@@ -1,5 +1,4 @@
 # check that all requests use identical methods and variables
-
 import socket
 
 print("Fincloud is up and running")
