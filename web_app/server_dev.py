@@ -4,6 +4,8 @@
 # change /forgot page
 # add a function to generate code for account recovery
 # request confirmation with email for account creation
+# add ssl encryption
+# create enum for response codes / several final variables (important to remove repeated use of numbers)
 
 
 # imports
@@ -19,7 +21,7 @@ import smtplib
 
 
 # classes
-class Log:  # object variables: log (contains a numpy array)
+class Log:  # object properties: log (contains a numpy array)
     # an array used to store other objects
     def __init__(self):
         self.log = np.array([])
@@ -28,15 +30,25 @@ class Log:  # object variables: log (contains a numpy array)
         self.log = np.append(self.log, [val])
 
 
-class Entry:  # object variables: action, amount, department
+class EntryTrade:
+    def __init__(self, cur_from, cur_to, amount_taken, date, conversion_rate):
+        self.cur_from = cur_from
+        self.cur_to = cur_to
+        self.amount = amount_taken
+        self.conversion_rate = conversion_rate
+        self.date = date
+
+
+class Entry:  # object properties: action, amount, department
     # entries are saved in the ledger of an account
-    def __init__(self, action, amount, account_type, department):
+    def __init__(self, action, amount, department, date):
         self.action = action  # type of action (deposit, withdrawal, transfer_sent, transfer_received)
         self.amount = amount  # value moved in the action
         self.department = department  # if the account is a business account, department is set, otherwise set as -1
+        self.date = date
 
 
-class HashTable:  # object variables: body (contains a dictionary)
+class HashTable:  # object properties: body (contains a dictionary)
     def __init__(self):
         self.body = {}
 
@@ -115,15 +127,13 @@ class Cloud:  # a financial cloud that allows deposits to be kept and accessed u
 
 
 class Account:
-    def __init__(self):  # object variables: value, account_number, ledger
+    def __init__(self):  # object properties: value, account_number, ledger
         self.value = create_value_table()
         self.account_number = assign_account_number()
         self.ledger = Log()
+        self.trade_ledger = Log()
         number_table.add_key_index(self.account_number)
         loc_type_table.add_index_value('reg')
-
-    def check_value(self):
-        return self.value['USD']
 
     def deposit(self, amount):
         confirm = False
@@ -138,6 +148,7 @@ class Account:
             confirm = True
             response_code = 1
             self.value['USD'] = self.value['USD'] + amount
+            self.ledger.append(Entry('d', amount, -1, get_date()))
 
         return confirm, response_code
 
@@ -155,6 +166,136 @@ class Account:
                 confirm = True
                 response_code = 1
                 self.value['USD'] = self.value['USD'] - amount
+                self.ledger.append(Entry('w', amount, -1, get_date()))
+            else:
+                response_code = -3
+                confirm = False
+
+        return confirm, response_code
+
+    def trade_currency(self, amount, cur_from, cur_to):
+        confirm = False
+        response_code = 0
+        if not (check_validity(amount) and (type(amount) is int) and amount != 0):
+            if amount == 0:
+                response_code = -2  # amount is 0
+            else:
+                response_code = -1  # input invalid
+            confirm = False
+        if confirm:
+            if (cur_from in self.value.keys()) and (cur_to in self.value.keys()):
+                if self.value[cur_from] >= amount:
+                    self.value[cur_from] = self.value[cur_from] - amount
+                    self.value[cur_to] = self.value[cur_to] + currency_rates(cur_from, cur_to, amount)
+                    self.trade_ledger.append(EntryTrade(cur_from, cur_to, amount, get_date(), currency_rates(cur_from, cur_to, 1)))
+                else:
+                    response_code = -3
+                    confirm = False
+            else:
+                response_code = -4
+                confirm = False
+
+        return confirm, response_code
+
+    def transfer(self, amount, target_account, dep_name):
+        confirm = False
+        target_index = -1
+        response_code = 0
+        if not (check_validity(amount) and (type(amount) is int) and amount != 0):
+            if amount == 0:
+                response_code = -2  # amount is 0
+            else:
+                response_code = -1  # input invalid
+            confirm = False
+        else:
+            target_index = name_table.in_table(target_account)
+            if target_index == -1:
+                target_index = number_table.in_table(target_account)
+                if target_index == -1:
+                    response_code = -3  # target account does not exist
+                else:
+                    confirm = True
+            else:
+                confirm = True
+        if confirm:
+            response_code = 1
+            if self.value['USD'] >= amount:
+                if dep_name == 'none':
+                    Accounts.log[target_index].value['USD'] = Accounts.log[target_index].value['USD'] + amount
+                    self.value['USD'] = self.value['USD'] - amount
+                    self.ledger.append(Entry('tf', amount, -1, get_date()))
+                    Accounts.log[target_index].ledger.append(Entry('tt', amount, -1, get_date()))
+                else:
+                    if loc_type_table.in_table(target_index) == 'bus':
+                        if dep_name in Accounts.log[target_index].departments.keys():
+                            Accounts.log[target_index].departments[dep_name]['USD'] = \
+                                Accounts.log[target_index].departments[dep_name]['USD'] + amount
+                            self.value['USD'] = self.value['USD'] - amount
+                            self.ledger.append(Entry('tf', amount, -1, get_date()))
+                            Accounts.log[target_index].ledger.append(Entry('tt', amount, dep_name, get_date()))
+                        else:
+                            response_code = -6  # department name does not exist
+                            confirm = False
+                    else:
+                        response_code = -5  # department set even though account is not a business account
+                        confirm = False
+            else:
+                response_code = -4  # amount is not enough
+                confirm = False
+
+        return confirm, response_code
+
+
+class SavingsAccount:  # object properties: value, returns, last_update, account_number, ledger
+    def __init__(self, returns):
+        self.value = 0
+        self.returns = pow(returns, 1/12)  # returns per month
+        self.last_update = get_date()
+        self.shift_date = get_date()[0]
+        self.account_number = assign_account_number()
+        self.ledger = Log()
+        number_table.add_key_index(self.account_number)
+        loc_type_table.add_index_value('sav')
+
+    def update(self):
+        current_date = get_date()
+        months = current_date[1] - self.last_update[1]
+        if current_date[0] < self.shift_date:
+            months -= 1
+        self.value = self.value * (pow((1 + self.returns), months))
+
+    def deposit(self, amount):
+        confirm = False
+        response_code = 0
+        if not (check_validity(amount) and (type(amount) is int) and amount != 0):
+            if amount == 0:
+                response_code = -2
+            else:
+                response_code = -1
+            confirm = False
+        else:
+            confirm = True
+            response_code = 1
+            self.value = self.value + amount
+            self.ledger.append(Entry('d', amount, -1, get_date()))
+
+        return confirm, response_code
+
+    def withdraw(self, amount):
+        confirm = False
+        response_code = 0
+        if not (check_validity(amount) and (type(amount) is int) and amount != 0):
+            if amount == 0:
+                response_code = -2
+            else:
+                response_code = -1
+            confirm = False
+        else:
+            if self.value >= amount:
+                confirm = True
+                response_code = 1
+                self.value = self.value - amount
+                self.ledger.append(Entry('w', amount, -1, get_date()))
             else:
                 response_code = -3
                 confirm = False
@@ -167,59 +308,50 @@ class Account:
         response_code = 0
         if not (check_validity(amount) and (type(amount) is int) and amount != 0):
             if amount == 0:
-                response_code = -2
+                response_code = -2  # amount is 0
             else:
-                response_code = -1
+                response_code = -1  # input invalid
             confirm = False
         else:
             target_index = name_table.in_table(target_account)
             if target_index == -1:
                 target_index = number_table.in_table(target_account)
                 if target_index == -1:
-                    response_code = -2
+                    response_code = -3  # target account does not exist
                 else:
                     confirm = True
             else:
                 confirm = True
         if confirm:
             response_code = 1
-            if self.value['USD'] >= amount:
+            if self.value >= amount:
                 if dep_name == 'none':
-                    Accounts.log[target_index].value['USD'] = Accounts.log[target_index].value['USD'] + amount
-                    self.value['USD'] = self.value['USD'] - amount
+                    Accounts.log[target_index].value = Accounts.log[target_index].value + amount
+                    self.value = self.value - amount
+                    self.ledger.append(Entry('tf', amount, -1, get_date()))
+                    Accounts.log[target_index].ledger.append(Entry('tt', amount, -1, get_date()))
                 else:
                     if loc_type_table.in_table(target_index) == 'bus':
                         if dep_name in Accounts.log[target_index].departments.keys():
                             Accounts.log[target_index].departments[dep_name]['USD'] = \
                                 Accounts.log[target_index].departments[dep_name]['USD'] + amount
-                            self.value['USD'] = self.value['USD'] - amount
+                            self.value = self.value - amount
+                            self.ledger.append(Entry('tf', amount, -1, get_date()))
+                            Accounts.log[target_index].ledger.append(Entry('tt', amount, dep_name, get_date()))
                         else:
-                            response_code = -5
+                            response_code = -6  # department name does not exist
                             confirm = False
                     else:
-                        response_code = -4
+                        response_code = -5  # department set even though account is not a business account
                         confirm = False
             else:
-                response_code = -3
+                response_code = -4  # amount is not enough
                 confirm = False
 
         return confirm, response_code
 
 
-class SavingsAccount:  # object variables: value, returns, last_update, account_number, ledger
-    def __init__(self, returns):
-        self.value = 0
-        self.returns = returns
-        self.last_update = get_date()
-        self.account_number = assign_account_number()
-        self.ledger = Log()
-        number_table.add_key_index(self.account_number)
-        loc_type_table.add_index_value('sav')
-
-    # def transfer(self, amount, target_account, ):
-
-
-class BusinessAccount:  # object variables: company_name, departments_array, account_number, ledger
+class BusinessAccount:  # object properties: company_name, departments_array, account_number, ledger
     def __init__(self, company_name, department_names):  # department_name is a list of names for each department
         self.company_name = company_name
         self.departments = {}
@@ -237,7 +369,7 @@ class BusinessAccount:  # object variables: company_name, departments_array, acc
             self.departments[dep_name] = create_value_table()
             confirm = True
         else:
-            response_code = -1
+            response_code = -1  # department name already exists
 
         return confirm, response_code
 
@@ -348,8 +480,7 @@ def hash_function(enter):
 
 def create_value_table():
     value_table = {'USD': 0, 'EUR': 0, 'JPY': 0, 'BGN': 0, 'CZK': 0, 'GBP': 0, 'CHF': 0, 'AUD': 0, 'BRL': 0, 'CAD': 0,
-                   'CNY': 0, 'IDR': 0, 'INR': 0, 'MXN': 0, 'SGD': 0, 'BTC': 0, 'history': False,
-                   'mining start date': '', 'mining rate': 0, 'mining fine': 0, 'mined BTC': 0}
+                   'CNY': 0, 'IDR': 0, 'INR': 0, 'MXN': 0, 'SGD': 0, 'BTC': 0}
     return value_table
 
 
@@ -368,20 +499,41 @@ def check_validity(data):
     return valid
 
 
-def send_email(email_address):
+def generate_code():
+    number = random.randint(100000, 999999)
+    return number
+
+
+def send_recovery_email(email_address):
     # create an SMTP server object
-    server = smtplib.SMTP('smtp.example.com', 587)
+    mail_server = smtplib.SMTP('smtp.example.com', 587)
 
     # create the email data, including the email content and recipients
     message = """\
     From: FinCloud@server.com
     To: {}
     Subject: Recovery for FinCloud account
-    
-    Add recovery code here.""".format(email_address)
+
+    Recovery code for your account: {}""".format(email_address, generate_code())
 
     # send the email using the server object
-    server.sendmail('FinCloud@server.com', email_address, message)
+    mail_server.sendmail('FinCloud@server.com', [email_address], message)
+
+
+def send_confirmation_email(email_address):
+    # create an SMTP server object
+    mail_server = smtplib.SMTP('smtp.example.com', 587)
+
+    # create the email data, including the email content and recipients
+    message = """\
+    From: FinCloud@server.com
+    To: {}
+    Subject: Recovery for FinCloud account
+
+    Confirm your email with this code: {}""".format(email_address, generate_code())
+
+    # send the email using the server object
+    mail_server.sendmail('FinCloud@server.com', [email_address], message)
 
 
 def verification(attempt, code_attempt):  # returns: verification answer, response code, account index
@@ -490,19 +642,32 @@ class FinCloud(BaseHTTPRequestHandler):
         self.send_header('Location', path)
         self.end_headers()
 
+    def input_error(self):  # redirect to main page, set redirect flag to true, set response code to -1 to display error
+        data.alter_rf(self.client_address[0], True)
+        data.alter_re(self.client_address[0], -1)
+        self.redirect('/')
+
     def do_GET(self):
 
         if self.client_address[0] not in data.redirect_flags.keys():
             data.alter_rf(self.client_address[0], False)
-        self.start()
-        output = '<html><body>'
-        self.wfile.write(bytes('<head><title>FinCloud.com</title></head>', "utf-8"))
-        output += '<h1>FinCloud - A modern solution for you</h1>'
-        output += '<h3><a href="/About">Learn about us</a></h3>'
-        output += '<h3><a href="/login">Sign in</a></h3>'
-        output += '<h3><a href="/see_data">Temp</a></h3>'
-        output += '</body></html>'
-        self.wfile.write(output.encode())
+
+        if self.path.endswith('/'):
+            self.start()
+            self.clear()
+            output = '<html><body>'
+            self.wfile.write(bytes('<head><title>FinCloud.com</title></head>', "utf-8"))
+            output += '<h1>FinCloud - A modern solution for you</h1>'
+            output += '<h3><a href="/About">Learn about us</a></h3>'
+            output += '<h3><a href="/login">Sign in</a></h3>'
+            output += '<h3><a href="/see_data">Temp</a></h3>'
+            if data.redirect_flags[self.client_address[0]]:
+                data.redirect_flags[self.client_address[0]] = False
+                if data.responses[self.client_address[0]] == -1:
+                    output += '</br>' + '<h4>System error. Please try again later.</h4>'
+                data.alter_re(self.client_address[0], 0)
+            output += '</body></html>'
+            self.wfile.write(output.encode())
 
         if self.path.endswith('/home'):
             self.start()
@@ -681,6 +846,8 @@ class FinCloud(BaseHTTPRequestHandler):
                     data.alter_re(self.client_address[0], response_code)
                     data.alter_rf(self.client_address[0], True)
                     self.redirect('/login')
+            else:
+                self.input_error()
 
         if self.path.endswith('/new/checking'):
             # extract user input from headers in POST packet
@@ -711,6 +878,8 @@ class FinCloud(BaseHTTPRequestHandler):
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], -5)
                     self.redirect('/new/checking')
+            else:
+                self.input_error()
 
         if self.path.endswith('/forgot'):
             # extract user input from headers in POST packet
@@ -724,6 +893,7 @@ class FinCloud(BaseHTTPRequestHandler):
                 new_code = fields.get('code')[0]
                 code_confirm = fields.get('code_confirm')[0]
                 user = fields.get('user')[0]
+
                 # account code reset process with user input
                 if new_code == code_confirm:
                     if (name_table.in_table(user) != -1) or (number_table.in_table(user) != -1):
@@ -731,6 +901,7 @@ class FinCloud(BaseHTTPRequestHandler):
                             account_name = phone_name_table.in_table(hash_function(phone_number))
                             account_loc = name_table.in_table(account_name)
                             pass_table.alter_key_index(account_loc, hash_function(new_code))
+
                             # redirect to login page and send approval
                             data.alter_rf(self.client_address[0], True)
                             data.alter_re(self.client_address[0], 2)
@@ -756,6 +927,8 @@ class FinCloud(BaseHTTPRequestHandler):
                         data.alter_rf(self.client_address[0], True)
                         data.alter_re(self.client_address[0], -3)
                         self.redirect('/forgot')
+            else:
+                self.input_error()
 
 
 # 'main' function
