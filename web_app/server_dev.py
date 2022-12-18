@@ -39,13 +39,23 @@ class EntryTrade:
         self.date = date
 
 
-class Entry:  # object properties: action, amount, department
-    # entries are saved in the ledger of an account
-    def __init__(self, action, amount, department, date):
+class EntryBusiness:
+    def __init__(self, action, amount, date, other_num, other_dep):
         self.action = action  # type of action (deposit, withdrawal, transfer_sent, transfer_received)
         self.amount = amount  # value moved in the action
-        self.department = department  # if the account is a business account, department is set, otherwise set as -1
         self.date = date
+        self.other_num = other_num  # if action involves other accounts this is set, otherwise set to -1
+        self.other_dep = other_dep  # if action involves other accounts this is set, otherwise set to -1
+
+
+class Entry:  # object properties: action, amount
+    # entries are saved in the ledger of an account
+    def __init__(self, action, amount, date, target_num, target_dep):
+        self.action = action  # type of action (deposit, withdrawal, transfer_sent, transfer_received)
+        self.amount = amount  # value moved in the action
+        self.date = date
+        self.target_num = target_num  # if action involves other accounts this is set, otherwise set to -1
+        self.target_dep = target_dep  # if action involves other accounts this is set, otherwise set to -1
 
 
 class HashTable:  # object properties: body (contains a dictionary)
@@ -73,6 +83,12 @@ class HashTable:  # object properties: body (contains a dictionary)
         new_table = reverse_dictionary(temp_table)
         self.body = new_table
 
+    def get_key(self, index):
+        temp_table = reverse_dictionary(self.body)
+        try:
+            return temp_table[index]
+        except KeyError:
+            return -1
 
 class Cloud:  # a financial cloud that allows deposits to be kept and accessed using an access code
     def __new__(cls):
@@ -135,6 +151,9 @@ class Account:
         number_table.add_key_index(self.account_number)
         loc_type_table.add_index_value('reg')
 
+    def get_value_usd(self):
+        return self.value['USD']
+
     def deposit(self, amount):
         confirm = False
         response_code = 0
@@ -148,7 +167,7 @@ class Account:
             confirm = True
             response_code = 1
             self.value['USD'] = self.value['USD'] + amount
-            self.ledger.append(Entry('d', amount, -1, get_date()))
+            self.ledger.append(Entry('d', amount, get_date(), -1, -1))
 
         return confirm, response_code
 
@@ -166,7 +185,7 @@ class Account:
                 confirm = True
                 response_code = 1
                 self.value['USD'] = self.value['USD'] - amount
-                self.ledger.append(Entry('w', amount, -1, get_date()))
+                self.ledger.append(Entry('w', amount, get_date(), -1, -1))
             else:
                 response_code = -3
                 confirm = False
@@ -223,16 +242,16 @@ class Account:
                 if dep_name == 'none':
                     Accounts.log[target_index].value['USD'] = Accounts.log[target_index].value['USD'] + amount
                     self.value['USD'] = self.value['USD'] - amount
-                    self.ledger.append(Entry('tf', amount, -1, get_date()))
-                    Accounts.log[target_index].ledger.append(Entry('tt', amount, -1, get_date()))
+                    self.ledger.append(Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, -1))
+                    Accounts.log[target_index].ledger.append(Entry('tt', amount, get_date(), self.account_number, -1))
                 else:
                     if loc_type_table.in_table(target_index) == 'bus':
                         if dep_name in Accounts.log[target_index].departments.keys():
                             Accounts.log[target_index].departments[dep_name]['USD'] = \
                                 Accounts.log[target_index].departments[dep_name]['USD'] + amount
                             self.value['USD'] = self.value['USD'] - amount
-                            self.ledger.append(Entry('tf', amount, -1, get_date()))
-                            Accounts.log[target_index].ledger.append(Entry('tt', amount, dep_name, get_date()))
+                            self.ledger.append(Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, dep_name))
+                            Accounts.log[target_index].ledger.append(Entry('tt', amount, get_date(), self.account_number, -1))
                         else:
                             response_code = -6  # department name does not exist
                             confirm = False
@@ -277,7 +296,7 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
             confirm = True
             response_code = 1
             self.value = self.value + amount
-            self.ledger.append(Entry('d', amount, -1, get_date()))
+            self.ledger.append(Entry('d', amount, get_date(), -1, -1))
 
         return confirm, response_code
 
@@ -295,7 +314,7 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
                 confirm = True
                 response_code = 1
                 self.value = self.value - amount
-                self.ledger.append(Entry('w', amount, -1, get_date()))
+                self.ledger.append(Entry('w', amount, get_date(), -1, -1))
             else:
                 response_code = -3
                 confirm = False
@@ -328,16 +347,16 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
                 if dep_name == 'none':
                     Accounts.log[target_index].value = Accounts.log[target_index].value + amount
                     self.value = self.value - amount
-                    self.ledger.append(Entry('tf', amount, -1, get_date()))
-                    Accounts.log[target_index].ledger.append(Entry('tt', amount, -1, get_date()))
+                    self.ledger.append(Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, -1))
+                    Accounts.log[target_index].ledger.append(Entry('tt', amount, get_date(), self.account_number, -1))
                 else:
                     if loc_type_table.in_table(target_index) == 'bus':
                         if dep_name in Accounts.log[target_index].departments.keys():
                             Accounts.log[target_index].departments[dep_name]['USD'] = \
                                 Accounts.log[target_index].departments[dep_name]['USD'] + amount
                             self.value = self.value - amount
-                            self.ledger.append(Entry('tf', amount, -1, get_date()))
-                            Accounts.log[target_index].ledger.append(Entry('tt', amount, dep_name, get_date()))
+                            self.ledger.append(Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, dep_name))
+                            Accounts.log[target_index].ledger.append(Entry('tt', amount, get_date(), self.account_number, -1))
                         else:
                             response_code = -6  # department name does not exist
                             confirm = False
@@ -356,17 +375,94 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
         self.company_name = company_name
         self.departments = {}
         self.account_number = assign_account_number()
-        self.ledger = Log()
         number_table.add_key_index(self.account_number)
         loc_type_table.add_index_value('bus')
         for name in department_names:
-            self.departments[name] = create_value_table()
+            self.departments[name] = (create_value_table(), Log())
+
+    def inner_transfer(self, dep_from, dep_to, amount):
+        confirm = False
+        response_code = 0
+        if not ((dep_from in self.departments.keys()) and (dep_to in self.departments.keys())):
+            if dep_from not in self.departments.keys():
+                response_code = -1
+            else:
+                response_code = -2
+            confirm = False
+        else:
+            if not (check_validity(amount) and (type(amount) is int) and amount != 0):
+                if amount == 0:
+                    response_code = -4
+                else:
+                    response_code = -3
+                confirm = False
+            else:
+                confirm = True
+        if confirm:
+            if self.departments[dep_from][0]['USD'] >= amount:
+                self.departments[dep_from][0]['USD'] = self.departments[dep_from][0]['USD'] - amount
+                self.departments[dep_to][0]['USD'] = self.departments[dep_to][0]['USD'] + amount
+                self.departments[dep_from][1].append(EntryBusiness('tfi', amount, get_date(), -1, dep_to))
+                self.departments[dep_to][1].append(EntryBusiness('tti', amount, get_date(), -1, dep_from))
+            else:
+                confirm = False
+                response_code = -5
+
+        return confirm, response_code
+
+    def deposit(self, amount, dep_name):
+        confirm = False
+        response_code = 0
+        if dep_name not in self.departments.keys():
+            response_code = -1
+            confirm = False
+        else:
+            if not (check_validity(amount) and (type(amount) is int) and amount != 0):
+                if amount == 0:
+                    response_code = -3
+                else:
+                    response_code = -2
+                confirm = False
+            else:
+                confirm = True
+        if confirm:
+            response_code = 1
+            self.departments[dep_name][0]['USD'] = self.departments[dep_name][0]['USD'] - amount
+            self.departments[dep_name][1].append(Entry('d', amount, get_date(), -1, -1))
+
+        return confirm, response_code
+
+    def withdraw(self, amount, dep_name):
+        confirm = False
+        response_code = 0
+        if dep_name not in self.departments.keys():
+            response_code = -1
+            confirm = False
+        else:
+            if not (check_validity(amount) and (type(amount) is int) and amount != 0):
+                if amount == 0:
+                    response_code = -3
+                else:
+                    response_code = -2
+                confirm = False
+            else:
+                confirm = True
+        if confirm:
+            if self.departments[dep_name][0]['USD'] >= amount:
+                response_code = 1
+                self.departments[dep_name][0]['USD'] = self.departments[dep_name][0]['USD'] + amount
+                self.departments[dep_name][1].append(Entry('d', amount, get_date(), -1, -1))
+            else:
+                response_code = -4
+                confirm = False
+
+        return confirm, response_code
 
     def add_department(self, dep_name):
         confirm = False
         response_code = 0
         if dep_name not in self.departments.keys():
-            self.departments[dep_name] = create_value_table()
+            self.departments[dep_name] = (create_value_table(), Log())
             confirm = True
         else:
             response_code = -1  # department name already exists
@@ -385,13 +481,13 @@ class Global:
         self.responses = {}
         self.current_account = {}
 
-    def alter_rf(self, key, value):  # add to/change key:value for redirect_flags
+    def alter_rf(self, key, value):  # add/change key:value for redirect_flags
         self.redirect_flags[key] = value
 
-    def alter_re(self, key, value):  # add to/change key:value for responses
+    def alter_re(self, key, value):  # add/change key:value for responses
         self.responses[key] = value
 
-    def alter_ca(self, key, value):  # add to/change key:value for current_account
+    def alter_ca(self, key, value):  # add/change key:value for current_account
         self.current_account[key] = value
 
 
@@ -504,9 +600,13 @@ def generate_code():
     return number
 
 
+# fix
 def send_recovery_email(email_address):
     # create an SMTP server object
     mail_server = smtplib.SMTP('smtp.example.com', 587)
+
+    # starting server encryption
+    mail_server.starttls()
 
     # create the email data, including the email content and recipients
     message = """\
@@ -520,9 +620,13 @@ def send_recovery_email(email_address):
     mail_server.sendmail('FinCloud@server.com', [email_address], message)
 
 
+# fix
 def send_confirmation_email(email_address):
     # create an SMTP server object
     mail_server = smtplib.SMTP('smtp.example.com', 587)
+
+    # starting server encryption
+    mail_server.starttls()
 
     # create the email data, including the email content and recipients
     message = """\
@@ -819,10 +923,25 @@ class FinCloud(BaseHTTPRequestHandler):
             self.wfile.write(output.encode())
 
         if self.path.endswith('/new/business'):
-            print()
+            pass
 
         if self.path.endswith('/new/savings'):
-            print()
+            pass
+
+        if self.path.endswith('/account/home'):
+            self.start()
+            self.clear()
+            output = '<html><body>'
+            account_name = str(name_table.get_key(data.current_account[self.client_address[0]]))
+            output += '<h1>Your Account: ' + account_name + '</h1>'
+            val = str(Accounts.log[name_table.in_table(account_name)].get_value_usd())
+            output += '<h2>Current value in USD: ' + val + '</h2>'
+            output += 'To deposit more funds: ' + '<a href="/account/deposit">Click here</a>'
+            output += '</body></html>'
+            self.wfile.write(output.encode())
+
+        if self.path.endswith('/account/deposit'):
+            pass
 
     def do_POST(self):
 
@@ -841,7 +960,7 @@ class FinCloud(BaseHTTPRequestHandler):
                 verify, response_code, index = verification(user_attempt, code_attempt)
                 if verify:
                     data.alter_ca(self.client_address[0], index)
-                    self.redirect('/home')
+                    self.redirect('/account/home')
                 else:
                     data.alter_re(self.client_address[0], response_code)
                     data.alter_rf(self.client_address[0], True)
