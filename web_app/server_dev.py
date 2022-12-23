@@ -6,6 +6,7 @@
 # request confirmation with email for account creation
 # add ssl encryption
 # create enum for response codes / several final variables (important to remove repeated use of numbers)
+# allow decimal values (change int types to double types for account values)
 
 
 # imports
@@ -18,6 +19,7 @@ import random
 import numpy as np
 from forex_python.converter import CurrencyRates
 import smtplib
+from server_header import *
 
 
 # classes
@@ -90,6 +92,7 @@ class HashTable:  # object properties: body (contains a dictionary)
         except KeyError:
             return -1
 
+
 class Cloud:  # a financial cloud that allows deposits to be kept and accessed using an access code
     def __new__(cls):
         if not hasattr(cls, 'instance'):
@@ -102,7 +105,7 @@ class Cloud:  # a financial cloud that allows deposits to be kept and accessed u
     def allocate(self, amount, code, account_index):
         confirm = False
         response_code = -1
-        if not (check_validity(amount) and (type(amount) is int) and amount != 0):
+        if not (validate_number(amount) and amount > 0):
             if amount == 0:
                 response_code = -2
             return confirm, response_code
@@ -122,7 +125,7 @@ class Cloud:  # a financial cloud that allows deposits to be kept and accessed u
     def withdraw(self, amount, code_attempt, account_index):
         confirm = False
         response_code = -1
-        if not (check_validity(amount) and (type(amount) is int) and amount != 0):
+        if not (validate_number(amount) and amount > 0):
             if amount == 0:
                 response_code = -2
             return confirm, response_code
@@ -157,7 +160,7 @@ class Account:
     def deposit(self, amount):
         confirm = False
         response_code = 0
-        if not (check_validity(amount) and (type(amount) is int) and amount != 0):
+        if not (validate_number(amount) and amount > 0):
             if amount == 0:
                 response_code = -2
             else:
@@ -174,7 +177,7 @@ class Account:
     def withdraw(self, amount):
         confirm = False
         response_code = 0
-        if not (check_validity(amount) and (type(amount) is int) and amount != 0):
+        if not (validate_number(amount) and amount > 0):
             if amount == 0:
                 response_code = -2
             else:
@@ -195,7 +198,7 @@ class Account:
     def trade_currency(self, amount, cur_from, cur_to):
         confirm = False
         response_code = 0
-        if not (check_validity(amount) and (type(amount) is int) and amount != 0):
+        if not (validate_number(amount) and amount > 0):
             if amount == 0:
                 response_code = -2  # amount is 0
             else:
@@ -220,7 +223,7 @@ class Account:
         confirm = False
         target_index = -1
         response_code = 0
-        if not (check_validity(amount) and (type(amount) is int) and amount != 0):
+        if not (validate_number(amount) and amount > 0):
             if amount == 0:
                 response_code = -2  # amount is 0
             else:
@@ -240,18 +243,25 @@ class Account:
             response_code = 1
             if self.value['USD'] >= amount:
                 if dep_name == 'none':
-                    Accounts.log[target_index].value['USD'] = Accounts.log[target_index].value['USD'] + amount
-                    self.value['USD'] = self.value['USD'] - amount
-                    self.ledger.append(Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, -1))
-                    Accounts.log[target_index].ledger.append(Entry('tt', amount, get_date(), self.account_number, -1))
+                    if loc_type_table.in_table(target_index) == 'sav':
+                        Accounts.log[target_index].value = Accounts.log[target_index].value + amount
+                    elif loc_type_table.in_table(target_index) == 'reg':
+                        Accounts.log[target_index].value['USD'] = Accounts.log[target_index].value['USD'] + amount
+                    if loc_type_table.in_table(target_index) == 'bus':
+                        response_code = -7  # account is of business type but department name is set to 'none'
+                        confirm = False
+                    else:
+                        self.value['USD'] = self.value['USD'] - amount
+                        self.ledger.append(Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, -1))
+                        Accounts.log[target_index].ledger.append(Entry('tt', amount, get_date(), self.account_number, -1))
                 else:
                     if loc_type_table.in_table(target_index) == 'bus':
                         if dep_name in Accounts.log[target_index].departments.keys():
-                            Accounts.log[target_index].departments[dep_name]['USD'] = \
-                                Accounts.log[target_index].departments[dep_name]['USD'] + amount
+                            Accounts.log[target_index].departments[dep_name][0]['USD'] = \
+                                Accounts.log[target_index].departments[dep_name][0]['USD'] + amount
                             self.value['USD'] = self.value['USD'] - amount
                             self.ledger.append(Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, dep_name))
-                            Accounts.log[target_index].ledger.append(Entry('tt', amount, get_date(), self.account_number, -1))
+                            Accounts.log[target_index].departments[dep_name][1].append(Entry('tt', amount, get_date(), self.account_number, -1))
                         else:
                             response_code = -6  # department name does not exist
                             confirm = False
@@ -268,11 +278,12 @@ class Account:
 class SavingsAccount:  # object properties: value, returns, last_update, account_number, ledger
     def __init__(self, returns):
         self.value = 0
-        self.returns = pow(returns, 1/12)  # returns per month
+        self.returns = pow((1 + returns/100), 1/12)  # returns per month
         self.last_update = get_date()
         self.shift_date = get_date()[0]
         self.account_number = assign_account_number()
         self.ledger = Log()
+        self.fee = set_fee(returns)
         number_table.add_key_index(self.account_number)
         loc_type_table.add_index_value('sav')
 
@@ -282,11 +293,12 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
         if current_date[0] < self.shift_date:
             months -= 1
         self.value = self.value * (pow((1 + self.returns), months))
+        self.value = self.value - self.fee
 
     def deposit(self, amount):
         confirm = False
         response_code = 0
-        if not (check_validity(amount) and (type(amount) is int) and amount != 0):
+        if not (validate_number(amount) and amount > 0):
             if amount == 0:
                 response_code = -2
             else:
@@ -303,7 +315,7 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
     def withdraw(self, amount):
         confirm = False
         response_code = 0
-        if not (check_validity(amount) and (type(amount) is int) and amount != 0):
+        if not (validate_number(amount) and amount > 0):
             if amount == 0:
                 response_code = -2
             else:
@@ -325,7 +337,7 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
         confirm = False
         target_index = -1
         response_code = 0
-        if not (check_validity(amount) and (type(amount) is int) and amount != 0):
+        if not (validate_number(amount) and amount > 0):
             if amount == 0:
                 response_code = -2  # amount is 0
             else:
@@ -345,18 +357,25 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
             response_code = 1
             if self.value >= amount:
                 if dep_name == 'none':
-                    Accounts.log[target_index].value = Accounts.log[target_index].value + amount
-                    self.value = self.value - amount
-                    self.ledger.append(Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, -1))
-                    Accounts.log[target_index].ledger.append(Entry('tt', amount, get_date(), self.account_number, -1))
+                    if loc_type_table.in_table(target_index) == 'sav':
+                        Accounts.log[target_index].value = Accounts.log[target_index].value + amount
+                    elif loc_type_table.in_table(target_index) == 'reg':
+                        Accounts.log[target_index].value['USD'] = Accounts.log[target_index].value['USD'] + amount
+                    if loc_type_table.in_table(target_index) == 'bus':
+                        response_code = -7  # account is of business type but department name is set to 'none'
+                        confirm = False
+                    else:
+                        self.value = self.value - amount
+                        self.ledger.append(Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, -1))
+                        Accounts.log[target_index].ledger.append(Entry('tt', amount, get_date(), self.account_number, -1))
                 else:
                     if loc_type_table.in_table(target_index) == 'bus':
                         if dep_name in Accounts.log[target_index].departments.keys():
-                            Accounts.log[target_index].departments[dep_name]['USD'] = \
-                                Accounts.log[target_index].departments[dep_name]['USD'] + amount
+                            Accounts.log[target_index].departments[dep_name][0]['USD'] = \
+                                Accounts.log[target_index].departments[dep_name][0]['USD'] + amount
                             self.value = self.value - amount
                             self.ledger.append(Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, dep_name))
-                            Accounts.log[target_index].ledger.append(Entry('tt', amount, get_date(), self.account_number, -1))
+                            Accounts.log[target_index].departments[dep_name][1].append(Entry('tt', amount, get_date(), self.account_number, -1))
                         else:
                             response_code = -6  # department name does not exist
                             confirm = False
@@ -364,7 +383,7 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
                         response_code = -5  # department set even though account is not a business account
                         confirm = False
             else:
-                response_code = -4  # amount is not enough
+                response_code = -4  # insufficient funds
                 confirm = False
 
         return confirm, response_code
@@ -380,6 +399,62 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
         for name in department_names:
             self.departments[name] = (create_value_table(), Log())
 
+    def transfer(self, dep_from, target_account, dep_to, amount):
+        confirm = False
+        target_index = -1
+        response_code = 0
+        if not (validate_number(amount) and amount > 0):
+            if amount == 0:
+                response_code = -2  # amount is 0
+            else:
+                response_code = -1  # input invalid
+            confirm = False
+        else:
+            target_index = name_table.in_table(target_account)
+            if target_index == -1:
+                target_index = number_table.in_table(target_account)
+                if target_index == -1:
+                    response_code = -3  # target account does not exist
+                else:
+                    confirm = True
+            else:
+                confirm = True
+        if confirm:
+            if dep_from not in self.departments.keys():
+                response_code = -4  # origin department does not exist
+                confirm = False
+        if confirm:
+            response_code = 1
+            if self.departments[dep_from][0]['USD'] >= amount:
+                if dep_to == 'none':
+                    if loc_type_table.in_table(target_index) == 'sav':
+                        Accounts.log[target_index].value = Accounts.log[target_index].value + amount
+                    elif loc_type_table.in_table(target_index) == 'reg':
+                        Accounts.log[target_index].value['USD'] = Accounts.log[target_index].value['USD'] + amount
+                    if loc_type_table.in_table(target_index) == 'bus':
+                        response_code = -7  # account is of business type but department name is set to 'none'
+                        confirm = False
+                    else:
+                        self.departments[dep_from][0]['USD'] = self.departments[dep_from][0]['USD'] - amount
+                        self.departments[dep_from][1].append(Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, -1))
+                        Accounts.log[target_index].ledger.append(Entry('tt', amount, get_date(), self.account_number, dep_from))
+                else:
+                    if loc_type_table.in_table(target_index) == 'bus':
+                        if dep_to in Accounts.log[target_index].departments.keys():
+                            Accounts.log[target_index].departments[dep_to][0]['USD'] = Accounts.log[target_index].departments[dep_to][0]['USD'] + amount
+                            self.departments[dep_from][0]['USD'] = self.departments[dep_from][0]['USD'] - amount
+                            self.departments[dep_from][1].append(Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, dep_to))
+                            Accounts.log[target_index].departments[dep_to][1].append(Entry('tt', amount, get_date(), self.account_number, dep_from))
+                        else:
+                            response_code = -7  # department name does not exist
+                            confirm = False
+                    else:
+                        response_code = -6  # department set even though account is not a business account
+                        confirm = False
+            else:
+                response_code = -5  # insufficient funds
+                confirm = False
+
     def inner_transfer(self, dep_from, dep_to, amount):
         confirm = False
         response_code = 0
@@ -390,7 +465,7 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
                 response_code = -2
             confirm = False
         else:
-            if not (check_validity(amount) and (type(amount) is int) and amount != 0):
+            if not (validate_number(amount) and amount > 0):
                 if amount == 0:
                     response_code = -4
                 else:
@@ -417,7 +492,7 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
             response_code = -1
             confirm = False
         else:
-            if not (check_validity(amount) and (type(amount) is int) and amount != 0):
+            if not (validate_number(amount) and amount > 0):
                 if amount == 0:
                     response_code = -3
                 else:
@@ -439,7 +514,7 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
             response_code = -1
             confirm = False
         else:
-            if not (check_validity(amount) and (type(amount) is int) and amount != 0):
+            if not (validate_number(amount) and amount > 0):
                 if amount == 0:
                     response_code = -3
                 else:
@@ -492,6 +567,16 @@ class Global:
 
 
 # functions
+def set_fee(returns):
+    if returns == returns_premium:
+        return 100
+    elif returns == returns_medium:
+        return 80
+    elif returns == returns_minimum:
+        return 50
+    return -1
+
+
 def currency_rates(cur1, cur2, amount):
     return CurrencyRates().convert(cur1, cur2, amount)
 
@@ -580,14 +665,39 @@ def create_value_table():
     return value_table
 
 
-def check_validity(data):
-    data = str(data)
+def validate_phone_number(phone):
+    valid = validate_number(phone)
+    if valid:
+        if len(str(phone)) != 12:
+            valid = False
+    return valid
+
+
+def validate_number(num):
+    valid = True
+    decimal_counter = 0
+    num = str(num)
+    if num[0] == '-':
+        num = num[1::]
+    for i in num:
+        if not ((ord(i) > 47) and (ord(i) < 58)):
+            if i == '.':
+                decimal_counter += 1
+            else:
+                valid = False
+    if decimal_counter > 1:
+        valid = False
+    return valid
+
+
+def validate_string(word):
+    word = str(word)
     characters = []
     valid = True
     non_valid = ['.', ':', '(', '{', ')', '}', ',', '^', '<', '>', '+', '-', '*', '/', '%', '=', '|', ' ']
     counter = 0
-    while (counter < len(data)) and valid:
-        ch = data[counter]
+    while (counter < len(word)) and valid:
+        ch = word[counter]
         if ch in non_valid:
             valid = False
         else:
@@ -674,24 +784,77 @@ def verification(attempt, code_attempt):  # returns: verification answer, respon
     return verify, response_code, index
 
 
-def create_account(account_name, account_code, phone_num):  # returns: confirmation, account index, response code
-    confirm = False  # initialize return value
-    user_name = account_name  # saving initial name of account
+def create_savings_account(account_name, account_code, phone_num, returns):
+    confirm = False
+    user_name = account_name
+    response_code = 0
 
     # checking validity and availability of account name and code
-    if check_validity(account_name) and check_validity(account_code):
+    if validate_string(account_name) and validate_string(account_code):
         if name_table.in_table(account_name) == -1 and number_table.in_table(account_name) == -1:
             confirm = True
             response_code = 1  # account name and code are confirmed
         else:
             response_code = -4  # account name is unavailable
     else:
-        if not check_validity(account_name) and check_validity(account_code):
+        if (not validate_string(account_name)) and validate_string(account_code):
             response_code = -1  # name invalid
         else:
             response_code = -2  # code invalid
-        if not (check_validity(account_name) or check_validity(account_code)):
+        if not (validate_string(account_name) or validate_string(account_code)):
             response_code = -3  # name and code invalid
+    if confirm:
+        if returns not in [returns_premium, returns_medium, returns_minimum]:
+            response_code = -5
+            confirm = False
+        if not validate_phone_number(phone_num):
+            response_code = -6
+            confirm = False
+        if phone_name_table.in_table(hash_function(phone_num)):
+            response_code = -7
+            confirm = False
+    if confirm:
+        # add account details to tables
+        name_table.add_key_index(account_name)
+        pass_table.add_key_index(hash_function(account_code))
+        phone_name_table.add_key_value(hash_function(phone_num), account_name)
+
+        # create account object
+        new_account = SavingsAccount(returns)
+        account_name = "ac" + str(name_table.in_table(account_name))
+        globals()[account_name] = new_account
+        Accounts.append(globals()[account_name])
+
+    # return values (confirmation, account index, response code)
+    return confirm, name_table.in_table(user_name), response_code
+
+
+def create_checking_account(account_name, account_code, phone_num):  # returns confirms, account index, response code
+    confirm = False  # initialize return value
+    user_name = account_name  # saving initial name of account
+    response_code = 0
+
+    # checking validity and availability of account name and code
+    if validate_string(account_name) and validate_string(account_code):
+        if name_table.in_table(account_name) == -1 and number_table.in_table(account_name) == -1:
+            confirm = True
+            response_code = 1  # account name and code are confirmed
+        else:
+            response_code = -4  # account name is unavailable
+    else:
+        if (not validate_string(account_name)) and validate_string(account_code):
+            response_code = -1  # name invalid
+        else:
+            response_code = -2  # code invalid
+        if not (validate_string(account_name) or validate_string(account_code)):
+            response_code = -3  # name and code invalid
+    if confirm:
+        if not validate_phone_number(phone_num):
+            response_code = -5
+            confirm = False
+        if phone_name_table.in_table(hash_function(phone_num)):
+            response_code = -6
+            confirm = False
     if confirm:
         # add account details to tables
         name_table.add_key_index(account_name)
@@ -706,24 +869,6 @@ def create_account(account_name, account_code, phone_num):  # returns: confirmat
 
     # return values (confirmation, account index, response code)
     return confirm, name_table.in_table(user_name), response_code
-
-
-# tables
-name_table = HashTable()  # account name table - {account name: serial number}
-number_table = HashTable()  # account number table - {account number: serial number}
-pass_table = HashTable()  # password table - {hash value of account password: serial number}
-phone_name_table = HashTable()  # account recovery recovery table - {hash value of phone number: account name}
-loc_type_table = HashTable()  # account type table - {serial number: type of account (reg/bus/sav)}
-value_summary_table = HashTable()  # value recovery table - {value summary: serial number}
-
-# Accounts log
-Accounts = Log()  # Log containing all Accounts
-
-# class containing data that can be accessible from all locations in file
-data = Global()
-
-# set containing all existing account numbers
-existing_account_numbers = set()
 
 
 # server: request handling
@@ -818,10 +963,10 @@ class FinCloud(BaseHTTPRequestHandler):
                     output += '<h4>Password is incorrect. Please try again.</h4>'
                 elif data.responses[self.client_address[0]] == -3:
                     output += '<h4>System error. Please try again at a later time.</h4>'
+                elif data.responses[self.client_address[0]] == 1:
+                    output += '<h4>New account created.</h4>'
                 elif data.responses[self.client_address[0]] == 2:
                     output += '<h4>Account recovered. Password reset.</h4>'
-                elif data.responses[self.client_address[0]] == 3:
-                    output += '<h4>New account created.</h4>'
                 data.alter_re(self.client_address[0], 0)
             output += '___         or         ___' + '</br>' + '</br>' + '</br>'
             output += 'New to FinCloud? ' + '<a href="/new">Get started</a>'
@@ -890,6 +1035,7 @@ class FinCloud(BaseHTTPRequestHandler):
                       ' Our personal accounts also offer you the option to distribute' \
                       ' your capital and purchase multiple currencies.'
             output += '</br>' + '</br>'
+            output += '<h2>Create Your Account</h2>'
             output += '<form method="POST" enctype="multipart/form-data" action="/new/checking">'
             output += 'Enter a name for your account: ' + '<input name="user" type="text">' + '</br>'
             output += '</br>'
@@ -914,6 +1060,10 @@ class FinCloud(BaseHTTPRequestHandler):
                 elif data.responses[self.client_address[0]] == -4:
                     output += '<h4>An account with this name already exists. Please try again.</h4>'
                 elif data.responses[self.client_address[0]] == -5:
+                    output += '<h4>Phone number not valid.</h4>'
+                elif data.responses[self.client_address[0]] == -6:
+                    output += '<h4>Phone number already registered to an existing account.</h4>'
+                elif data.responses[self.client_address[0]] == -7:
                     output += '<h4>Code confirmation does not match the code you entered. Please try again.</h4>'
                 data.alter_re(self.client_address[0], 0)
             output += 'Want to check out different options? ' + '<a href="/new">Check them out here</a>'
@@ -926,7 +1076,37 @@ class FinCloud(BaseHTTPRequestHandler):
             pass
 
         if self.path.endswith('/new/savings'):
-            pass
+            self.start()
+            self.clear()
+            output = '<html><body>'
+            output += '<h1>Open a personal savings account</h1>'
+            output += 'Personal savings accounts allow for safe and profitable storage for your savings.' \
+                      ' Our personal savings accounts provide preset annual returns guaranteed and backed by our funds.'
+            output += '<h4>Options for account returns:</h4>'
+            output += 'Premium: 4% annual returns, $100 monthly fee' + '</br>'
+            output += 'Regular: 2.75% annual returns, $80 monthly fee' + '</br>'
+            output += 'Safe: 2% annual returns, $50 monthly fee' + '</br>'
+            output += '</br></br></br>'
+            output += '<h2>Create Your Account</h2>'
+            output += '<form method="POST" enctype="multipart/form-data" action="/new/savings">'
+            output += 'Enter a name for your account: ' + '<input name="user" type="text">' + '</br>'
+            output += '</br>'
+            output += 'Enter a password for your account: ' + '<input name="code" type="text">' + '</br>'
+            output += 'Confirm your new account password: ' + '<input name="code_confirm" type="text">' + '</br>'
+            output += '</br>'
+            output += 'Enter your phone number: ' + '<input name="phone" type="text">' + '</br>'
+            output += '</br>'
+            output += 'Select preferred returns for your savings account: '
+            output += '<select id="returns" name="returns">'
+            output += '<option value = "premium">Premium - 4% annually</option>'
+            output += '<option value = "medium">Regular - 2.75% annually</option>'
+            output += '<option value = "minimum">Safe - 2% annually</option>'
+            output += '</select>'
+            output += '</br></br>'
+            output += '<input type="submit" value="Create Account">'
+            output += '</form>'
+            output += '</body></html>'
+            self.wfile.write(output.encode())
 
         if self.path.endswith('/account/home'):
             self.start()
@@ -937,11 +1117,39 @@ class FinCloud(BaseHTTPRequestHandler):
             val = str(Accounts.log[name_table.in_table(account_name)].get_value_usd())
             output += '<h2>Current value in USD: ' + val + '</h2>'
             output += 'To deposit more funds: ' + '<a href="/account/deposit">Click here</a>'
+
+            if data.redirect_flags[self.client_address[0]]:
+                data.alter_rf(self.client_address[0], False)
+                if self.responses[self.client_address[0]] == 2:
+                    output += '</br>' + '<h4>Deposit confirmed.</h4>'
+                data.alter_re(self.client_address[0], False)
             output += '</body></html>'
             self.wfile.write(output.encode())
 
         if self.path.endswith('/account/deposit'):
-            pass
+            self.start()
+            self.clear()
+            output = '<html><body>'
+            account_name = str(name_table.get_key(data.current_account[self.client_address[0]]))
+            account_number = str(number_table.get_key(data.current_account[self.client_address[0]]))
+            val = str(Accounts.log[name_table.in_table(account_name)].get_value_usd())
+            output += '<h1>Your Account: ' + account_name + '</h1>'
+            output += '<h3>Account number: ' + account_number + '</h3>'
+            output += '<h3>Current value in USD: ' + val + '</h3>' + '</br>' + '</br>'
+            output += '<form method="POST" enctype="multipart/form-data" action="/account/deposit">'
+            output += 'Enter amount to deposit: ' + '<input name="amount" type="text">' + '</br>' + '</br>'
+            output += '<input type="submit" value="Submit">'
+            output += '</form>'
+
+            if data.redirect_flags[self.client_address[0]]:
+                data.alter_rf(self.client_address[0], False)
+                if self.responses[self.client_address[0]] == -1:
+                    output += '</br>' + '<h4>Invalid transaction (null or negative values).</h4>'
+                if self.responses[self.client_address[0]] == -2:
+                    output += '</br>' + '<h4>Invalid input (amount).</h4>'
+                data.alter_re(self.client_address[0], False)
+            output += '</body></html>'
+            self.wfile.write(output.encode())
 
     def do_POST(self):
 
@@ -983,7 +1191,7 @@ class FinCloud(BaseHTTPRequestHandler):
 
                 # create account with user input
                 if code == code_confirm:
-                    confirm, index, response_code = create_account(account_name, code, phone_number)
+                    confirm, index, response_code = create_checking_account(account_name, code, phone_number)
                     if confirm:
                         data.alter_ca(self.client_address[0], index)
                         data.alter_re(self.client_address[0], 3)
@@ -995,7 +1203,7 @@ class FinCloud(BaseHTTPRequestHandler):
                         self.redirect('/new/checking')
                 else:
                     data.alter_rf(self.client_address[0], True)
-                    data.alter_re(self.client_address[0], -5)
+                    data.alter_re(self.client_address[0], -7)
                     self.redirect('/new/checking')
             else:
                 self.input_error()
@@ -1049,6 +1257,26 @@ class FinCloud(BaseHTTPRequestHandler):
             else:
                 self.input_error()
 
+        if self.path.endswith('/account/deposit'):
+            # extract user input from headers in POST packet
+            ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
+            pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
+            content_len = int(self.headers.get('Content-length'))
+            pdict['CONTENT-LENGTH'] = content_len
+            if ctype == 'multipart/form-data':
+                fields = cgi.parse_multipart(self.rfile, pdict)
+                amount = fields.get('amount')[0]
+                index = data.current_account[self.client_address[0]]
+                confirm, response_code = Accounts.log[index].deposit(int(amount))
+                if confirm:
+                    data.alter_rf(self.client_address[0], True)
+                    data.alter_re(self.client_address[0], 2)
+                    self.redirect('/account/home')
+                else:
+                    data.alter_rf(self.client_address[0], True)
+                    data.alter_re(self.client_address[0], response_code)
+                    self.redirect('/account/deposit')
+
 
 # 'main' function
 def main():
@@ -1058,7 +1286,6 @@ def main():
     server = http.server.HTTPServer(server_address, FinCloud)
     print('Server running at http://{}:{}'.format(IP, PORT))
     server.serve_forever()
-    print("yes")
 
 
 if __name__ == '__main__':
