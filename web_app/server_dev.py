@@ -6,19 +6,10 @@
 # request confirmation with email for account creation
 # add ssl encryption
 # create enum for response codes / several final variables (important to remove repeated use of numbers)
-# allow decimal values (change int types to double types for account values)
+# fix timeout code
+# possibly run timeout function in background with multi-processing
 
-
-# imports
-import http.server
-from http.server import BaseHTTPRequestHandler
-import socket
-import cgi
-import datetime
-import random
-import numpy as np
-from forex_python.converter import CurrencyRates
-import smtplib
+# import header file
 from server_header import *
 
 
@@ -209,7 +200,8 @@ class Account:
                 if self.value[cur_from] >= amount:
                     self.value[cur_from] = self.value[cur_from] - amount
                     self.value[cur_to] = self.value[cur_to] + currency_rates(cur_from, cur_to, amount)
-                    self.trade_ledger.append(EntryTrade(cur_from, cur_to, amount, get_date(), currency_rates(cur_from, cur_to, 1)))
+                    self.trade_ledger.append(
+                        EntryTrade(cur_from, cur_to, amount, get_date(), currency_rates(cur_from, cur_to, 1)))
                 else:
                     response_code = -3
                     confirm = False
@@ -252,16 +244,20 @@ class Account:
                         confirm = False
                     else:
                         self.value['USD'] = self.value['USD'] - amount
-                        self.ledger.append(Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, -1))
-                        Accounts.log[target_index].ledger.append(Entry('tt', amount, get_date(), self.account_number, -1))
+                        self.ledger.append(
+                            Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, -1))
+                        Accounts.log[target_index].ledger.append(
+                            Entry('tt', amount, get_date(), self.account_number, -1))
                 else:
                     if loc_type_table.in_table(target_index) == 'bus':
                         if dep_name in Accounts.log[target_index].departments.keys():
                             Accounts.log[target_index].departments[dep_name][0]['USD'] = \
                                 Accounts.log[target_index].departments[dep_name][0]['USD'] + amount
                             self.value['USD'] = self.value['USD'] - amount
-                            self.ledger.append(Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, dep_name))
-                            Accounts.log[target_index].departments[dep_name][1].append(Entry('tt', amount, get_date(), self.account_number, -1))
+                            self.ledger.append(
+                                Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, dep_name))
+                            Accounts.log[target_index].departments[dep_name][1].append(
+                                Entry('tt', amount, get_date(), self.account_number, -1))
                         else:
                             response_code = -6  # department name does not exist
                             confirm = False
@@ -278,12 +274,12 @@ class Account:
 class SavingsAccount:  # object properties: value, returns, last_update, account_number, ledger
     def __init__(self, returns):
         self.value = 0
-        self.returns = pow((1 + returns/100), 1/12)  # returns per month
+        self.returns = int(pow((1 + returns / 100), 1 / 12))  # returns per month   remove the int()!
         self.last_update = get_date()
         self.shift_date = get_date()[0]
         self.account_number = assign_account_number()
         self.ledger = Log()
-        self.fee = set_fee(returns)
+        self.fee = set_fee(self.returns)
         number_table.add_key_index(self.account_number)
         loc_type_table.add_index_value('sav')
 
@@ -366,16 +362,20 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
                         confirm = False
                     else:
                         self.value = self.value - amount
-                        self.ledger.append(Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, -1))
-                        Accounts.log[target_index].ledger.append(Entry('tt', amount, get_date(), self.account_number, -1))
+                        self.ledger.append(
+                            Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, -1))
+                        Accounts.log[target_index].ledger.append(
+                            Entry('tt', amount, get_date(), self.account_number, -1))
                 else:
                     if loc_type_table.in_table(target_index) == 'bus':
                         if dep_name in Accounts.log[target_index].departments.keys():
                             Accounts.log[target_index].departments[dep_name][0]['USD'] = \
                                 Accounts.log[target_index].departments[dep_name][0]['USD'] + amount
                             self.value = self.value - amount
-                            self.ledger.append(Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, dep_name))
-                            Accounts.log[target_index].departments[dep_name][1].append(Entry('tt', amount, get_date(), self.account_number, -1))
+                            self.ledger.append(
+                                Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, dep_name))
+                            Accounts.log[target_index].departments[dep_name][1].append(
+                                Entry('tt', amount, get_date(), self.account_number, -1))
                         else:
                             response_code = -6  # department name does not exist
                             confirm = False
@@ -436,15 +436,20 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
                         confirm = False
                     else:
                         self.departments[dep_from][0]['USD'] = self.departments[dep_from][0]['USD'] - amount
-                        self.departments[dep_from][1].append(Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, -1))
-                        Accounts.log[target_index].ledger.append(Entry('tt', amount, get_date(), self.account_number, dep_from))
+                        self.departments[dep_from][1].append(
+                            Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, -1))
+                        Accounts.log[target_index].ledger.append(
+                            Entry('tt', amount, get_date(), self.account_number, dep_from))
                 else:
                     if loc_type_table.in_table(target_index) == 'bus':
                         if dep_to in Accounts.log[target_index].departments.keys():
-                            Accounts.log[target_index].departments[dep_to][0]['USD'] = Accounts.log[target_index].departments[dep_to][0]['USD'] + amount
+                            Accounts.log[target_index].departments[dep_to][0]['USD'] = \
+                                Accounts.log[target_index].departments[dep_to][0]['USD'] + amount
                             self.departments[dep_from][0]['USD'] = self.departments[dep_from][0]['USD'] - amount
-                            self.departments[dep_from][1].append(Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, dep_to))
-                            Accounts.log[target_index].departments[dep_to][1].append(Entry('tt', amount, get_date(), self.account_number, dep_from))
+                            self.departments[dep_from][1].append(
+                                Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, dep_to))
+                            Accounts.log[target_index].departments[dep_to][1].append(
+                                Entry('tt', amount, get_date(), self.account_number, dep_from))
                         else:
                             response_code = -7  # department name does not exist
                             confirm = False
@@ -454,6 +459,8 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
             else:
                 response_code = -5  # insufficient funds
                 confirm = False
+
+        return confirm, response_code
 
     def inner_transfer(self, dep_from, dep_to, amount):
         confirm = False
@@ -555,6 +562,7 @@ class Global:
         self.redirect_flags = {}
         self.responses = {}
         self.current_account = {}
+        self.background_redirect_flags = {}
 
     def alter_rf(self, key, value):  # add/change key:value for redirect_flags
         self.redirect_flags[key] = value
@@ -564,6 +572,23 @@ class Global:
 
     def alter_ca(self, key, value):  # add/change key:value for current_account
         self.current_account[key] = value
+
+    def alter_brf(self, key, value):
+        self.background_redirect_flags[key] = value
+
+    def delete_ca(self, key):  # delete key:value from current_account
+        del self.current_account[key]
+
+    def delete_re(self, key):  # delete key:value from current_account
+        del self.responses[key]
+
+    def delete_brf(self, key):
+        del self.background_redirect_flags[key]
+
+
+class ConnectionEntry:
+    def __init__(self, request_type, ip, port, precise_time):
+        self.lst = [request_type, ip, port, precise_time]
 
 
 # functions
@@ -588,7 +613,7 @@ def assign_account_number():
     # Check if the random number has been generated before
     while number in existing_account_numbers:
         # If it has, generate a new random number
-        random_number = random.randint(1000000000, 9999999999)
+        number = random.randint(1000000000, 9999999999)
 
     # Add the random number to the set of generated numbers
     existing_account_numbers.add(number)
@@ -607,14 +632,34 @@ def reverse_dictionary(dic):
 
 def get_date():
     now = str(datetime.datetime.now())
-    year = now[0:4]
-    month = now[5:7]
-    day = now[8:10]
-    date = np.array([year, month, day])
-    return date
+    year = int(now[0:4])
+    month = int(now[5:7])
+    day = int(now[8:10])
+    return np.array([year, month, day])
 
 
-def digitcount(num):
+def get_precise_time():
+    now = str(datetime.datetime.now())
+    year = int(now[0:4])
+    month = int(now[5:7])
+    day = int(now[8:10])
+    hour = int(now[11:13])
+    minute = int(now[14:16])
+    second = int(now[17:19])
+    return np.array([year, month, day, hour, minute, second])
+
+
+def time_dif(last, current):
+    delta = current[5] - last[5]  # add seconds
+    delta += 60*(current[4]-last[4])  # add minutes
+    delta += 60 * 60 * (current[3]-last[3])  # add hours
+    delta += 24 * 60 * 60 * (current[2]-last[2])  # add days
+    delta += 30 * 24 * 60 * 60 * (current[1]-last[1])  # add months
+    delta += 365 * 24 * 60 * 60 * (current[0]-last[0])  # add years
+    return delta
+
+
+def digit_count(num):
     num = str(num)
     counter = 0
     for ch in num:
@@ -654,7 +699,7 @@ def hash_function(enter):
     else:
         newval += 11
     temp = newval
-    while digitcount(temp) < 30:
+    while digit_count(temp) < 30:
         temp *= 10
     return abs(temp)
 
@@ -665,12 +710,13 @@ def create_value_table():
     return value_table
 
 
-def validate_phone_number(phone):
+def validate_phone_number(phone):  # temporary (change later)
     valid = validate_number(phone)
     if valid:
         if len(str(phone)) != 12:
             valid = False
-    return valid
+
+    return True
 
 
 def validate_number(num):
@@ -850,10 +896,10 @@ def create_checking_account(account_name, account_code, phone_num):  # returns c
             response_code = -3  # name and code invalid
     if confirm:
         if not validate_phone_number(phone_num):
-            response_code = -5
+            response_code = -5  # phone number not valid
             confirm = False
-        if phone_name_table.in_table(hash_function(phone_num)):
-            response_code = -6
+        elif phone_name_table.in_table(hash_function(phone_num)) != -1:
+            response_code = -6  # phone number already registered
             confirm = False
     if confirm:
         # add account details to tables
@@ -871,7 +917,7 @@ def create_checking_account(account_name, account_code, phone_num):  # returns c
     return confirm, name_table.in_table(user_name), response_code
 
 
-# server: request handling
+# HTTP request handler for HTTP server
 class FinCloud(BaseHTTPRequestHandler):
 
     def clear(self):
@@ -901,6 +947,13 @@ class FinCloud(BaseHTTPRequestHandler):
         if self.client_address[0] not in data.redirect_flags.keys():
             data.alter_rf(self.client_address[0], False)
 
+        history.append(ConnectionEntry('get', self.client_address[0], self.client_address[1], get_precise_time()))
+
+        # wait and then check background redirect flag
+
+        if self.client_address[0] not in addresses:
+            addresses.add(self.client_address[0])
+
         if self.path.endswith('/'):
             self.start()
             self.clear()
@@ -917,10 +970,6 @@ class FinCloud(BaseHTTPRequestHandler):
                 data.alter_re(self.client_address[0], 0)
             output += '</body></html>'
             self.wfile.write(output.encode())
-
-        if self.path.endswith('/home'):
-            self.start()
-            self.clear()
 
         if self.path.endswith('/see_data'):  # delete after development
             self.start()
@@ -963,12 +1012,14 @@ class FinCloud(BaseHTTPRequestHandler):
                     output += '<h4>Password is incorrect. Please try again.</h4>'
                 elif data.responses[self.client_address[0]] == -3:
                     output += '<h4>System error. Please try again at a later time.</h4>'
-                elif data.responses[self.client_address[0]] == 1:
-                    output += '<h4>New account created.</h4>'
                 elif data.responses[self.client_address[0]] == 2:
                     output += '<h4>Account recovered. Password reset.</h4>'
+                elif data.responses[self.client_address[0]] == 3:
+                    output += '<h4>New account created.</h4>'
+                elif data.responses[self.client_address[0]] == 4:
+                    output += '<h4>Session timed out. Log in again.'
                 data.alter_re(self.client_address[0], 0)
-            output += '___         or         ___' + '</br>' + '</br>' + '</br>'
+            output += '</br>' + '________      or      ________' + '</br>' + '</br>' + '</br>'
             output += 'New to FinCloud? ' + '<a href="/new">Get started</a>'
             output += '</body></html>'
             self.wfile.write(output.encode())
@@ -1055,7 +1106,7 @@ class FinCloud(BaseHTTPRequestHandler):
                 elif data.responses[self.client_address[0]] == -2:
                     output += '<h4>Account code is invalid: do not use unnecessary symbols. Please try again.</h4>'
                 elif data.responses[self.client_address[0]] == -3:
-                    output += '<h4>Account name and code are invalid: do not use unnecessary symbols.' \
+                    output += '<h4>Account name and code are invalid: do not use symbols.' \
                               ' Please try again.</h4>'
                 elif data.responses[self.client_address[0]] == -4:
                     output += '<h4>An account with this name already exists. Please try again.</h4>'
@@ -1105,6 +1156,9 @@ class FinCloud(BaseHTTPRequestHandler):
             output += '</br></br>'
             output += '<input type="submit" value="Create Account">'
             output += '</form>'
+
+            # add redirect options
+
             output += '</body></html>'
             self.wfile.write(output.encode())
 
@@ -1116,17 +1170,18 @@ class FinCloud(BaseHTTPRequestHandler):
             output += '<h1>Your Account: ' + account_name + '</h1>'
             val = str(Accounts.log[name_table.in_table(account_name)].get_value_usd())
             output += '<h2>Current value in USD: ' + val + '</h2>'
-            output += 'To deposit more funds: ' + '<a href="/account/deposit">Click here</a>'
+            output += '<h3><a href="/account/deposit_funds">Deposit Funds</a></h3>'
 
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
-                if self.responses[self.client_address[0]] == 2:
+                if data.responses[self.client_address[0]] == 2:
                     output += '</br>' + '<h4>Deposit confirmed.</h4>'
-                data.alter_re(self.client_address[0], False)
+                data.alter_re(self.client_address[0], 0)
             output += '</body></html>'
             self.wfile.write(output.encode())
 
-        if self.path.endswith('/account/deposit'):
+        if self.path.endswith('/account/deposit_funds'):
+            print('Got to /account/deposit')
             self.start()
             self.clear()
             output = '<html><body>'
@@ -1136,22 +1191,30 @@ class FinCloud(BaseHTTPRequestHandler):
             output += '<h1>Your Account: ' + account_name + '</h1>'
             output += '<h3>Account number: ' + account_number + '</h3>'
             output += '<h3>Current value in USD: ' + val + '</h3>' + '</br>' + '</br>'
-            output += '<form method="POST" enctype="multipart/form-data" action="/account/deposit">'
+            output += '<form method="POST" enctype="multipart/form-data" action="/account/deposit_funds">'
             output += 'Enter amount to deposit: ' + '<input name="amount" type="text">' + '</br>' + '</br>'
             output += '<input type="submit" value="Submit">'
             output += '</form>'
 
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
-                if self.responses[self.client_address[0]] == -1:
+                if data.responses[self.client_address[0]] == -1:
                     output += '</br>' + '<h4>Invalid transaction (null or negative values).</h4>'
-                if self.responses[self.client_address[0]] == -2:
+                if data.responses[self.client_address[0]] == -2:
                     output += '</br>' + '<h4>Invalid input (amount).</h4>'
                 data.alter_re(self.client_address[0], False)
             output += '</body></html>'
             self.wfile.write(output.encode())
 
     def do_POST(self):
+
+        if self.client_address[0] not in addresses:
+            pass
+            # handle error: redirect to '/' path and print response "system error"
+
+        history.append(ConnectionEntry('post', self.client_address[0], self.client_address[1], get_precise_time()))
+
+        # wait and then check background redirect flag
 
         if self.path.endswith('/login'):
             # extract user input from headers in POST packet
@@ -1176,6 +1239,33 @@ class FinCloud(BaseHTTPRequestHandler):
             else:
                 self.input_error()
 
+        if self.path.endswith('/new/savings'):
+            # extract user input from headers in POST packet
+            ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
+            pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
+            content_len = int(self.headers.get('Content-length'))
+            pdict['CONTENT-LENGTH'] = content_len
+            if ctype == 'multipart/form-data':
+                fields = cgi.parse_multipart(self.rfile, pdict)
+                phone_number = fields.get('phone')[0]
+                code = fields.get('code')[0]
+                code_confirm = fields.get('code_confirm')[0]
+                account_name = fields.get('user')[0]
+                returns_str = fields.get('returns')[0]
+                returns_dict = {'premium': 4, 'medium': 2.75, 'safe': 2}  # to determine returns in numbers
+                returns = returns_dict[returns_str]
+                # create account with user input
+                if code == code_confirm:
+                    confirm, index, response_code = create_savings_account(account_name, code, phone_number, returns)
+                    if confirm:
+                        pass
+                    else:
+                        pass
+                else:
+                    pass
+            else:
+                self.input_error()
+
         if self.path.endswith('/new/checking'):
             # extract user input from headers in POST packet
             ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
@@ -1188,7 +1278,6 @@ class FinCloud(BaseHTTPRequestHandler):
                 code = fields.get('code')[0]
                 code_confirm = fields.get('code_confirm')[0]
                 account_name = fields.get('user')[0]
-
                 # create account with user input
                 if code == code_confirm:
                     confirm, index, response_code = create_checking_account(account_name, code, phone_number)
@@ -1257,7 +1346,7 @@ class FinCloud(BaseHTTPRequestHandler):
             else:
                 self.input_error()
 
-        if self.path.endswith('/account/deposit'):
+        if self.path.endswith('/account/deposit_funds'):
             # extract user input from headers in POST packet
             ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
             pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
@@ -1267,7 +1356,7 @@ class FinCloud(BaseHTTPRequestHandler):
                 fields = cgi.parse_multipart(self.rfile, pdict)
                 amount = fields.get('amount')[0]
                 index = data.current_account[self.client_address[0]]
-                confirm, response_code = Accounts.log[index].deposit(int(amount))
+                confirm, response_code = Accounts.log[index].deposit(float(amount))
                 if confirm:
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], 2)
@@ -1275,11 +1364,31 @@ class FinCloud(BaseHTTPRequestHandler):
                 else:
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], response_code)
-                    self.redirect('/account/deposit')
+                    self.redirect('/account/deposit_funds')
+            else:
+                self.input_error()
+
+
+# background function
+def background_function():
+    while True:
+        print("background")  # delete line
+        time.sleep(2)  # delete line
+
+        # for each ip in addresses set
+        # check if the same ip exists twice in history log
+        # if so, check time dif between last two connection entries
+        # if time dif is larger than session limit, set background redirect flag to true for the ip
+        # if background redirect flag is set to true, delete address from addresses set
 
 
 # 'main' function
 def main():
+    # run background function
+    process = multiprocessing.Process(target=background_function)
+    process.start()
+
+    # run http server
     PORT = 8080
     IP = socket.gethostbyname(socket.gethostname())
     server_address = (IP, PORT)
