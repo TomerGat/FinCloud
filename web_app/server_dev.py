@@ -668,17 +668,17 @@ def digit_count(num):
 
 
 def multiple(vec):
-    sumlist = 1
+    list_multiple = 1
     for i in vec:
-        sumlist *= i
-    return sumlist
+        list_multiple *= i
+    return list_multiple
 
 
 def sum_list(vec):
-    sumlist = 1
+    list_sum = 1
     for i in vec:
-        sumlist += i
-    return sumlist
+        list_sum += i
+    return list_sum
 
 
 def hash_function(enter):
@@ -693,12 +693,12 @@ def hash_function(enter):
         val = val ^ (sum(ascii_values) + 95813)
     factor = (((sum(values) + 15984354) | (multiple(values) + 10000009814008)) & (
             (sum(ascii_values) + 87515557) ^ (multiple(ascii_values) * 8558224)))
-    newval = abs(val ^ factor)
-    if newval % 10 != 9:
-        newval += 1
+    new_val = abs(val ^ factor)
+    if new_val % 10 != 9:
+        new_val += 1
     else:
-        newval += 11
-    temp = newval
+        new_val += 11
+    temp = new_val
     while digit_count(temp) < 30:
         temp *= 10
     return abs(temp)
@@ -742,10 +742,11 @@ def validate_string(word):
     valid = True
     non_valid = ['.', ':', '(', '{', ')', '}', ',', '^', '<', '>', '+', '-', '*', '/', '%', '=', '|', ' ']
     counter = 0
-    while (counter < len(word)) and valid:
+    while counter < len(word):
         ch = word[counter]
         if ch in non_valid:
             valid = False
+            break
         else:
             counter += 1
     return valid
@@ -976,8 +977,10 @@ class FinCloud(BaseHTTPRequestHandler):
             self.clear()
             output = '<html><body>'
             print(name_table.body)
+            print(number_table.body)
             print(pass_table.body)
             print(phone_name_table.body)
+            print(loc_type_table.body)
             output += '</body></html>'
             self.wfile.write(output.encode())
 
@@ -1382,13 +1385,14 @@ def background_function():
         # if background redirect flag is set to true, delete address from addresses set
 
 
-# 'main' function
+# main - driver function
 def main():
-    # run background function
+    # create separate process for background function
     process = multiprocessing.Process(target=background_function)
+    # run the process
     process.start()
 
-    # run http server
+    # create HTTP server with custom request handler
     PORT = 8080
     IP = socket.gethostbyname(socket.gethostname())
     server_address = (IP, PORT)
@@ -1397,5 +1401,6 @@ def main():
     server.serve_forever()
 
 
+# run main driver function
 if __name__ == '__main__':
     main()
