@@ -948,8 +948,10 @@ class FinCloud(BaseHTTPRequestHandler):
         if self.client_address[0] not in data.redirect_flags.keys():
             data.alter_rf(self.client_address[0], False)
 
-        history.append(ConnectionEntry('get', self.client_address[0], self.client_address[1], get_precise_time()))
+        # if ip is not in history dict, add it
 
+        # append history log
+ 
         # wait and then check background redirect flag
 
         if self.client_address[0] not in addresses:
@@ -1211,11 +1213,11 @@ class FinCloud(BaseHTTPRequestHandler):
 
     def do_POST(self):
 
-        if self.client_address[0] not in addresses:
+        if self.client_address[0] not in addresses or self.client_address[0] not in history.keys():
             pass
             # handle error: redirect to '/' path and print response "system error"
 
-        history.append(ConnectionEntry('post', self.client_address[0], self.client_address[1], get_precise_time()))
+        # append history log
 
         # wait and then check background redirect flag
 
