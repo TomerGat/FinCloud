@@ -8,6 +8,7 @@
 # create enum for response codes / several final variables (important to remove repeated use of numbers)
 # fix timeout code
 # possibly run timeout function in background with multi-processing
+# store ip addresses as hash values
 
 # import header file
 from server_header import *
