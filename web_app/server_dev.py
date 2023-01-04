@@ -1333,6 +1333,9 @@ class FinCloud(BaseHTTPRequestHandler):
 
         if self.path.endswith('/account/holdings'):
             pass
+        
+        if self.path.endswith('/account/holdings/business'):
+            pass
 
         if self.path.endswith('/account/inner_transfer'):
             pass
