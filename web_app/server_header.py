@@ -22,12 +22,12 @@ returns_medium = 2.75
 returns_minimum = 2
 
 # tables
-name_table = HashTable()  # account name table - {account name: serial number}
-number_table = HashTable()  # account number table - {account number: serial number}
-pass_table = HashTable()  # password table - {hash value of account password: serial number}
-phone_name_table = HashTable()  # account recovery recovery table - {hash value of phone number: account name}
-loc_type_table = HashTable()  # account type table - {serial number: type of account (reg/bus/sav)}
-value_summary_table = HashTable()  # value recovery table - {value summary: serial number}
+name_table = Table()  # account name table - {account name: serial number}
+number_table = Table()  # account number table - {account number: serial number}
+pass_table = Table()  # password table - {hash value of account password: serial number}
+phone_name_table = Table()  # account recovery recovery table - {hash value of phone number: account name}
+loc_type_table = Table()  # account type table - {serial number: type of account (reg/bus/sav)}
+value_summary_table = Table()  # value recovery table - {value summary: serial number}
 
 # Accounts log
 Accounts = Log()  # Log containing all Accounts

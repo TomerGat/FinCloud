@@ -9,6 +9,7 @@
 # fix timeout code
 # possibly run timeout function in background with multi-processing
 # store ip addresses as hash values
+# create admin account with special privileges, such as deleting accounts, backing up data and more
 
 # import header file
 from server_header import *
@@ -52,7 +53,7 @@ class Entry:  # object properties: action, amount
         self.target_dep = target_dep  # if action involves other accounts this is set, otherwise set to -1
 
 
-class HashTable:  # object properties: body (contains a dictionary)
+class Table:  # object properties: body (contains a dictionary)
     def __init__(self):
         self.body = {}
 
@@ -147,7 +148,7 @@ class Account:
         loc_type_table.add_index_value('reg')
 
     def get_value_usd(self):
-        return self.value['USD']
+        return str(self.value['USD'])
 
     def deposit(self, amount):
         confirm = False
@@ -182,7 +183,7 @@ class Account:
                 self.value['USD'] = self.value['USD'] - amount
                 self.ledger.append(Entry('w', amount, get_date(), -1, -1))
             else:
-                response_code = -3
+                response_code = -3  # account value too low
                 confirm = False
 
         return confirm, response_code
@@ -283,6 +284,9 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
         self.fee = set_fee(self.returns)
         number_table.add_key_index(self.account_number)
         loc_type_table.add_index_value('sav')
+
+    def get_value_usd(self):
+        return self.value
 
     def update(self):
         current_date = get_date()
@@ -399,6 +403,12 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
         loc_type_table.add_index_value('bus')
         for name in department_names:
             self.departments[name] = (create_value_table(), Log())
+
+    def get_value_usd(self):
+        total = 0
+        for dep_name in self.departments.keys():
+            total += self.departments[dep_name][0]['USD']
+        return total
 
     def transfer(self, dep_from, target_account, dep_to, amount):
         confirm = False
@@ -588,8 +598,8 @@ class Global:
 
 
 class ConnectionEntry:
-    def __init__(self, request_type, ip, port, precise_time):
-        self.lst = [request_type, ip, port, precise_time]
+    def __init__(self, request_type, precise_time):
+        self.lst = [request_type, precise_time]
 
 
 # functions
@@ -858,7 +868,7 @@ def create_savings_account(account_name, account_code, phone_num, returns):
         if not validate_phone_number(phone_num):
             response_code = -6
             confirm = False
-        if phone_name_table.in_table(hash_function(phone_num)):
+        if phone_name_table.in_table(hash_function(phone_num)) != -1:
             response_code = -7
             confirm = False
     if confirm:
@@ -949,10 +959,11 @@ class FinCloud(BaseHTTPRequestHandler):
         if self.client_address[0] not in data.redirect_flags.keys():
             data.alter_rf(self.client_address[0], False)
 
-        # if ip is not in history dict, add it
+        if self.client_address[0] not in history.keys():
+            history[self.client_address[0]] = Log()
 
-        # append history log
- 
+        history[self.client_address[0]].append(ConnectionEntry('get', get_precise_time()))
+
         # wait and then check background redirect flag
 
         if self.client_address[0] not in addresses:
@@ -966,11 +977,16 @@ class FinCloud(BaseHTTPRequestHandler):
             output += '<h1>FinCloud - A modern solution for you</h1>'
             output += '<h3><a href="/About">Learn about us</a></h3>'
             output += '<h3><a href="/login">Sign in</a></h3>'
-            output += '<h3><a href="/see_data">Temp</a></h3>'
+            output += '<h3><a href="/see_data">Temp</a></h3>' + '</br>'  # delete (only for dev)
+            output += '</br>' + '</br>'
+            output += '<h2>Discover Our Financial Cloud</h2>'
+            output += 'To use Financial Cloud ' + '<a href="/guest/cloud">Click here</a>'
+
+            # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.redirect_flags[self.client_address[0]] = False
                 if data.responses[self.client_address[0]] == -1:
-                    output += '</br>' + '<h4>System error. Please try again later.</h4>'
+                    output += '<h4>System error. Please try again later.</h4>'
                 data.alter_re(self.client_address[0], 0)
             output += '</body></html>'
             self.wfile.write(output.encode())
@@ -1007,7 +1023,7 @@ class FinCloud(BaseHTTPRequestHandler):
             output += '<input type="submit" value="Login">'
             output += '</form>'
             temp = '<p style = "color: black" style = "text-decoration: none">Forgot your password?</p>'
-            output += '<h5><a href="/forgot">' + temp + '</a></h5>'
+            output += '<h5><a href="/forgot">' + temp + '</a></h5>' + '</br>'
 
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
@@ -1025,6 +1041,7 @@ class FinCloud(BaseHTTPRequestHandler):
                 elif data.responses[self.client_address[0]] == 4:
                     output += '<h4>Session timed out. Log in again.'
                 data.alter_re(self.client_address[0], 0)
+
             output += '</br>' + '________      or      ________' + '</br>' + '</br>' + '</br>'
             output += 'New to FinCloud? ' + '<a href="/new">Get started</a>'
             output += '</body></html>'
@@ -1043,8 +1060,8 @@ class FinCloud(BaseHTTPRequestHandler):
             output += 'Confirm your new account password: ' + '<input name="code_confirm" type="text">' + '</br>'
             output += '</br>'
             output += '<input type="submit" value="Submit">'
-            output += '</form>'
-            output += '</br>'
+            output += '</form>' + '</br>'
+
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
@@ -1055,6 +1072,7 @@ class FinCloud(BaseHTTPRequestHandler):
                 elif data.responses[self.client_address[0]] == -3:
                     output += '<h4>Codes do not match</h4>'
                 data.alter_re(self.client_address[0], 0)
+
             output += '</br>'
             output += '<h4><a href="/login">Return to log in page</a></h4>'
             output += '</body></html>'
@@ -1110,7 +1128,7 @@ class FinCloud(BaseHTTPRequestHandler):
                 if data.responses[self.client_address[0]] == -1:
                     output += '<h4>Account name is invalid. Please try again.</h4>'
                 elif data.responses[self.client_address[0]] == -2:
-                    output += '<h4>Account code is invalid: do not use unnecessary symbols. Please try again.</h4>'
+                    output += '<h4>Account code is invalid: do not use symbols. Please try again.</h4>'
                 elif data.responses[self.client_address[0]] == -3:
                     output += '<h4>Account name and code are invalid: do not use symbols.' \
                               ' Please try again.</h4>'
@@ -1123,14 +1141,12 @@ class FinCloud(BaseHTTPRequestHandler):
                 elif data.responses[self.client_address[0]] == -7:
                     output += '<h4>Code confirmation does not match the code you entered. Please try again.</h4>'
                 data.alter_re(self.client_address[0], 0)
+
             output += 'Want to check out different options? ' + '<a href="/new">Check them out here</a>'
             output += '</br>' + '</br>' + '</br>'
             output += 'Already have an account? ' + '<a href="/login">Sign in here</a>'
             output += '</body></html>'
             self.wfile.write(output.encode())
-
-        if self.path.endswith('/new/business'):
-            pass
 
         if self.path.endswith('/new/savings'):
             self.start()
@@ -1161,56 +1177,177 @@ class FinCloud(BaseHTTPRequestHandler):
             output += '</select>'
             output += '</br></br>'
             output += '<input type="submit" value="Create Account">'
-            output += '</form>'
+            output += '</form>' + '</br>'
 
-            # add redirect options
+            # print error/response message if redirect flag is set to True
+            if data.redirect_flags[self.client_address[0]]:
+                data.alter_rf(self.client_address[0], False)
+                if data.responses[self.client_address[0]] == -1:
+                    output += '<h4>Account name is invalid. Please try again.</h4>'
+                elif data.responses[self.client_address[0]] == -2:
+                    output += '<h4>Account code is invalid: do not use symbols. Please try again.</h4>'
+                elif data.responses[self.client_address[0]] == -3:
+                    output += '<h4>Account name and code are invalid: do not use symbols.' \
+                              ' Please try again.</h4>'
+                elif data.responses[self.client_address[0]] == -4:
+                    output += '<h4>An account with this name already exists. Please try again.</h4>'
+                if data.responses[self.client_address[0]] == -5:
+                    output += '<h4>Returns are invalid for this type of account.</h4>'
+                if data.responses[self.client_address[0]] == -6:
+                    output += '<h4>Phone number not valid.</h4>'
+                if data.responses[self.client_address[0]] == -7:
+                    output += '<h4>Phone number already registered to an existing account.</h4>'
+                if data.responses[self.client_address[0]] == -8:
+                    output += '<h4>Code confirmation does not match the code you entered. Please try again.</h4>'
+                data.alter_re(self.client_address[0], 0)
 
+            output += 'Want to check out different options? ' + '<a href="/new">Check them out here</a>'
+            output += '</br>' + '</br>' + '</br>'
+            output += 'Already have an account? ' + '<a href="/login">Sign in here</a>'
             output += '</body></html>'
             self.wfile.write(output.encode())
+
+        if self.path.endswith('/new/business'):
+            pass
 
         if self.path.endswith('/account/home'):
             self.start()
             self.clear()
             output = '<html><body>'
-            account_name = str(name_table.get_key(data.current_account[self.client_address[0]]))
+            ac_index = data.current_account[self.client_address[0]]
+            account_name = str(name_table.get_key(ac_index))
             output += '<h1>Your Account: ' + account_name + '</h1>'
-            val = str(Accounts.log[name_table.in_table(account_name)].get_value_usd())
+            val = Accounts.log[ac_index].get_value_usd()
             output += '<h2>Current value in USD: ' + val + '</h2>'
+            if loc_type_table.body[ac_index] == 'bus':
+                pass  # present usd holdings per dep
+            if loc_type_table.body[ac_index] != 'sav':
+                output += '<h3><a href="/account/holdings">See current currency holdings</a></h3>'
+            output += '</br>' + '</br>'
             output += '<h3><a href="/account/deposit_funds">Deposit Funds</a></h3>'
+            output += '<h3><a href="/account/withdraw_funds">Withdraw Funds</a></h3>'
+            output += '<h3><a href="/account/transfer_funds">Transfer Funds to other accounts</a></h3>'
+            if loc_type_table.body[ac_index] == 'bus':
+                output += '<h3><a href="/account/inner_transfer">Transfer between business departments</a></h3>'
+            output += '</br>' + '</br>'
 
+            # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
                 if data.responses[self.client_address[0]] == 2:
-                    output += '</br>' + '<h4>Deposit confirmed.</h4>'
+                    output += '<h4>Deposit confirmed.</h4>'
+                if data.responses[self.client_address[0]] == 3:
+                    output += '<h4>Withdrawal confirmed.</h4>'
                 data.alter_re(self.client_address[0], 0)
+
+            output += '</br>' + '</br>'
+            output += 'To use Financial Cloud ' + '<a href="/account/cloud">Click here</a>'
+
             output += '</body></html>'
             self.wfile.write(output.encode())
 
         if self.path.endswith('/account/deposit_funds'):
-            print('Got to /account/deposit')
             self.start()
             self.clear()
             output = '<html><body>'
-            account_name = str(name_table.get_key(data.current_account[self.client_address[0]]))
-            account_number = str(number_table.get_key(data.current_account[self.client_address[0]]))
-            val = str(Accounts.log[name_table.in_table(account_name)].get_value_usd())
-            output += '<h1>Your Account: ' + account_name + '</h1>'
+            ac_index = data.current_account[self.client_address[0]]
+            account_name = str(name_table.get_key(ac_index))
+            account_number = str(number_table.get_key(ac_index))
+            val = Accounts.log[ac_index].get_value_usd()
+            output += '<h1>Deposit Funds</h1>' + '</br>'
+            output += '<h2>Your Account: ' + account_name + '</h2>'
             output += '<h3>Account number: ' + account_number + '</h3>'
             output += '<h3>Current value in USD: ' + val + '</h3>' + '</br>' + '</br>'
             output += '<form method="POST" enctype="multipart/form-data" action="/account/deposit_funds">'
-            output += 'Enter amount to deposit: ' + '<input name="amount" type="text">' + '</br>' + '</br>'
+            output += 'Enter amount to deposit: ' + '<input name="amount" type="text">'
+            if loc_type_table.body[ac_index] == 'bus':
+                output += 'Enter department to deposit to: ' + '<input name="dep_name" type="text">'
+            output += '</br>' + '</br>'
             output += '<input type="submit" value="Submit">'
-            output += '</form>'
+            output += '</form>' + '</br>'
 
+            # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
                 if data.responses[self.client_address[0]] == -1:
-                    output += '</br>' + '<h4>Invalid transaction (null or negative values).</h4>'
+                    output += '<h4>Invalid transaction (null or negative values).</h4>'
                 if data.responses[self.client_address[0]] == -2:
-                    output += '</br>' + '<h4>Invalid input (amount).</h4>'
+                    output += '<h4>Invalid input (amount).</h4>'
                 data.alter_re(self.client_address[0], False)
+
+            output += '</br>' + '</br>' + 'To return to home page ' + '<a href="/account/home">Click here</a>'
             output += '</body></html>'
             self.wfile.write(output.encode())
+
+        if self.path.endswith('/account/withdraw_funds'):
+            self.start()
+            self.clear()
+            output = '<html><body>'
+            ac_index = data.current_account[self.client_address[0]]
+            account_name = str(name_table.get_key(ac_index))
+            account_number = str(number_table.get_key(ac_index))
+            val = Accounts.log[ac_index].get_value_usd()
+            output += '<h1>Withdraw Funds</h1>' + '</br>'
+            output += '<h2>Your Account: ' + account_name + '</h2>'
+            output += '<h3>Account number: ' + account_number + '</h3>'
+            output += '<h3>Current value in USD: ' + val + '</h3>' + '</br>' + '</br>'
+            output += '<form method="POST" enctype="multipart/form-data" action="/account/withdraw_funds">'
+            output += 'Enter amount to withdraw: ' + '<input name="amount" type="text">' + '</br>' + '</br>'
+            if loc_type_table.body[ac_index] == 'bus':
+                output += 'Enter department to withdraw from: ' + '<input name="dep_name" type="text">'
+            output += '<input type="submit" value="Submit">'
+            output += '</form>' + '</br>'
+
+            # print error/response message if redirect flag is set to True
+            if data.redirect_flags[self.client_address[0]]:
+                data.alter_rf(self.client_address[0], False)
+                if data.responses[self.client_address[0]] == -1:
+                    output += '<h4>Invalid transaction (null or negative values).</h4>'
+                if data.responses[self.client_address[0]] == -2:
+                    output += '<h4>Invalid input (amount).</h4>'
+                if data.responses[self.client_address[0]] == -3:
+                    output += '<h4>Account value in USD is insufficient for this withdrawal.</h4>'
+                data.alter_re(self.client_address[0], False)
+
+            output += '</br>' + '</br>' + 'To return to home page ' + '<a href="/account/home">Click here</a>'
+            output += '</body></html>'
+            self.wfile.write(output.encode())
+
+        if self.path.endswith('/account/transfer_funds'):
+            self.start()
+            self.clear()
+            output = '<html><body>'
+            ac_index = data.current_account[self.client_address[0]]
+            account_name = str(name_table.get_key(ac_index))
+            account_number = str(number_table.get_key(ac_index))
+            val = Accounts.log[ac_index].get_value_usd()
+            output += '<h1>Transfer Funds</h1>' + '</br>'
+            output += '<h2>Your Account: ' + account_name + '</h2>'
+            output += '<h3>Account number: ' + account_number + '</h3>'
+            output += '<h3>Current value in USD: ' + val + '</h3>' + '</br>' + '</br>'
+            output += '<form method="POST" enctype="multipart/form-data" action="/account/transfer_funds">'
+            # create form (consider different options according to type of account)
+            output += '</form>' + '</br>'
+            # print error/response message if redirect flag is set to True
+            # link to home page
+
+        if self.path.endswith('/account/holdings'):
+            pass
+
+        if self.path.endswith('/account/inner_transfer'):
+            pass
+
+        if self.path.endswith('/account/cloud'):
+            pass
+
+        if self.path.endswith('/account/cloud/allocate'):
+            pass
+
+        if self.path.endswith('/account/cloud/withdraw'):
+            pass
+
+        if self.path.endswith('/guest/cloud'):
+            pass
 
     def do_POST(self):
 
@@ -1218,7 +1355,7 @@ class FinCloud(BaseHTTPRequestHandler):
             pass
             # handle error: redirect to '/' path and print response "system error"
 
-        # append history log
+        history[self.client_address[0]].append(ConnectionEntry('post', get_precise_time()))
 
         # wait and then check background redirect flag
 
@@ -1264,11 +1401,17 @@ class FinCloud(BaseHTTPRequestHandler):
                 if code == code_confirm:
                     confirm, index, response_code = create_savings_account(account_name, code, phone_number, returns)
                     if confirm:
-                        pass
+                        data.alter_re(self.client_address[0], 3)
+                        data.alter_rf(self.client_address[0], True)
+                        self.redirect('/login')
                     else:
-                        pass
+                        data.alter_re(self.client_address[0], response_code)
+                        data.alter_rf(self.client_address[0], True)
+                        self.redirect('/new/savings')
                 else:
-                    pass
+                    data.alter_rf(self.client_address[0], True)
+                    data.alter_re(self.client_address[0], -8)
+                    self.redirect('/new/savings')
             else:
                 self.input_error()
 
@@ -1288,7 +1431,6 @@ class FinCloud(BaseHTTPRequestHandler):
                 if code == code_confirm:
                     confirm, index, response_code = create_checking_account(account_name, code, phone_number)
                     if confirm:
-                        data.alter_ca(self.client_address[0], index)
                         data.alter_re(self.client_address[0], 3)
                         data.alter_rf(self.client_address[0], True)
                         self.redirect('/login')
@@ -1361,8 +1503,14 @@ class FinCloud(BaseHTTPRequestHandler):
             if ctype == 'multipart/form-data':
                 fields = cgi.parse_multipart(self.rfile, pdict)
                 amount = fields.get('amount')[0]
+                bus_account = False
+                if loc_type_table.body[data.current_account[self.client_address[0]]] == 'bus':
+                    bus_account = True
                 index = data.current_account[self.client_address[0]]
-                confirm, response_code = Accounts.log[index].deposit(float(amount))
+                if not bus_account:
+                    confirm, response_code = Accounts.log[index].deposit(float(amount))
+                else:
+                    confirm, response_code = Accounts.log[index].deposit(float(amount), fields.get('dep_name')[0])
                 if confirm:
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], 2)
@@ -1374,11 +1522,38 @@ class FinCloud(BaseHTTPRequestHandler):
             else:
                 self.input_error()
 
+        if self.path.endswith('/account/withdraw_funds'):
+            # extract user input from headers in POST packet
+            ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
+            pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
+            content_len = int(self.headers.get('Content-length'))
+            pdict['CONTENT-LENGTH'] = content_len
+            if ctype == 'multipart/form-data':
+                fields = cgi.parse_multipart(self.rfile, pdict)
+                amount = fields.get('amount')[0]
+                bus_account = False
+                if loc_type_table.body[data.current_account[self.client_address[0]]] == 'bus':
+                    bus_account = True
+                index = data.current_account[self.client_address[0]]
+                if not bus_account:
+                    confirm, response_code = Accounts.log[index].withdraw(float(amount))
+                else:
+                    confirm, response_code = Accounts.log[index].withdraw(float(amount), fields.get('dep_name')[0])
+                if confirm:
+                    data.alter_rf(self.client_address[0], True)
+                    data.alter_re(self.client_address[0], 3)
+                    self.redirect('/account/home')
+                else:
+                    data.alter_rf(self.client_address[0], True)
+                    data.alter_re(self.client_address[0], response_code)
+                    self.redirect('/account/withdraw_funds')
+            else:
+                self.input_error()
+
 
 # background function
 def background_function():
     while True:
-        print("background")  # delete line
         time.sleep(2)  # delete line
 
         # for each ip in addresses set
