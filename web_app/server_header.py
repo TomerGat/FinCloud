@@ -24,7 +24,7 @@ returns_minimum = 2
 # tables
 name_table = Table()  # account name table - {account name: serial number}
 number_table = Table()  # account number table - {account number: serial number}
-pass_table = Table()  # password table - {hash value of account password: serial number}
+pass_table = Table()  # password table - {serial number : hash value of account password}
 phone_name_table = Table()  # account recovery recovery table - {hash value of phone number: account name}
 loc_type_table = Table()  # account type table - {serial number: type of account (reg/bus/sav)}
 value_summary_table = Table()  # value recovery table - {value summary: serial number}

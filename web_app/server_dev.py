@@ -213,7 +213,7 @@ class Account:
 
         return confirm, response_code
 
-    def transfer(self, amount, target_account, dep_name):
+    def transfer(self, amount, target_account, target_dep):
         confirm = False
         target_index = -1
         response_code = 0
@@ -236,7 +236,7 @@ class Account:
         if confirm:
             response_code = 1
             if self.value['USD'] >= amount:
-                if dep_name == 'none':
+                if target_dep == 'none':
                     if loc_type_table.in_table(target_index) == 'sav':
                         Accounts.log[target_index].value = Accounts.log[target_index].value + amount
                     elif loc_type_table.in_table(target_index) == 'reg':
@@ -252,13 +252,13 @@ class Account:
                             Entry('tt', amount, get_date(), self.account_number, -1))
                 else:
                     if loc_type_table.in_table(target_index) == 'bus':
-                        if dep_name in Accounts.log[target_index].departments.keys():
-                            Accounts.log[target_index].departments[dep_name][0]['USD'] = \
-                                Accounts.log[target_index].departments[dep_name][0]['USD'] + amount
+                        if target_dep in Accounts.log[target_index].departments.keys():
+                            Accounts.log[target_index].departments[target_dep][0]['USD'] = \
+                                Accounts.log[target_index].departments[target_dep][0]['USD'] + amount
                             self.value['USD'] = self.value['USD'] - amount
                             self.ledger.append(
-                                Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, dep_name))
-                            Accounts.log[target_index].departments[dep_name][1].append(
+                                Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, target_dep))
+                            Accounts.log[target_index].departments[target_dep][1].append(
                                 Entry('tt', amount, get_date(), self.account_number, -1))
                         else:
                             response_code = -6  # department name does not exist
@@ -334,7 +334,7 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
 
         return confirm, response_code
 
-    def transfer(self, amount, target_account, dep_name):
+    def transfer(self, amount, target_account, target_dep):
         confirm = False
         target_index = -1
         response_code = 0
@@ -357,7 +357,7 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
         if confirm:
             response_code = 1
             if self.value >= amount:
-                if dep_name == 'none':
+                if target_dep == 'none':
                     if loc_type_table.in_table(target_index) == 'sav':
                         Accounts.log[target_index].value = Accounts.log[target_index].value + amount
                     elif loc_type_table.in_table(target_index) == 'reg':
@@ -373,13 +373,13 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
                             Entry('tt', amount, get_date(), self.account_number, -1))
                 else:
                     if loc_type_table.in_table(target_index) == 'bus':
-                        if dep_name in Accounts.log[target_index].departments.keys():
-                            Accounts.log[target_index].departments[dep_name][0]['USD'] = \
-                                Accounts.log[target_index].departments[dep_name][0]['USD'] + amount
+                        if target_dep in Accounts.log[target_index].departments.keys():
+                            Accounts.log[target_index].departments[target_dep][0]['USD'] = \
+                                Accounts.log[target_index].departments[target_dep][0]['USD'] + amount
                             self.value = self.value - amount
                             self.ledger.append(
-                                Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, dep_name))
-                            Accounts.log[target_index].departments[dep_name][1].append(
+                                Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, target_dep))
+                            Accounts.log[target_index].departments[target_dep][1].append(
                                 Entry('tt', amount, get_date(), self.account_number, -1))
                         else:
                             response_code = -6  # department name does not exist
@@ -410,7 +410,7 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
             total += self.departments[dep_name][0]['USD']
         return total
 
-    def transfer(self, dep_from, target_account, dep_to, amount):
+    def transfer(self, amount, source_dep, target_account, target_dep):
         confirm = False
         target_index = -1
         response_code = 0
@@ -431,13 +431,13 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
             else:
                 confirm = True
         if confirm:
-            if dep_from not in self.departments.keys():
+            if source_dep not in self.departments.keys():
                 response_code = -4  # origin department does not exist
                 confirm = False
         if confirm:
             response_code = 1
-            if self.departments[dep_from][0]['USD'] >= amount:
-                if dep_to == 'none':
+            if self.departments[source_dep][0]['USD'] >= amount:
+                if target_dep == 'none':
                     if loc_type_table.in_table(target_index) == 'sav':
                         Accounts.log[target_index].value = Accounts.log[target_index].value + amount
                     elif loc_type_table.in_table(target_index) == 'reg':
@@ -446,21 +446,21 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
                         response_code = -7  # account is of business type but department name is set to 'none'
                         confirm = False
                     else:
-                        self.departments[dep_from][0]['USD'] = self.departments[dep_from][0]['USD'] - amount
-                        self.departments[dep_from][1].append(
+                        self.departments[source_dep][0]['USD'] = self.departments[source_dep][0]['USD'] - amount
+                        self.departments[source_dep][1].append(
                             Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, -1))
                         Accounts.log[target_index].ledger.append(
-                            Entry('tt', amount, get_date(), self.account_number, dep_from))
+                            Entry('tt', amount, get_date(), self.account_number, source_dep))
                 else:
                     if loc_type_table.in_table(target_index) == 'bus':
-                        if dep_to in Accounts.log[target_index].departments.keys():
-                            Accounts.log[target_index].departments[dep_to][0]['USD'] = \
-                                Accounts.log[target_index].departments[dep_to][0]['USD'] + amount
-                            self.departments[dep_from][0]['USD'] = self.departments[dep_from][0]['USD'] - amount
-                            self.departments[dep_from][1].append(
-                                Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, dep_to))
-                            Accounts.log[target_index].departments[dep_to][1].append(
-                                Entry('tt', amount, get_date(), self.account_number, dep_from))
+                        if target_dep in Accounts.log[target_index].departments.keys():
+                            Accounts.log[target_index].departments[target_dep][0]['USD'] = \
+                                Accounts.log[target_index].departments[target_dep][0]['USD'] + amount
+                            self.departments[source_dep][0]['USD'] = self.departments[source_dep][0]['USD'] - amount
+                            self.departments[source_dep][1].append(
+                                Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, target_dep))
+                            Accounts.log[target_index].departments[target_dep][1].append(
+                                Entry('tt', amount, get_date(), self.account_number, source_dep))
                         else:
                             response_code = -7  # department name does not exist
                             confirm = False
@@ -662,11 +662,11 @@ def get_precise_time():
 
 def time_dif(last, current):
     delta = current[5] - last[5]  # add seconds
-    delta += 60*(current[4]-last[4])  # add minutes
-    delta += 60 * 60 * (current[3]-last[3])  # add hours
-    delta += 24 * 60 * 60 * (current[2]-last[2])  # add days
-    delta += 30 * 24 * 60 * 60 * (current[1]-last[1])  # add months
-    delta += 365 * 24 * 60 * 60 * (current[0]-last[0])  # add years
+    delta += 60 * (current[4] - last[4])  # add minutes
+    delta += 60 * 60 * (current[3] - last[3])  # add hours
+    delta += 24 * 60 * 60 * (current[2] - last[2])  # add days
+    delta += 30 * 24 * 60 * 60 * (current[1] - last[1])  # add months
+    delta += 365 * 24 * 60 * 60 * (current[0] - last[0])  # add years
     return delta
 
 
@@ -813,19 +813,19 @@ def verification(attempt, code_attempt):  # returns: verification answer, respon
     verify = False
 
     # check existence of account name/number
-    temp_name = name_table.in_table(attempt)  # attempt - client's attempt at account name/number
-    temp_num = number_table.in_table(attempt)
+    name_index = name_table.in_table(attempt)  # attempt - client's attempt at account name/number
+    num_index = number_table.in_table(attempt)
     # set response
-    if (temp_name == -1) and (temp_num == -1):
+    if (name_index == -1) and (num_index == -1):
         response_code = -1  # incorrect name/number
-    elif (temp_name != -1) and (temp_num == -1):
-        if temp_name == pass_table.in_table(hash_function(code_attempt)):
+    elif (name_index != -1) and (num_index == -1):
+        if pass_table.in_table(name_index) == hash_function(code_attempt):
             response_code = 1
             verify = True
         else:
             response_code = -2  # incorrect password
-    elif (temp_num != -1) and (temp_name == -1):
-        if temp_num == pass_table.in_table(hash_function(code_attempt)):
+    elif (num_index != -1) and (name_index == -1):
+        if pass_table.in_table(num_index) == hash_function(code_attempt):
             response_code = 1
             verify = True
         else:
@@ -836,7 +836,9 @@ def verification(attempt, code_attempt):  # returns: verification answer, respon
     # setting index of account
     index = -1
     if verify:
-        index = pass_table.in_table(hash_function(code_attempt))
+        index = name_table.in_table(attempt)
+        if index == -1:
+            index = number_table.in_table(attempt)
 
     # return values (verification answer, response code)
     return verify, response_code, index
@@ -874,7 +876,7 @@ def create_savings_account(account_name, account_code, phone_num, returns):
     if confirm:
         # add account details to tables
         name_table.add_key_index(account_name)
-        pass_table.add_key_index(hash_function(account_code))
+        pass_table.add_index_value(hash_function(account_code))
         phone_name_table.add_key_value(hash_function(phone_num), account_name)
 
         # create account object
@@ -916,7 +918,7 @@ def create_checking_account(account_name, account_code, phone_num):  # returns c
     if confirm:
         # add account details to tables
         name_table.add_key_index(account_name)
-        pass_table.add_key_index(hash_function(account_code))
+        pass_table.add_index_value(hash_function(account_code))
         phone_name_table.add_key_value(hash_function(phone_num), account_name)
 
         # create account object
@@ -950,6 +952,8 @@ class FinCloud(BaseHTTPRequestHandler):
         self.end_headers()
 
     def input_error(self):  # redirect to main page, set redirect flag to true, set response code to -1 to display error
+        if self.client_address[0] in data.current_account.keys():
+            data.delete_ca(self.client_address[0])
         data.alter_rf(self.client_address[0], True)
         data.alter_re(self.client_address[0], -1)
         self.redirect('/')
@@ -1094,7 +1098,7 @@ class FinCloud(BaseHTTPRequestHandler):
             output += 'Personal accounts that allow for dynamic management of personal funds.' \
                       ' Our personal accounts also offer users the option to distribute' \
                       ' their capital and purchase multiple currencies.'
-            output += '<h4><a href="/new/savings">Savings Account</a></h4>'
+            output += '<h4><a href="/new/savings">PersonalSavings Account</a></h4>'
             output += 'Personal accounts that support savings at an interest determined by you.'
             output += '</br>' + '</br>' + '</br>' + '</br>'
             output += 'Already have an account? ' + '<a href="/login">Sign in here</a>'
@@ -1222,13 +1226,17 @@ class FinCloud(BaseHTTPRequestHandler):
             if loc_type_table.body[ac_index] == 'bus':
                 pass  # present usd holdings per dep
             if loc_type_table.body[ac_index] != 'sav':
-                output += '<h3><a href="/account/holdings">See current currency holdings</a></h3>'
+                output += '<h3>See current holdings ' + '<a href="/account/holdings">Here</a></h3>'
             output += '</br>' + '</br>'
-            output += '<h3><a href="/account/deposit_funds">Deposit Funds</a></h3>'
-            output += '<h3><a href="/account/withdraw_funds">Withdraw Funds</a></h3>'
-            output += '<h3><a href="/account/transfer_funds">Transfer Funds to other accounts</a></h3>'
+            output += '<h3>To deposit funds ' + '<a href="/account/deposit_funds">Click here</a></h3>'
+            output += '<h3>To withdraw funds ' + '<a href="/account/withdraw_funds">Click here</a></h3>'
+            output += '<h3>To transfer funds to other accounts ' + \
+                      '<a href="/account/transfer_funds">Click here</a></h3>'
             if loc_type_table.body[ac_index] == 'bus':
+                output += '</br>'
                 output += '<h3><a href="/account/inner_transfer">Transfer between business departments</a></h3>'
+            output += '</br>'
+            output += '<h3>To use Financial Cloud ' + '<a href="/account/cloud">Click here</a></h3>'
             output += '</br>' + '</br>'
 
             # print error/response message if redirect flag is set to True
@@ -1238,12 +1246,25 @@ class FinCloud(BaseHTTPRequestHandler):
                     output += '<h4>Deposit confirmed.</h4>'
                 if data.responses[self.client_address[0]] == 3:
                     output += '<h4>Withdrawal confirmed.</h4>'
+                if data.responses[self.client_address[0]] == 4:
+                    output += '<h4>Transfer confirmed.</h4>'
                 data.alter_re(self.client_address[0], 0)
 
-            output += '</br>' + '</br>'
-            output += 'To use Financial Cloud ' + '<a href="/account/cloud">Click here</a>'
-
+            output += '</br></br>' + '<h4><a href="/account/logout">Log out</a></h4>'
             output += '</body></html>'
+            self.wfile.write(output.encode())
+
+        if self.path.endswith('/account/logout'):
+            self.start()
+            self.clear()
+            output = '<html><body>'
+            ac_index = data.current_account[self.client_address[0]]
+            account_name = str(name_table.get_key(ac_index))
+            output += '<h1>Your Account: ' + account_name + '</h1>'
+            output += '<h2><Are you sure you want to log out of your account?</h2>'
+            output += '<form method="POST" enctype="multipart/form-data" action="/account/logout">'
+            output += '<input type="submit" value="Confirm">' + '</form>'
+            output += '<h4><a href="/account/home">Cancel logout</a></h4>'
             self.wfile.write(output.encode())
 
         if self.path.endswith('/account/deposit_funds'):
@@ -1316,25 +1337,80 @@ class FinCloud(BaseHTTPRequestHandler):
         if self.path.endswith('/account/transfer_funds'):
             self.start()
             self.clear()
-            output = '<html><body>'
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
             account_number = str(number_table.get_key(ac_index))
             val = Accounts.log[ac_index].get_value_usd()
+            ac_type = loc_type_table.body[ac_index]
+            output = '<html><body>'
             output += '<h1>Transfer Funds</h1>' + '</br>'
             output += '<h2>Your Account: ' + account_name + '</h2>'
             output += '<h3>Account number: ' + account_number + '</h3>'
             output += '<h3>Current value in USD: ' + val + '</h3>' + '</br>' + '</br>'
             output += '<form method="POST" enctype="multipart/form-data" action="/account/transfer_funds">'
-            # create form (consider different options according to type of account)
+            output += 'Enter amount to transfer: ' + '<input name="amount" type="text">' + '</br>'
+            output += 'Enter name/number of account to transfer to: ' + '<input name="target" type="text">' + '</br>'
+            output += 'If you are transferring to a business account, enter name of department to transfer to: ' + \
+                      '<input name="target_dep" type="text">' + '</br>'
+            if ac_type == 'bus':
+                output += 'Enter name of department to transfer to: ' + '<input name="source_dep" type="text">'
+            output += '<input type="submit" value="Submit">'
             output += '</form>' + '</br>'
+
             # print error/response message if redirect flag is set to True
-            # link to home page
+            if data.redirect_flags[self.client_address[0]]:
+                data.alter_rf(self.client_address[0], False)
+                # add options for response codes
+                data.alter_re(self.client_address[0], 0)
+
+            output += '</br>' + '</br>' + 'To return to home page ' + '<a href="/account/home">Click here</a>'
+            output += '</body></html>'
+            self.wfile.write(output.encode())
 
         if self.path.endswith('/account/holdings'):
-            pass
-        
+            self.start()
+            self.clear()
+            ac_index = data.current_account[self.client_address[0]]
+            if loc_type_table.body[ac_index] == 'bus':
+                self.redirect('/account/holdings/business')
+            value_table = Accounts.log[ac_index].value
+            account_name = str(name_table.get_key(ac_index))
+            account_number = str(number_table.get_key(ac_index))
+            output = '<html><body>'
+            output += '<h1>Account Holdings</h1>' + '</br>'
+            output += '<h2>Your Account: ' + account_name + '</h2>'
+            output += '<h3>Account number: ' + account_number + '</h3>' + '</br>'
+            output += '<h2>Current currency holdings:</h2>'
+            output += '<table>' + '<tr>'
+            output += '<th>Currency</th>' + '<th> | Current Value</th>' + '<th> | Exchange Rate to USD</th>' + '</tr>'
+            output += '<tr><td> | USD</td><td> | ' + str(value_table['USD']) + '</td>' + \
+                '<td> | ' + str(currency_rates('USD', 'USD', 1)) + '</td></tr>'
+            for key in value_table.keys():
+                if value_table[key] != 0 and key != 'USD':
+                    output += '<tr><td> | ' + key + '</td>'
+                    output += '<td> | ' + str(value_table[key]) + '</td>'
+                    output += '<td> | ' + str(currency_rates(key, 'USD', 1)) + '</td></tr>'
+            output += '</table>'
+
+            # print error/response message if redirect flag is set to True
+            if data.redirect_flags[self.client_address[0]]:
+                data.alter_rf(self.client_address[0], False)
+                # add options for response codes
+                data.alter_re(self.client_address[0], 0)
+
+            output += '</br></br>' + 'To trade and invest in different currencies ' + \
+                      '<a href="/account/holdings/trade_currencies">Click here</a>' + '</br></br>'
+            output += 'To return to home page ' + '<a href="/account/home">Click here</a>'
+            output += '</body></html>'
+            self.wfile.write(output.encode())
+
         if self.path.endswith('/account/holdings/business'):
+            pass
+
+        if self.path.endswith('/account/holdings/trade_currencies'):
+            pass
+
+        if self.path.endswith('/account/holdings/business/trade_currencies'):
             pass
 
         if self.path.endswith('/account/inner_transfer'):
@@ -1375,6 +1451,8 @@ class FinCloud(BaseHTTPRequestHandler):
 
                 # verification process with input from user
                 verify, response_code, index = verification(user_attempt, code_attempt)
+                print(verify)
+                print(index)
                 if verify:
                     data.alter_ca(self.client_address[0], index)
                     self.redirect('/account/home')
@@ -1384,6 +1462,11 @@ class FinCloud(BaseHTTPRequestHandler):
                     self.redirect('/login')
             else:
                 self.input_error()
+
+        if self.path.endswith('/account/logout'):
+            # logout page does not request input, any post request signals logging out of account
+            data.delete_ca(self.client_address[0])
+            self.redirect('/login')
 
         if self.path.endswith('/new/savings'):
             # extract user input from headers in POST packet
@@ -1534,14 +1617,14 @@ class FinCloud(BaseHTTPRequestHandler):
             if ctype == 'multipart/form-data':
                 fields = cgi.parse_multipart(self.rfile, pdict)
                 amount = fields.get('amount')[0]
-                bus_account = False
+                is_bus_account = False
                 if loc_type_table.body[data.current_account[self.client_address[0]]] == 'bus':
                     bus_account = True
-                index = data.current_account[self.client_address[0]]
-                if not bus_account:
-                    confirm, response_code = Accounts.log[index].withdraw(float(amount))
+                ac_index = data.current_account[self.client_address[0]]
+                if not is_bus_account:
+                    confirm, response_code = Accounts.log[ac_index].withdraw(float(amount))
                 else:
-                    confirm, response_code = Accounts.log[index].withdraw(float(amount), fields.get('dep_name')[0])
+                    confirm, response_code = Accounts.log[ac_index].withdraw(float(amount), fields.get('dep_name')[0])
                 if confirm:
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], 3)
@@ -1550,6 +1633,39 @@ class FinCloud(BaseHTTPRequestHandler):
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], response_code)
                     self.redirect('/account/withdraw_funds')
+            else:
+                self.input_error()
+
+        if self.path.endswith('/account/transfer_funds'):
+            # extract user input from headers in POST packet
+            ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
+            pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
+            content_len = int(self.headers.get('Content-length'))
+            pdict['CONTENT-LENGTH'] = content_len
+            if ctype == 'multipart/form-data':
+                fields = cgi.parse_multipart(self.rfile, pdict)
+                is_bus_account = False
+                target_account = fields.get('target')[0]
+                target_dep = fields.get('target_dep')[0]
+                amount = fields.get('amount')[0]
+                if target_dep == "":
+                    target_dep = "none"
+                ac_index = data.current_account[self.client_address[0]]
+                if loc_type_table.body[ac_index] == 'bus':
+                    is_bus_account = True
+                if not is_bus_account:
+                    confirm, response_code = Accounts.log[ac_index].transfer(float(amount), target_account, target_dep)
+                else:
+                    confirm, response_code = \
+                        Accounts.log[ac_index].transfer(float(amount), fields.get('source_dep')[0], target_account, target_dep)
+                if confirm:
+                    data.alter_rf(self.client_address[0], True)
+                    data.alter_re(self.client_address[0], 4)
+                    self.redirect('/account/home')
+                else:
+                    data.alter_rf(self.client_address[0], True)
+                    data.alter_re(self.client_address[0], response_code)
+                    self.redirect('/account/transfer_funds')
             else:
                 self.input_error()
 
