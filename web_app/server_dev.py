@@ -287,25 +287,25 @@ class Account:
 class SavingsAccount:  # object properties: value, returns, last_update, account_number, ledger
     def __init__(self, returns):
         self.value = 0
-        self.returns = int(pow((1 + returns / 100), 1 / 12))  # returns per month   remove the int()!
+        self.returns = pow((1 + returns / 100), 1 / 12)  # returns per month
         self.last_update = get_date()
         self.shift_date = get_date()[0]
         self.account_number = assign_account_number()
         self.ledger = Log()
-        self.fee = set_fee(self.returns)
+        self.fee = set_fee(self.returns)  # monthly fee
         number_table.add_key_index(self.account_number)
         loc_type_table.add_index_value('sav')
 
     def get_value_usd(self):
         return str(self.value)
 
-    def update(self):
+    def update_value(self):
         current_date = get_date()
         months = current_date[1] - self.last_update[1]
         if current_date[0] < self.shift_date:
             months -= 1
         self.value = self.value * (pow((1 + self.returns), months))
-        self.value = self.value - self.fee
+        self.value = self.value - self.fee * months
 
     def deposit(self, amount):
         confirm = True
@@ -1972,8 +1972,8 @@ class FinCloud(BaseHTTPRequestHandler):
                 self.input_error()
 
 
-# background function
-def background_function():
+# background functions
+def session_timing():
     while True:
         time.sleep(2)  # delete line
 
@@ -1984,12 +1984,25 @@ def background_function():
         # if background redirect flag is set to true, delete address from addresses set
 
 
+def savings_update():
+    while True:
+        time.sleep(600)  # update every 10 min
+        for index in loc_type_table.body.keys():
+            if loc_type_table.body[index] == 'sav':
+                Accounts.log[index].update_value()
+
+
 # main - driver function
 def main():
-    # create separate process for background function
-    process = multiprocessing.Process(target=background_function)
+    # create separate process for session timings
+    session_process = multiprocessing.Process(target=session_timing)
     # run the process
-    process.start()
+    session_process.start()
+
+    # create separate process for savings updates
+    update_process = multiprocessing.Process()
+    # run the process
+    update_process.start()
 
     # create HTTP server with custom request handler
     PORT = 8080
