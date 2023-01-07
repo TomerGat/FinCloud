@@ -10,16 +10,25 @@ from forex_python.converter import CurrencyRates
 import smtplib
 import multiprocessing
 import time
+from enum import Enum
 
 
 # import objects from main file
 from server_dev import *
 
 
+# enum containing response codes
+class Response(Enum):
+    wrong_name = 1
+    wrong_pass = 1
+    # continue
+
+
 # returns for savings account
 returns_premium = 4
 returns_medium = 2.75
 returns_minimum = 2
+
 
 # tables
 name_table = Table()  # account name table - {account name: serial number}
