@@ -1,18 +1,22 @@
+# build email server to send emails for account recovery
+# replace phone numbers with email addresses, change hash table so it contains email addresses and not hash values
+# create function to validate email addresses
+# change /forgot page to allow recovery of account name
+# request confirmation with email for account creation
+# add ssl encryption
+# create enum for response codes / several final variables (important to remove repeated use of numbers)
+# possibly run timeout function in background with multi-processing
+# store ip addresses as hash values
+# create admin account with special privileges, such as deleting accounts, backing up data and more
+# add trade history, action history, account actions summary
+# add option to trade crypto other than BTC
+
 # import header file
 from server_header import *
 
 
 # classes
-class Log:  # object properties: log (contains a numpy array)
-    # an array used to store other objects
-    def __init__(self):
-        self.log = np.array([])
-
-    def append(self, val):
-        self.log = np.append(self.log, [val])
-
-
-class EntryTrade:
+class TradeEntry:
     def __init__(self, cur_from, cur_to, amount_taken, date, conversion_rate):
         self.cur_from = cur_from
         self.cur_to = cur_to
@@ -29,39 +33,6 @@ class Entry:  # object properties: action, amount
         self.date = date
         self.target_num = target_num  # if action involves other accounts this is set, otherwise set to -1
         self.target_dep = target_dep  # if action involves other accounts this is set, otherwise set to -1
-
-
-class Table:  # object properties: body (contains a dictionary)
-    def __init__(self):
-        self.body = {}
-
-    def add_key_value(self, key, value):  # add {key: value}
-        self.body[key] = value
-
-    def add_key_index(self, key):  # add {key: index}
-        self.body[key] = len(self.body)
-
-    def add_index_value(self, value):  # add {index: value}
-        self.body[len(self.body)] = value
-
-    def in_table(self, key):  # return value for received key (return -1 if key does not exist)
-        try:
-            return self.body[key]
-        except KeyError:
-            return -1
-
-    def alter_key_index(self, index, new_key):  # change the key in a {key: index} type table
-        temp_table = reverse_dictionary(self.body)
-        temp_table[index] = new_key
-        new_table = reverse_dictionary(temp_table)
-        self.body = new_table
-
-    def get_key(self, index):
-        temp_table = reverse_dictionary(self.body)
-        try:
-            return temp_table[index]
-        except KeyError:
-            return -1
 
 
 class Cloud:  # a financial cloud that allows deposits to be kept and accessed using an access code
@@ -201,7 +172,7 @@ class Account:
                     self.value[cur_from] = self.value[cur_from] - amount
                     self.value[cur_to] = self.value[cur_to] + currency_rates(cur_from, cur_to, amount)
                     self.trade_ledger.append(
-                        EntryTrade(cur_from, cur_to, amount, get_date(), currency_rates(cur_from, cur_to, 1)))
+                        TradeEntry(cur_from, cur_to, amount, get_date(), currency_rates(cur_from, cur_to, 1)))
                     confirm = True
                 else:
                     response_code = -3
@@ -571,40 +542,6 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
         return confirm, response_code
 
 
-class Global:
-    def __new__(cls):
-        if not hasattr(cls, 'instance'):
-            cls.instance = super(Global, cls).__new__(cls)
-        return cls.instance
-
-    def __init__(self):
-        self.redirect_flags = {}
-        self.responses = {}
-        self.current_account = {}
-        self.background_redirect_flags = {}
-
-    def alter_rf(self, key, value):  # add/change key:value for redirect_flags
-        self.redirect_flags[key] = value
-
-    def alter_re(self, key, value):  # add/change key:value for responses
-        self.responses[key] = value
-
-    def alter_ca(self, key, value):  # add/change key:value for current_account
-        self.current_account[key] = value
-
-    def alter_brf(self, key, value):
-        self.background_redirect_flags[key] = value
-
-    def delete_ca(self, key):  # delete key:value from current_account
-        del self.current_account[key]
-
-    def delete_re(self, key):  # delete key:value from current_account
-        del self.responses[key]
-
-    def delete_brf(self, key):
-        del self.background_redirect_flags[key]
-
-
 class ConnectionEntry:
     def __init__(self, request_type, precise_time):
         self.lst = [request_type, precise_time]
@@ -638,15 +575,6 @@ def assign_account_number():
     existing_account_numbers.add(number)
 
     return number
-
-
-def reverse_dictionary(dic):
-    keys = list(dic.keys())
-    values = list(dic.values())
-    reversed_dic = {}
-    for i in range(len(keys)):
-        reversed_dic[values[i]] = keys[i]
-    return reversed_dic
 
 
 def get_date():
@@ -700,9 +628,9 @@ def sum_list(vec):
     return list_sum
 
 
-def hash_function(enter):
+def hash_function(input_str):
     ascii_values = []
-    for ch in enter:
+    for ch in input_str:
         ascii_values.append(ord(ch))
     values = []
     for i in range(len(ascii_values)):
@@ -729,13 +657,22 @@ def create_value_table():
     return value_table
 
 
-def validate_phone_number(phone):  # temporary (change later)
-    valid = validate_number(phone)
-    if valid:
-        if len(str(phone)) != 12:
-            valid = False
+def create_table_output(value_table):
+    output = '<table>' + '<tr>'
+    output += '<th>Currency</th>' + '<th> | Current Value</th>' + '<th> | Exchange Rate to USD</th>' + '</tr>'
+    output += '<tr><td> | USD</td><td> | ' + str(value_table['USD']) + '</td>' + '<td> | ' + str(currency_rates('USD', 'USD', 1)) + '</td></tr>'
+    for key in value_table.keys():
+        if value_table[key] != 0 and key != 'USD':
+            output += '<tr><td> | ' + key + '</td>'
+            output += '<td> | ' + str(value_table[key]) + '</td>'
+            output += '<td> | ' + str(currency_rates(key, 'USD', 1)) + '</td></tr>'
+    output += '</table>'
 
-    return True
+    return output
+
+
+def validate_phone_number(phone):
+    return validate_number(phone) and (len(str(phone)) == 10)
 
 
 def validate_number(num):
@@ -760,7 +697,7 @@ def validate_string(word):
     word = str(word)
     characters = []
     valid = True
-    non_valid = ['.', ':', '(', '{', ')', '}', ',', '^', '<', '>', '+', '-', '*', '/', '%', '=', '|', ' ']
+    non_valid = [':', '(', '{', ')', '}', ',', '^', '<', '>', '+', '-', '*', '/', '%', '=', '|', ' ']
     counter = 0
     while counter < len(word):
         ch = word[counter]
@@ -770,6 +707,52 @@ def validate_string(word):
         else:
             counter += 1
     return valid
+
+
+def check_for_spaces(word):
+    confirm = False
+    for ch in word:
+        if ch == ' ':
+            confirm = True
+            break
+    return confirm
+
+
+def divide_to_words(words):
+    wordList = []
+    temp_str = ''
+    for ch in words:
+        if ch != ' ':
+            temp_str += ch
+        else:
+            if temp_str != '':
+                wordList.append(temp_str)
+            temp_str = ''
+    if temp_str != '':
+        wordList.append(temp_str)
+    return wordList
+
+
+def validate_comp_name(comp_name):
+    if check_for_spaces(comp_name):
+        valid = True
+        for word in divide_to_words(comp_name):
+            valid = validate_string(word)
+            if not valid:
+                return False
+        return True
+    else:
+        return validate_string(comp_name)
+
+
+def organize_comp_name(comp_name):
+    words = divide_to_words(comp_name)
+    new_name = ''
+    for i in range(len(words)):
+        new_name += words[i]
+        if i != len(words)-1:
+            new_name += " "
+    return new_name
 
 
 def generate_code():
@@ -946,16 +929,19 @@ def create_business_account(account_name, company_name, account_code, phone_num)
     response_code = 0
 
     # checking validity and availability of account name and code
-    if validate_string(account_name) and validate_string(account_code) and validate_string(company_name):
+    ac_name_valid = validate_string(account_name)
+    ac_code_valid = validate_string(account_code)
+    if check_for_spaces(company_name):
+        company_name = organize_comp_name(company_name)
+    comp_name_valid = validate_comp_name(company_name)
+
+    if ac_name_valid and ac_code_valid and comp_name_valid:
         if name_table.in_table(account_name) == -1 and number_table.in_table(account_name) == -1:
             confirm = True
             response_code = 1  # account name and code are confirmed
         else:
             response_code = -10  # account name is unavailable
     else:
-        ac_name_valid = validate_string(account_name)
-        ac_code_valid = validate_string(account_code)
-        comp_name_valid = validate_string(company_name)
         if not ac_name_valid and ac_code_valid and comp_name_valid:
             response_code = -1  # name invalid
         elif ac_name_valid and not ac_code_valid and comp_name_valid:
@@ -1354,6 +1340,7 @@ class FinCloud(BaseHTTPRequestHandler):
                 output += '<h3>Open a new department for your business account ' + \
                           '<a href="/account/business/open_dep">now</a></h3>'
             output += '</br>' + '</br>'
+
             output += '<h3>To deposit funds ' + '<a href="/account/deposit_funds">Click here</a></h3>'
             output += '<h3>To withdraw funds ' + '<a href="/account/withdraw_funds">Click here</a></h3>'
             output += '<h3>To transfer funds to other accounts ' + \
@@ -1522,24 +1509,15 @@ class FinCloud(BaseHTTPRequestHandler):
             self.start()
             self.clear()
             ac_index = data.current_account[self.client_address[0]]
-            value_table = Accounts.log[ac_index].value
+
             account_name = str(name_table.get_key(ac_index))
-            account_number = str(number_table.get_key(ac_index))
             output = '<html><body>'
             output += '<h1>Account Holdings</h1>' + '</br>'
             output += '<h2>Your Account: ' + account_name + '</h2>'
-            output += '<h3>Account number: ' + account_number + '</h3>' + '</br>'
             output += '<h2>Current currency holdings:</h2>'
-            output += '<table>' + '<tr>'
-            output += '<th>Currency</th>' + '<th> | Current Value</th>' + '<th> | Exchange Rate to USD</th>' + '</tr>'
-            output += '<tr><td> | USD</td><td> | ' + str(value_table['USD']) + '</td>' + \
-                      '<td> | ' + str(currency_rates('USD', 'USD', 1)) + '</td></tr>'
-            for key in value_table.keys():
-                if value_table[key] != 0 and key != 'USD':
-                    output += '<tr><td> | ' + key + '</td>'
-                    output += '<td> | ' + str(value_table[key]) + '</td>'
-                    output += '<td> | ' + str(currency_rates(key, 'USD', 1)) + '</td></tr>'
-            output += '</table>'
+            value_table = Accounts.log[ac_index].value
+
+            output += create_table_output(value_table)
 
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
@@ -1555,7 +1533,35 @@ class FinCloud(BaseHTTPRequestHandler):
             self.wfile.write(output.encode())
 
         if self.path.endswith('/account/business/departments'):
-            pass
+            self.start()
+            self.clear()
+            ac_index = data.current_account[self.client_address[0]]
+            account_name = str(name_table.get_key(ac_index))
+            account_number = str(number_table.get_key(ac_index))
+            comp_name = Accounts.log[ac_index].company_name
+            output = '<html><body>'
+            output += '<h1>Business Departments</h1>' + '</br>'
+            output += '<h2>Company: ' + comp_name + '</h2>'
+            output += '<h2>Account name: ' + account_name + '</h2>' + '</br></br>'
+            output += '<h1>Company Departments and holdings: </h1></br>'
+            if len(Accounts.log[ac_index].departments.keys()) == 0:
+                output += '<h3>Account has no departments.</h3></br></br>'
+            for dep in Accounts.log[ac_index].departments.keys():
+                output += '<h2>Holdings for department "' + dep + '":</h2></br>'
+                output += create_table_output(Accounts.log[ac_index].departments[dep][0]) + '</br></br>'
+
+            # print error/response message if redirect flag is set to True
+            if data.redirect_flags[self.client_address[0]]:
+                data.alter_rf(self.client_address[0], False)
+                response_code = data.responses[self.client_address[0]]
+                # add options for response codes
+                data.alter_re(self.client_address[0], 0)
+
+            output += '</br></br>' + 'To trade and invest in different currencies ' + \
+                      '<a href="/account/business/departments/holdings/trade_currencies">Click here</a>' + '</br></br>'
+            output += 'To return to account home page ' + '<a href="/account/home">Click here</a>'
+            output += '</body></html>'
+            self.wfile.write(output.encode())
 
         if self.path.endswith('/account/holdings/trade_currencies'):
             pass
@@ -1731,8 +1737,7 @@ class FinCloud(BaseHTTPRequestHandler):
                 company_name = fields.get('comp_name')[0]
                 # create account with user input
                 if code == code_confirm:
-                    confirm, index, response_code = create_business_account(account_name, company_name, code,
-                                                                            phone_number)
+                    confirm, index, response_code = create_business_account(account_name, company_name, code, phone_number)
                     if confirm:
                         data.alter_re(self.client_address[0], 3)
                         data.alter_rf(self.client_address[0], True)
@@ -1834,11 +1839,11 @@ class FinCloud(BaseHTTPRequestHandler):
             if ctype == 'multipart/form-data':
                 fields = cgi.parse_multipart(self.rfile, pdict)
                 amount = fields.get('amount')[0]
-                bus_account = False
+                is_bus_account = False
                 if loc_type_table.body[data.current_account[self.client_address[0]]] == 'bus':
-                    bus_account = True
+                    is_bus_account = True
                 index = data.current_account[self.client_address[0]]
-                if not bus_account:
+                if not is_bus_account:
                     confirm, response_code = Accounts.log[index].deposit(amount)
                 else:
                     confirm, response_code = Accounts.log[index].deposit(amount, fields.get('dep_name')[0])
@@ -1864,7 +1869,7 @@ class FinCloud(BaseHTTPRequestHandler):
                 amount = fields.get('amount')[0]
                 is_bus_account = False
                 if loc_type_table.body[data.current_account[self.client_address[0]]] == 'bus':
-                    bus_account = True
+                    is_bus_account = True
                 ac_index = data.current_account[self.client_address[0]]
                 if not is_bus_account:
                     confirm, response_code = Accounts.log[ac_index].withdraw(amount)
@@ -1964,7 +1969,7 @@ class FinCloud(BaseHTTPRequestHandler):
 # background functions
 def session_timing():
     while True:
-        time.sleep(2)  # delete line
+        time.sleep(1)
 
         # for each ip in addresses set
         # check if the same ip exists twice in history log
