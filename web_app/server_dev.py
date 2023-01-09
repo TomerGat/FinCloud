@@ -1,16 +1,3 @@
-# build email server to send emails for account recovery
-# replace phone numbers with email addresses, change hash table so it contains email addresses and not hash values
-# create function to validate email addresses
-# change /forgot page to allow recovery of account name
-# request confirmation with email for account creation
-# add ssl encryption
-# create enum for response codes / several final variables (important to remove repeated use of numbers)
-# possibly run timeout function in background with multi-processing
-# store ip addresses as hash values
-# create admin account with special privileges, such as deleting accounts, backing up data and more
-# add trade history, action history, account actions summary
-# add option to trade crypto other than BTC
-
 # import header file
 from server_header import *
 
