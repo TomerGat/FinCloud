@@ -11,6 +11,7 @@ import smtplib
 import multiprocessing
 import time
 from enum import Enum
+import os
 
 
 # necessary functions for data structure implementations
@@ -130,7 +131,8 @@ data = Global()
 # set containing all existing account numbers
 existing_account_numbers = set()
 
-# Dictionary of Logs containing history of received packets
+# Dictionary of Logs containing history of received packets  {ip address : Log}
+# after session timeout, log for timed out account is erased
 history = {}
 
 # set containing addresses connected

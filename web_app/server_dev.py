@@ -1,3 +1,16 @@
+# build email server to send emails for account recovery
+# replace phone numbers with email addresses, change hash table so it contains email addresses and not hash values
+# create function to validate email addresses
+# change /forgot page to allow recovery of account name
+# request confirmation with email for account creation
+# add ssl encryption
+# create enum for response codes / several final variables (important to remove repeated use of numbers)
+# possibly run timeout function in background with multi-processing
+# store ip addresses as hash values
+# create admin account with special privileges, such as deleting accounts, backing up data and more
+# add trade history, action history, account actions summary
+# add option to trade crypto other than BTC
+
 # import header file
 from server_header import *
 
@@ -590,7 +603,7 @@ def time_dif(last, current):
     delta += 24 * 60 * 60 * (current[2] - last[2])  # add days
     delta += 30 * 24 * 60 * 60 * (current[1] - last[1])  # add months
     delta += 365 * 24 * 60 * 60 * (current[0] - last[0])  # add years
-    return delta
+    return delta  # time delta in seconds
 
 
 def digit_count(num):
@@ -1957,12 +1970,22 @@ class FinCloud(BaseHTTPRequestHandler):
 def session_timing():
     while True:
         time.sleep(1)
+        for ip in addresses:
+            if len(history[ip].log) >= 2:
+                log_length = len(history[ip].log)
+                time1 = history[ip].log[log_length-2][1]
+                time2 = history[ip].log[log_length - 1][1]
+                timeDif = time_dif(time1, time2)
+                if timeDif >= 600:
+                    data.alter_brf(ip, True)
+                    addresses.remove(ip)
+                    history[ip] = Log()
 
-        # for each ip in addresses set
+        # for ip in addresses set
         # check if the same ip exists twice in history log
         # if so, check time dif between last two connection entries
         # if time dif is larger than session limit, set background redirect flag to true for the ip
-        # if background redirect flag is set to true, delete address from addresses set
+        # if background redirect flag is set to true, delete address from addresses set and reset history log
 
 
 def savings_update():
@@ -1975,17 +1998,24 @@ def savings_update():
 
 # main - driver function
 def main():
+    print('Starting separate processes:')
+
     # create separate process for session timings
     session_process = multiprocessing.Process(target=session_timing)
     # run the process
     session_process.start()
+    session_process_PID = session_process.pid
+    print('* Session timing process started at PID = "' + str(session_process_PID) + '"')
 
     # create separate process for savings updates
-    update_process = multiprocessing.Process()
+    update_process = multiprocessing.Process(target=savings_update)
     # run the process
     update_process.start()
+    update_process_PID = update_process.pid
+    print('* Savings account updating process started at PID = "' + str(update_process_PID) + '"\n')
 
     # create HTTP server with custom request handler
+    print('Running http server at PID = "' + str(os.getpid()) + '"')
     PORT = 8080
     IP = socket.gethostbyname(socket.gethostname())
     server_address = (IP, PORT)
