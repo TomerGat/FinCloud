@@ -1,16 +1,3 @@
-# build email server to send emails for account recovery
-# replace phone numbers with email addresses, change hash table so it contains email addresses and not hash values
-# create function to validate email addresses
-# change /forgot page to allow recovery of account name
-# request confirmation with email for account creation
-# add ssl encryption
-# create enum for response codes / several final variables (important to remove repeated use of numbers)
-# possibly run timeout function in background with multi-processing
-# store ip addresses as hash values
-# create admin account with special privileges, such as deleting accounts, backing up data and more
-# add trade history, action history, account actions summary
-# add option to trade crypto other than BTC
-
 # import header file
 from server_header import *
 
@@ -23,6 +10,11 @@ class TradeEntry:
         self.amount = amount_taken
         self.conversion_rate = conversion_rate
         self.date = date
+
+
+class ConnectionEntry:
+    def __init__(self, request_type, precise_time):
+        self.lst = [request_type, precise_time]
 
 
 class Entry:  # object properties: action, amount
@@ -175,9 +167,14 @@ class Account:
                         TradeEntry(cur_from, cur_to, amount, get_date(), currency_rates(cur_from, cur_to, 1)))
                     confirm = True
                 else:
-                    response_code = -3
+                    response_code = -3  # insufficient funds
             else:
-                response_code = -4
+                if (cur_from not in self.value.keys()) and (cur_to in self.value.keys()):
+                    response_code = -4  # source currency not found
+                elif (cur_from in self.value.keys()) and (cur_to not in self.value.keys()):
+                    response_code = -5  # target currency not found
+                else:
+                    response_code = -6  # source and target currencies not found
 
         return confirm, response_code
 
@@ -514,7 +511,7 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
         if response_code == -1 or response_code == -2:
             confirm = False
         elif dep_name not in self.departments.keys():
-            response_code = -3  # dep name does not exist
+            response_code = -4  # dep name does not exist
             confirm = False
         else:
             if self.departments[dep_name][0]['USD'] >= amount:
@@ -523,7 +520,7 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
                 self.departments[dep_name][1].append(Entry('d', amount, get_date(), -1, -1))
             else:
                 confirm = False
-                response_code = -4  # insufficient funds
+                response_code = -3  # insufficient funds
 
         return confirm, response_code
 
@@ -540,11 +537,6 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
             response_code = -1  # department name already exists
 
         return confirm, response_code
-
-
-class ConnectionEntry:
-    def __init__(self, request_type, precise_time):
-        self.lst = [request_type, precise_time]
 
 
 # functions
@@ -999,11 +991,19 @@ class FinCloud(BaseHTTPRequestHandler):
         self.send_header('Location', path)
         self.end_headers()
 
-    def input_error(self):  # redirect to main page, set redirect flag to true, set response code to -1 to display error
+    def system_error(self):  # redirect to main page, set redirect flag to true, set response code to -1 to display error
         if self.client_address[0] in data.current_account.keys():
             data.delete_ca(self.client_address[0])
         data.alter_rf(self.client_address[0], True)
         data.alter_re(self.client_address[0], -1)
+        self.redirect('/')
+
+    def timeout_session(self):
+        if self.client_address[0] in data.current_account.keys():
+            data.delete_ca(self.client_address[0])
+        data.alter_rf(self.client_address[0], True)
+        data.alter_re(self.client_address[0], -2)
+        data.alter_brf(self.client_address[0], False)
         self.redirect('/')
 
     def do_GET(self):
@@ -1016,10 +1016,15 @@ class FinCloud(BaseHTTPRequestHandler):
 
         history[self.client_address[0]].append(ConnectionEntry('get', get_precise_time()))
 
-        # wait and then check background redirect flag
+        if self.client_address[0] not in data.background_redirect_flags.keys():
+            data.alter_brf(self.client_address[0], False)
+
+        # check background redirect flag
+        if data.background_redirect_flags[self.client_address[0]]:
+            self.timeout_session()
 
         if self.client_address[0] not in addresses:
-            addresses.add(self.client_address[0])
+            addresses.append(self.client_address[0])
 
         if self.path.endswith('/'):
             self.start()
@@ -1040,6 +1045,8 @@ class FinCloud(BaseHTTPRequestHandler):
                 response_code = data.responses[self.client_address[0]]
                 if response_code == -1:
                     output += '<h4>System error. Please try again later.</h4>'
+                if response_code == -2:
+                    output += '<h4>Session timed out.</h4>'
                 data.alter_re(self.client_address[0], 0)
             output += '</body></html>'
             self.wfile.write(output.encode())
@@ -1325,12 +1332,14 @@ class FinCloud(BaseHTTPRequestHandler):
             output = '<html><body>'
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
-            output += '<h1>Your Account: ' + account_name + '</h1>'
+            account_number = str(number_table.get_key(ac_index))
+            output += '<h1>Account name: ' + account_name + '</h1>'
+            output += '<h2>Account number: ' + account_number + '</h2>'
             val = Accounts.log[ac_index].get_value_usd()
             if loc_type_table.body[ac_index] == 'bus':
                 comp_name = str(Accounts.log[ac_index].company_name)
-                output += '<h1>Company: ' + comp_name + '</h1>'
-            output += '<h2>Current value in USD: ' + val + '</h2>'
+                output += '<h2>Company name: ' + comp_name + '</h2>'
+            output += '</br><h2>Current value in USD: ' + val + '</h2>'
             if loc_type_table.body[ac_index] == 'reg':
                 output += '<h3>See current holdings ' + '<a href="/account/holdings">Here</a></h3>'
             elif loc_type_table.body[ac_index] == 'bus':
@@ -1391,11 +1400,9 @@ class FinCloud(BaseHTTPRequestHandler):
             output = '<html><body>'
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
-            account_number = str(number_table.get_key(ac_index))
             val = Accounts.log[ac_index].get_value_usd()
             output += '<h1>Deposit Funds</h1>' + '</br>'
             output += '<h2>Your Account: ' + account_name + '</h2>'
-            output += '<h3>Account number: ' + account_number + '</h3>'
             output += '<h3>Current value in USD: ' + val + '</h3>' + '</br>' + '</br>'
             output += '<form method="POST" enctype="multipart/form-data" action="/account/deposit_funds">'
             output += 'Enter amount to deposit: ' + '<input name="amount" type="text">' + '</br></br>'
@@ -1413,6 +1420,8 @@ class FinCloud(BaseHTTPRequestHandler):
                     output += '<h4>Invalid transaction (null or negative values).</h4>'
                 if response_code == -2:
                     output += '<h4>Invalid input (amount).</h4>'
+                if response_code == -3:
+                    output += '<h4>Department name not found</h4>'
                 data.alter_re(self.client_address[0], False)
 
             output += '</br></br>' + 'To return to account home page ' + '<a href="/account/home">Click here</a>'
@@ -1425,11 +1434,9 @@ class FinCloud(BaseHTTPRequestHandler):
             output = '<html><body>'
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
-            account_number = str(number_table.get_key(ac_index))
             val = Accounts.log[ac_index].get_value_usd()
             output += '<h1>Withdraw Funds</h1>' + '</br>'
             output += '<h2>Your Account: ' + account_name + '</h2>'
-            output += '<h3>Account number: ' + account_number + '</h3>'
             output += '<h3>Current value in USD: ' + val + '</h3>' + '</br>' + '</br>'
             output += '<form method="POST" enctype="multipart/form-data" action="/account/withdraw_funds">'
             output += 'Enter amount to withdraw: ' + '<input name="amount" type="text">' + '</br></br>'
@@ -1449,6 +1456,8 @@ class FinCloud(BaseHTTPRequestHandler):
                     output += '<h4>Invalid input (amount).</h4>'
                 if response_code == -3:
                     output += '<h4>Account value in USD is insufficient for this withdrawal.</h4>'
+                if response_code == -4:
+                    output += '<h4>Department name not found</h4>'
                 data.alter_re(self.client_address[0], False)
 
             output += '</br></br>' + 'To return to account home page ' + '<a href="/account/home">Click here</a>'
@@ -1460,13 +1469,11 @@ class FinCloud(BaseHTTPRequestHandler):
             self.clear()
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
-            account_number = str(number_table.get_key(ac_index))
             val = Accounts.log[ac_index].get_value_usd()
             ac_type = loc_type_table.body[ac_index]
             output = '<html><body>'
             output += '<h1>Transfer Funds</h1>' + '</br>'
             output += '<h2>Your Account: ' + account_name + '</h2>'
-            output += '<h3>Account number: ' + account_number + '</h3>'
             output += '<h3>Current value in USD: ' + val + '</h3>' + '</br>' + '</br>'
             output += '<form method="POST" enctype="multipart/form-data" action="/account/transfer_funds">'
             output += 'Enter amount to transfer: ' + '<input name="amount" type="text">' + '</br>'
@@ -1509,14 +1516,13 @@ class FinCloud(BaseHTTPRequestHandler):
             self.start()
             self.clear()
             ac_index = data.current_account[self.client_address[0]]
-
             account_name = str(name_table.get_key(ac_index))
             output = '<html><body>'
             output += '<h1>Account Holdings</h1>' + '</br>'
             output += '<h2>Your Account: ' + account_name + '</h2>'
             output += '<h2>Current currency holdings:</h2>'
-            value_table = Accounts.log[ac_index].value
 
+            value_table = Accounts.log[ac_index].value
             output += create_table_output(value_table)
 
             # print error/response message if redirect flag is set to True
@@ -1537,7 +1543,6 @@ class FinCloud(BaseHTTPRequestHandler):
             self.clear()
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
-            account_number = str(number_table.get_key(ac_index))
             comp_name = Accounts.log[ac_index].company_name
             output = '<html><body>'
             output += '<h1>Business Departments</h1>' + '</br>'
@@ -1548,7 +1553,9 @@ class FinCloud(BaseHTTPRequestHandler):
                 output += '<h3>Account has no departments.</h3></br></br>'
             for dep in Accounts.log[ac_index].departments.keys():
                 output += '<h2>Holdings for department "' + dep + '":</h2></br>'
-                output += create_table_output(Accounts.log[ac_index].departments[dep][0]) + '</br></br>'
+                output += create_table_output(Accounts.log[ac_index].departments[dep][0]) + '</br>'
+                output += 'Trade currencies with department capital: ' + \
+                          '<a href="/account/business/departments/' + dep + '/invest_capital/trade_currencies">Here</a>'
 
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
@@ -1557,16 +1564,54 @@ class FinCloud(BaseHTTPRequestHandler):
                 # add options for response codes
                 data.alter_re(self.client_address[0], 0)
 
-            output += '</br></br>' + 'To trade and invest in different currencies ' + \
-                      '<a href="/account/business/departments/holdings/trade_currencies">Click here</a>' + '</br></br>'
-            output += 'To return to account home page ' + '<a href="/account/home">Click here</a>'
+            output += '</br></br>' + 'To return to account home page ' + '<a href="/account/home">Click here</a>'
             output += '</body></html>'
             self.wfile.write(output.encode())
 
         if self.path.endswith('/account/holdings/trade_currencies'):
-            pass
+            self.start()
+            self.clear()
+            ac_index = data.current_account[self.client_address[0]]
+            account_name = str(name_table.get_key(ac_index))
+            value_table = Accounts.log[ac_index].value
+            available_currencies = [currency for currency in value_table.keys() if value_table[currency] > 0]
+            output = '<html><body>'
+            output += '<h1>Currencies - Trade & Invest</h1>'
+            output += '<h2>Your Account: ' + account_name + '</h2>'
+            output += 'We offer you the opportunity to distribute and invest your account capital throughout' \
+                      ' multiple international currencies. '
+            output += 'Transfer funds between an array of currencies at market value without additional cost.' + '</br></br>'
+            if len(available_currencies) == 0:
+                output += '<h2>No funds available.</h2></br>'
+            output += '<h2>Trade currencies:</h2>'
+            output += '<form method="POST" enctype="multipart/form-data" action="/account/holdings/trade_currencies">'
+            output += 'Enter amount to transfer: ' + '<input name="amount" type="text">' + '</br>'
+            output += 'Select currency to transfer from: '
+            output += '<select id="source_cur" name="source_cur">'
+            for cur in available_currencies:
+                output += '<option value = "' + cur + '">' + cur + '</option>'
+            output += '</select></br>'
+            output += 'Select currency to transfer to: '
+            output += '<select id="source_cur" name="source_cur">'
+            for cur in value_table.keys():
+                output += '<option value = "' + cur + '">' + cur + '</option>'
+            output += '</select></br></br>'
+            output += '<input type="submit" value="Submit">'
+            output += '</form>'
 
-        if self.path.endswith('/account/business/departments/holdings/trade_currencies'):
+            # print error/response message if redirect flag is set to True
+            if data.redirect_flags[self.client_address[0]]:
+                data.alter_rf(self.client_address[0], False)
+                response_code = data.responses[self.client_address[0]]
+                # add options for response codes
+                data.alter_re(self.client_address[0], 0)
+
+            output += '</br>' + '</br>' + 'To return to account holdings page ' + '<a href="/account/holdings">Click here</a>'
+            output += '</br>' + '</br>' + 'Return to account home page ' + '<a href="/account/home">Click here</a>'
+            output += '</body></html>'
+            self.wfile.write(output.encode())
+
+        if self.path.endswith('/invest_capital/trade_currencies'):
             pass
 
         if self.path.endswith('/account/business/inner_transfer'):
@@ -1576,7 +1621,6 @@ class FinCloud(BaseHTTPRequestHandler):
             account_name = str(name_table.get_key(ac_index))
             account_number = str(number_table.get_key(ac_index))
             val = Accounts.log[ac_index].get_value_usd()
-            ac_type = loc_type_table.body[ac_index]
             output = '<html><body>'
             output += '<h1>Departmental Transfer</h1>' + '</br>'
             output += '<h2>Your Account: ' + account_name + '</h2>'
@@ -1628,7 +1672,6 @@ class FinCloud(BaseHTTPRequestHandler):
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
             output += '<h1>Your Account: ' + account_name + '</h1>'
-            val = Accounts.log[ac_index].get_value_usd()
             comp_name = str(Accounts.log[ac_index].company_name)
             output += '<h1>Company: ' + comp_name + '</h1>'
             output += '<form method="POST" enctype="multipart/form-data" action="/account/business/open_dep">'
@@ -1654,12 +1697,13 @@ class FinCloud(BaseHTTPRequestHandler):
     def do_POST(self):
 
         if self.client_address[0] not in addresses or self.client_address[0] not in history.keys():
-            pass
-            # handle error: redirect to '/' path and print response "system error"
+            self.system_error()
 
         history[self.client_address[0]].append(ConnectionEntry('post', get_precise_time()))
 
-        # wait and then check background redirect flag
+        # check background redirect flag
+        if data.background_redirect_flags[self.client_address[0]]:
+            self.timeout_session()
 
         if self.path.endswith('/login'):
             # extract user input from headers in POST packet
@@ -1682,7 +1726,7 @@ class FinCloud(BaseHTTPRequestHandler):
                     data.alter_rf(self.client_address[0], True)
                     self.redirect('/login')
             else:
-                self.input_error()
+                self.system_error()
 
         if self.path.endswith('/account/logout'):
             # logout page does not request input, any post request signals logging out of account
@@ -1720,7 +1764,7 @@ class FinCloud(BaseHTTPRequestHandler):
                     data.alter_re(self.client_address[0], -8)
                     self.redirect('/new/savings')
             else:
-                self.input_error()
+                self.system_error()
 
         if self.path.endswith('/new/business'):
             # extract user input from headers in POST packet
@@ -1750,6 +1794,8 @@ class FinCloud(BaseHTTPRequestHandler):
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], -11)
                     self.redirect('/new/business')
+            else:
+                self.system_error()
 
         if self.path.endswith('/new/checking'):
             # extract user input from headers in POST packet
@@ -1779,7 +1825,7 @@ class FinCloud(BaseHTTPRequestHandler):
                     data.alter_re(self.client_address[0], -7)
                     self.redirect('/new/checking')
             else:
-                self.input_error()
+                self.system_error()
 
         if self.path.endswith('/forgot'):
             # extract user input from headers in POST packet
@@ -1828,7 +1874,7 @@ class FinCloud(BaseHTTPRequestHandler):
                         data.alter_re(self.client_address[0], -3)
                         self.redirect('/forgot')
             else:
-                self.input_error()
+                self.system_error()
 
         if self.path.endswith('/account/deposit_funds'):
             # extract user input from headers in POST packet
@@ -1856,7 +1902,7 @@ class FinCloud(BaseHTTPRequestHandler):
                     data.alter_re(self.client_address[0], response_code)
                     self.redirect('/account/deposit_funds')
             else:
-                self.input_error()
+                self.system_error()
 
         if self.path.endswith('/account/withdraw_funds'):
             # extract user input from headers in POST packet
@@ -1884,7 +1930,7 @@ class FinCloud(BaseHTTPRequestHandler):
                     data.alter_re(self.client_address[0], response_code)
                     self.redirect('/account/withdraw_funds')
             else:
-                self.input_error()
+                self.system_error()
 
         if self.path.endswith('/account/transfer_funds'):
             # extract user input from headers in POST packet
@@ -1917,7 +1963,7 @@ class FinCloud(BaseHTTPRequestHandler):
                     data.alter_re(self.client_address[0], response_code)
                     self.redirect('/account/transfer_funds')
             else:
-                self.input_error()
+                self.system_error()
 
         if self.path.endswith('/account/business/inner_transfer'):
             # extract user input from headers in POST packet
@@ -1941,7 +1987,7 @@ class FinCloud(BaseHTTPRequestHandler):
                     data.alter_re(self.client_address[0], response_code)
                     self.redirect('/account/business/inner_transfer')
             else:
-                self.input_error()
+                self.system_error()
 
         if self.path.endswith('/account/business/open_dep'):
             # extract user input from headers in POST packet
@@ -1963,20 +2009,20 @@ class FinCloud(BaseHTTPRequestHandler):
                     data.alter_re(self.client_address[0], response_code)
                     self.redirect('/account/business/open_dep')
             else:
-                self.input_error()
+                self.system_error()
 
 
 # background functions
 def session_timing():
     while True:
-        time.sleep(1)
         for ip in addresses:
             if len(history[ip].log) >= 2:
                 log_length = len(history[ip].log)
-                time1 = history[ip].log[log_length-2][1]
-                time2 = history[ip].log[log_length - 1][1]
+                time1 = history[ip].log[log_length - 2].lst[1]
+                time2 = history[ip].log[log_length - 1].lst[1]
                 timeDif = time_dif(time1, time2)
-                if timeDif >= 600:
+                if timeDif >= session_limit:
+                    print("time dif above limit")
                     data.alter_brf(ip, True)
                     addresses.remove(ip)
                     history[ip] = Log()
@@ -1998,30 +2044,33 @@ def savings_update():
 
 # main - driver function
 def main():
-    print('Starting separate processes:')
+    print('Starting background threads:')
 
-    # create separate process for session timings
-    session_process = multiprocessing.Process(target=session_timing)
+    # create separate thread for session timings
+    session_thread = threading.Thread(target=session_timing)
     # run the process
-    session_process.start()
-    session_process_PID = session_process.pid
-    print('* Session timing process started at PID = "' + str(session_process_PID) + '"')
+    session_thread.start()
+    session_thread_ID = session_thread.ident
+    print('* Session timing thread started at thread id = "' + str(session_thread_ID) + '"')
 
-    # create separate process for savings updates
-    update_process = multiprocessing.Process(target=savings_update)
+    # create separate thread for savings updates
+    update_thread = threading.Thread(target=savings_update)
     # run the process
-    update_process.start()
-    update_process_PID = update_process.pid
-    print('* Savings account updating process started at PID = "' + str(update_process_PID) + '"\n')
+    update_thread.start()
+    update_thread_ID = update_thread.ident
+    print('* Savings account updating thread started at thread ID = "' + str(update_thread_ID) + '"\n')
 
     # create HTTP server with custom request handler
-    print('Running http server at PID = "' + str(os.getpid()) + '"')
+    print('Running main thread at thread ID = "' + str(threading.get_ident()) + '"')
     PORT = 8080
     IP = socket.gethostbyname(socket.gethostname())
     server_address = (IP, PORT)
     server = http.server.HTTPServer(server_address, FinCloud)
     print('Server running at http://{}:{}'.format(IP, PORT))
     server.serve_forever()
+
+    while True:
+        time.sleep(2)
 
 
 # run main driver function

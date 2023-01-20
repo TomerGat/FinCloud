@@ -9,6 +9,7 @@ import numpy as np
 from forex_python.converter import CurrencyRates
 import smtplib
 import multiprocessing
+import threading
 import time
 from enum import Enum
 import os
@@ -131,12 +132,12 @@ data = Global()
 # set containing all existing account numbers
 existing_account_numbers = set()
 
-# Dictionary of Logs containing history of received packets  {ip address : Log}
+# Shared Dictionary of Logs containing history of received packets  {ip address : Log}
 # after session timeout, log for timed out account is erased
 history = {}
 
-# set containing addresses connected
-addresses = set()
+# shared list containing addresses connected
+addresses = []
 
-# session timeout limit
+# session timeout limit (in sec)
 session_limit = 1200
