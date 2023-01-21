@@ -1,3 +1,17 @@
+# build email server to send emails for account recovery
+# replace phone numbers with email addresses, change hash table so it contains email addresses and not hash values
+# create function to validate email addresses
+# change /forgot page to allow recovery of account name
+# request confirmation with email for account creation
+# add ssl encryption
+# create enum for response codes / several final variables (important to remove repeated use of numbers)
+# store ip addresses as hash values
+# create admin account with special privileges, such as deleting accounts, backing up data and more
+# add trade history, action history, account actions summary
+# add option to trade crypto other than BTC
+# get_value_usd() possibly very slow - might need changing
+
+
 # import header file
 from server_header import *
 
@@ -630,28 +644,31 @@ def assign_account_number():
     return number
 
 
-def hash_function(input_value):
-    input_str = str(input_value)
-    ascii_values = []
-    for ch in input_str:
-        ascii_values.append(ord(ch))
+def hash_function(param) -> int:
+    input_str = str(param)
+    ascii_values = [ord(ch) for ch in input_str]
     values = []
     for i in range(len(ascii_values)):
         values.append((i * 123854 ^ ascii_values[i] * 984) | (multiple(ascii_values)))
-    val = ((sum(values) - 2587465) & (951456 * (multiple(values)) + 456 * sum(values)))
+    val = ((sum_vec(values) - 2587465) & (951456 * (multiple(values)) + 456 * sum_vec(values)))
     if val < 0:
-        val = val ^ (sum(ascii_values) + 95813)
-    factor = (((sum(values) + 15984354) | (multiple(values) + 10000009814008)) & (
-            (sum(ascii_values) + 87515557) ^ (multiple(ascii_values) * 8558224)))
+        val = val ^ (sum_vec(ascii_values) + 95813)
+    factor = (((sum_vec(values) + 15984354) | (multiple(values) + 10000009814008)) & ((sum_vec(ascii_values) + 87515557) ^ (multiple(ascii_values) * 8558224)))
     new_val = abs(val ^ factor)
     if new_val % 10 != 9:
         new_val += 1
     else:
         new_val += 11
-    temp = new_val
-    while digit_count(temp) < 30:
-        temp *= 10
-    return abs(temp)
+    shifts = 64 - math.floor(math.log10(new_val)) + 1
+    new_val = new_val << shifts
+    temp = digit_count(new_val)
+    if temp == 18:
+        new_val = 100 * new_val
+    elif temp == 20:
+        new_val = new_val // 10
+    if new_val < 0:
+        return abs(10 * new_val)
+    return limit_length(abs(new_val))
 
 
 def create_table_output(value_table):
@@ -2160,6 +2177,7 @@ def main():
     with open(file_path, 'w') as file:
         file.write(Admin_code)
     create_checking_account('Admin', Admin_code, 1234567890)
+    loc_type_table.body[0] = 'admin'
 
     # thread management
     print('Starting background threads:')

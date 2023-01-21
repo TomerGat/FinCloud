@@ -1,5 +1,4 @@
 # import util functions and libraries
-from Fincloud_imports import *
 from Fincloud_util_functions import *
 
 
@@ -88,11 +87,6 @@ class Response(Enum):
     # continue
 
 
-# returns for savings account
-returns_premium = 4
-returns_medium = 2.75
-returns_minimum = 2
-
 # tables
 name_table = Table()  # account name table - {account name: serial number}
 number_table = Table()  # account number table - {account number: serial number}
@@ -116,9 +110,6 @@ history = {}
 
 # shared list containing addresses connected
 addresses = []
-
-# session timeout limit (in sec)
-session_limit = 1200
 
 # creating backup of last currency rates (relative to USD)
 last_rates = create_value_table()

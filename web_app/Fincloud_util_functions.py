@@ -1,26 +1,35 @@
 # import libraries file
 from Fincloud_imports import *
+from Fincloud_finals import *
 
 
 # util functions
-def digit_count(num):
-    num = str(num)
-    counter = len(num)
+def digit_count(num: int) -> int:
+    str_num = str(num)
+    counter = 0
+    for ch in str_num:
+        counter += 1
     return counter
 
 
-def multiple(vec):
-    list_multiple = 1
+def multiple(vec: list) -> int:
+    mul = 1
     for i in vec:
-        list_multiple *= i
-    return list_multiple
+        mul *= i
+    return mul
 
 
-def sum_list(vec):
-    list_sum = 1
+def sum_vec(vec: list) -> int:
+    s = 0
     for i in vec:
-        list_sum += i
-    return list_sum
+        s += i
+    return s
+
+
+def limit_length(num: int) -> int:
+    while digit_count(num) < HASH_LENGTH_LIMIT:
+        num *= 10
+    return num % 10000000000000000000
 
 
 def create_value_table():
