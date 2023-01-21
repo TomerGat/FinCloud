@@ -6,7 +6,7 @@ import cgi
 import datetime
 import random
 import numpy as np
-from forex_python.converter import CurrencyRates
+from forex_python import converter
 import smtplib
 import multiprocessing
 import threading
@@ -79,6 +79,7 @@ class Global:  # object properties: redirect_flags, responses, current_account, 
         self.responses = {}
         self.current_account = {}
         self.background_redirect_flags = {}
+        self.admin_token = hash(random.randint(0, 1000))
 
     def alter_rf(self, key, value):  # add/change key:value for redirect_flags
         self.redirect_flags[key] = value
@@ -114,7 +115,6 @@ returns_premium = 4
 returns_medium = 2.75
 returns_minimum = 2
 
-
 # tables
 name_table = Table()  # account name table - {account name: serial number}
 number_table = Table()  # account number table - {account number: serial number}
@@ -141,3 +141,10 @@ addresses = []
 
 # session timeout limit (in sec)
 session_limit = 1200
+
+# creating backup of last currency rates (relative to USD)
+c = converter.CurrencyRates()
+last_rates = {'USD': 0, 'EUR': 0, 'JPY': 0, 'BGN': 0, 'CZK': 0, 'GBP': 0, 'CHF': 0, 'AUD': 0, 'BRL': 0, 'CAD': 0,
+              'CNY': 0, 'IDR': 0, 'INR': 0, 'MXN': 0, 'SGD': 0}
+for cur in last_rates.keys():
+    last_rates[cur] = c.get_rate('USD', cur)
