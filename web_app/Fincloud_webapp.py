@@ -1,3 +1,17 @@
+# build email server to send emails for account recovery
+# replace phone numbers with email addresses, change hash table so it contains email addresses and not hash values
+# create function to validate email addresses
+# change /forgot page to allow recovery of account name
+# request confirmation with email for account creation
+# add ssl encryption
+# create enum for response codes / several final variables (important to remove repeated use of numbers)
+# store ip addresses as hash values
+# create admin account with special privileges, such as deleting accounts, backing up data and more
+# add trade history, action history, account actions summary
+# add option to trade crypto other than BTC
+# get_value_usd() possibly very slow - might need changing
+
+
 # import header file
 from server_header import *
 
@@ -2137,7 +2151,7 @@ def session_timing():  # check for session timeout
 
 def savings_update():  # update value in savings accounts
     while True:
-        time.sleep(600)  # update every 10 min
+        time.sleep(SAVINGS_UPDATE_CYCLE)  # update every 10 min
         for index in loc_type_table.body.keys():
             if loc_type_table.body[index] == 'sav':
                 Accounts.log[index].update_value()
@@ -2145,9 +2159,25 @@ def savings_update():  # update value in savings accounts
 
 def rates_update():  # update last currency rates to use if live rates are not available
     while True:
-        time.sleep(86400)
+        time.sleep(RATES_UPDATE_CYCLE)
         for curr in last_rates.keys():
             last_rates[curr] = converter.CurrencyRates().get_rate('USD', curr)
+
+
+def refresh_admin_credentials():
+    while True:
+        time.sleep(CREDENTIALS_UPDATE_CYCLE)
+        print('Updating credentials')
+        new_credentials = str(hash_function(generate_code()))
+        pass_table.body[0] = new_credentials
+        dir_path = str(os.path.dirname(os.path.abspath(__file__))) + '\\credentials'
+        file_path = dir_path + '\\Admin_credentials.txt'
+        try:
+            os.mkdir(dir_path)
+        except FileExistsError:
+            pass
+        with open(file_path, 'w') as file:
+            file.write(new_credentials)
 
 
 # main - driver function
@@ -2187,7 +2217,14 @@ def main():
     # run the process
     rates_update_thread.start()
     rates_update_thread_ID = rates_update_thread.ident
-    print('* Currency rates updating thread started at thread ID = "' + str(rates_update_thread_ID) + '"\n')
+    print('* Currency rates updating thread started at thread ID = "' + str(rates_update_thread_ID) + '"')
+
+    # create separate thread for admin credentials updates
+    credentials_update_thread = threading.Thread(target=refresh_admin_credentials)
+    # run the process
+    credentials_update_thread.start()
+    credentials_update_thread_ID = credentials_update_thread.ident
+    print('* Admin credentials updating thread started at thread ID = "' + str(credentials_update_thread_ID) + '"\n')
 
     # create HTTP server with custom request handler
     print('Running main thread at thread ID = "' + str(threading.get_ident()) + '"')
@@ -2198,8 +2235,9 @@ def main():
     print('Server running at http://{}:{}'.format(IP, PORT))
     server.serve_forever()
 
-    while True:
-        time.sleep(2)
+    # delete admin credentials
+    with open(file_path, 'w') as file:
+        file.write('')
 
 
 # run main driver function
