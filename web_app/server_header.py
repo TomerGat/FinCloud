@@ -1,28 +1,6 @@
-# imports:
-import http.server
-from http.server import BaseHTTPRequestHandler
-import socket
-import cgi
-import datetime
-import random
-import numpy as np
-from forex_python import converter
-import smtplib
-import multiprocessing
-import threading
-import time
-from enum import Enum
-import os
-
-
-# necessary functions for data structure implementations
-def reverse_dictionary(dic):
-    keys = list(dic.keys())
-    values = list(dic.values())
-    reversed_dic = {}
-    for i in range(len(keys)):
-        reversed_dic[values[i]] = keys[i]
-    return reversed_dic
+# import util functions and libraries
+from Fincloud_imports import *
+from Fincloud_util_functions import *
 
 
 # data structures
@@ -143,8 +121,6 @@ addresses = []
 session_limit = 1200
 
 # creating backup of last currency rates (relative to USD)
-c = converter.CurrencyRates()
-last_rates = {'USD': 0, 'EUR': 0, 'JPY': 0, 'BGN': 0, 'CZK': 0, 'GBP': 0, 'CHF': 0, 'AUD': 0, 'BRL': 0, 'CAD': 0,
-              'CNY': 0, 'IDR': 0, 'INR': 0, 'MXN': 0, 'SGD': 0}
+last_rates = create_value_table()
 for cur in last_rates.keys():
-    last_rates[cur] = c.get_rate('USD', cur)
+    last_rates[cur] = converter.CurrencyRates().get_rate('USD', cur)

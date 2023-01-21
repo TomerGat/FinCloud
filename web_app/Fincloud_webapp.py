@@ -1,3 +1,17 @@
+# build email server to send emails for account recovery
+# replace phone numbers with email addresses, change hash table so it contains email addresses and not hash values
+# create function to validate email addresses
+# change /forgot page to allow recovery of account name
+# request confirmation with email for account creation
+# add ssl encryption
+# create enum for response codes / several final variables (important to remove repeated use of numbers)
+# store ip addresses as hash values
+# create admin account with special privileges, such as deleting accounts, backing up data and more
+# add trade history, action history, account actions summary
+# add option to trade crypto other than BTC
+# get_value_usd() possibly very slow - might need changing
+
+
 # import header file
 from server_header import *
 
@@ -36,7 +50,7 @@ class Cloud:  # a financial cloud that allows deposits to be kept and accessed u
     def __init__(self):  # attribute contains dictionary {code: value accessed with code}
         self.allocated = {}
 
-    def allocate(self, amount, code, account_index):
+    def allocate(self, amount, allocation_code, ac_name, dep_name):
         confirm = True
         response_code = 0
         if not validate_number(amount):
@@ -49,19 +63,35 @@ class Cloud:  # a financial cloud that allows deposits to be kept and accessed u
             confirm = False
         else:
             confirm = False
-            if Accounts.log[account_index].value >= amount:
-                if validate_string(code):
-                    Accounts.log[account_index].value -= amount
-                    if hash_function(code) in self.allocated.keys():
-                        self.allocated[hash_function(code)] += amount
-                    else:
-                        self.allocated[hash_function(code)] = amount
-                    confirm = True
-                    response_code = 1
+            ac_index = name_table.in_table(ac_name)
+            if 0 < ac_index <= len(Accounts.log):
+                ac_type = loc_type_table.in_table(ac_index)
+                if ac_type == 'reg':
+                    ac_value = Accounts.log[ac_index].value['USD']
+                elif ac_type == 'sav':
+                    ac_value = Accounts.log[ac_index].value
                 else:
-                    response_code = -4
+                    ac_value = Accounts.log[ac_index].departments[dep_name][0]['USD']
+                if ac_value >= amount:
+                    if validate_string(allocation_code):
+                        confirm = True
+                        if ac_type == 'reg':
+                            Accounts.log[ac_index].value['USD'] = Accounts.log[ac_index].value['USD'] - amount
+                        elif ac_type == 'sav':
+                            Accounts.log[ac_index].value = Accounts.log[ac_index].value - amount
+                        else:
+                            Accounts.log[ac_index].departments[dep_name][0]['USD'] = Accounts.log[ac_index].departments[dep_name][0]['USD'] - amount
+                        if allocation_code in self.allocated.keys():
+                            self.allocated[allocation_code] = self.allocated[allocation_code] + amount
+                        else:
+                            self.allocated[allocation_code] = amount
+                        response_code = 1
+                    else:
+                        pass
+                else:
+                    pass
             else:
-                response_code = -3
+                pass
 
         return confirm, response_code
 
@@ -614,55 +644,6 @@ def assign_account_number():
     return number
 
 
-def get_date():
-    now = str(datetime.datetime.now())
-    year = int(now[0:4])
-    month = int(now[5:7])
-    day = int(now[8:10])
-    return np.array([year, month, day])
-
-
-def get_precise_time():
-    now = str(datetime.datetime.now())
-    year = int(now[0:4])
-    month = int(now[5:7])
-    day = int(now[8:10])
-    hour = int(now[11:13])
-    minute = int(now[14:16])
-    second = int(now[17:19])
-    return np.array([year, month, day, hour, minute, second])
-
-
-def time_dif(last, current):
-    delta = current[5] - last[5]  # add seconds
-    delta += 60 * (current[4] - last[4])  # add minutes
-    delta += 60 * 60 * (current[3] - last[3])  # add hours
-    delta += 24 * 60 * 60 * (current[2] - last[2])  # add days
-    delta += 30 * 24 * 60 * 60 * (current[1] - last[1])  # add months
-    delta += 365 * 24 * 60 * 60 * (current[0] - last[0])  # add years
-    return delta  # time delta in seconds
-
-
-def digit_count(num):
-    num = str(num)
-    counter = len(num)
-    return counter
-
-
-def multiple(vec):
-    list_multiple = 1
-    for i in vec:
-        list_multiple *= i
-    return list_multiple
-
-
-def sum_list(vec):
-    list_sum = 1
-    for i in vec:
-        list_sum += i
-    return list_sum
-
-
 def hash_function(input_value):
     input_str = str(input_value)
     ascii_values = []
@@ -687,12 +668,6 @@ def hash_function(input_value):
     return abs(temp)
 
 
-def create_value_table():
-    value_table = {'USD': 0, 'EUR': 0, 'JPY': 0, 'BGN': 0, 'CZK': 0, 'GBP': 0, 'CHF': 0, 'AUD': 0, 'BRL': 0, 'CAD': 0,
-                   'CNY': 0, 'IDR': 0, 'INR': 0, 'MXN': 0, 'SGD': 0}
-    return value_table
-
-
 def create_table_output(value_table):
     output = '<table>' + '<tr>'
     output += '<th>Currency</th>' + '<th> | Current Value</th>' + '<th> | Exchange Rate to USD</th>' + '</tr>'
@@ -705,95 +680,6 @@ def create_table_output(value_table):
     output += '</table>'
 
     return output
-
-
-def validate_phone_number(phone):
-    return validate_number(phone) and (len(str(phone)) == 10)
-
-
-def validate_number(num):
-    valid = True
-    decimal_counter = 0
-    num = str(num)
-    if num[0] == '-':
-        num = num[1::]
-    for i in num:
-        if not ((ord(i) > 47) and (ord(i) < 58)):
-            if i == '.':
-                decimal_counter += 1
-            else:
-                valid = False
-                break
-    if decimal_counter > 1:
-        valid = False
-    return valid
-
-
-def validate_string(word):
-    word = str(word)
-    characters = []
-    valid = True
-    non_valid = [':', '(', '{', ')', '}', ',', '^', '<', '>', '+', '-', '*', '/', '%', '=', '|', ' ']
-    counter = 0
-    while counter < len(word):
-        ch = word[counter]
-        if ch in non_valid:
-            valid = False
-            break
-        else:
-            counter += 1
-    return valid
-
-
-def check_for_spaces(word):
-    confirm = False
-    for ch in word:
-        if ch == ' ':
-            confirm = True
-            break
-    return confirm
-
-
-def divide_to_words(words):
-    wordList = []
-    temp_str = ''
-    for ch in words:
-        if ch != ' ':
-            temp_str += ch
-        else:
-            if temp_str != '':
-                wordList.append(temp_str)
-            temp_str = ''
-    if temp_str != '':
-        wordList.append(temp_str)
-    return wordList
-
-
-def validate_comp_name(comp_name):
-    if check_for_spaces(comp_name):
-        valid = True
-        for word in divide_to_words(comp_name):
-            valid = validate_string(word)
-            if not valid:
-                return False
-        return True
-    else:
-        return validate_string(comp_name)
-
-
-def organize_comp_name(comp_name):
-    words = divide_to_words(comp_name)
-    new_name = ''
-    for i in range(len(words)):
-        new_name += words[i]
-        if i != len(words)-1:
-            new_name += " "
-    return new_name
-
-
-def generate_code():
-    number = random.randint(100000, 999999)
-    return number
 
 
 # fix
@@ -1790,7 +1676,33 @@ class FinCloud(BaseHTTPRequestHandler):
             pass
 
         if self.path.endswith('/account/cloud/allocate'):
-            pass
+            self.start()
+            self.clear()
+            ac_index = data.current_account[self.client_address[0]]
+            account_name = str(name_table.get_key(ac_index))
+            val = Accounts.log[ac_index].get_value_usd()
+            ac_type = loc_type_table.body[ac_index]
+            output = '<html><body>'
+            output += '<h1>Allocate Funds With Fincloud</h1>' + '</br>'
+            output += '<h2>Your Account: ' + account_name + '</h2>'
+            output += '<h3>Current value in USD: ' + val + '</h3>' + '</br>' + '</br>'
+            output += '<form method="POST" enctype="multipart/form-data" action="/account/cloud/allocate">'
+            output += 'Enter amount to allocate: ' + '<input name="amount" type="text">' + '</br>'
+            if ac_type == 'bus':
+                output += '</br>' + 'Enter name of department to allocate from: ' + '<input name="source_dep" type="text">' + '</br>'
+            output += 'Enter allocation number (used to access funds): ' + '<input name="allocation_id" type="text">' + '</br>'
+            output += '<input type="submit" value="Submit">'
+            output += '</form>' + '</br>'
+
+            # print error/response message if redirect flag is set to True
+            if data.redirect_flags[self.client_address[0]]:
+                data.alter_rf(self.client_address[0], False)
+                # add options for response codes
+                data.alter_re(self.client_address[0], 0)
+
+            output += '</br>' + '</br>' + 'To return to account home page ' + '<a href="/account/home">Click here</a>'
+            output += '</body></html>'
+            self.wfile.write(output.encode())
 
         if self.path.endswith('/account/cloud/withdraw'):
             pass
@@ -2194,9 +2106,26 @@ class FinCloud(BaseHTTPRequestHandler):
             else:
                 self.system_error()
 
+        if self.path.endswith('/account/cloud/allocate'):
+            # extract user input from headers in POST packet
+            ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
+            pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
+            content_len = int(self.headers.get('Content-length'))
+            pdict['CONTENT-LENGTH'] = content_len
+            if ctype == 'multipart/form-data':
+                fields = cgi.parse_multipart(self.rfile, pdict)
+                allocation_id = fields.get('allocation_id')[0]
+                amount = fields.get('amount')[0]
+                ac_index = data.current_account[self.client_address[0]]
+                if loc_type_table.body[ac_index] == 'bus':
+                    is_bus_account = True
+                # continue
+            else:
+                self.system_error()
+
 
 # background functions
-def session_timing():
+def session_timing():  # check for session timeout
     while True:
         for ip in addresses:
             if len(history[ip].log) >= 2:
@@ -2217,7 +2146,7 @@ def session_timing():
         # if background redirect flag is set to true, delete address from addresses set and reset history log
 
 
-def savings_update():
+def savings_update():  # update value in savings accounts
     while True:
         time.sleep(600)  # update every 10 min
         for index in loc_type_table.body.keys():
@@ -2225,10 +2154,26 @@ def savings_update():
                 Accounts.log[index].update_value()
 
 
+def rates_update():  # update last currency rates to use if live rates are not available
+    while True:
+        time.sleep(86400)
+        for curr in last_rates.keys():
+            last_rates[curr] = converter.CurrencyRates().get_rate('USD', curr)
+
+
 # main - driver function
 def main():
-    # admin account setup
-    confirm, index, response_code = create_checking_account('Admin', 'fincloud_admin138', 1234567890)
+    # admin account and credentials setup
+    Admin_code = str(hash_function(generate_code()))
+    dir_path = str(os.path.dirname(os.path.abspath(__file__))) + '\\credentials'
+    file_path = dir_path + '\\Admin_credentials.txt'
+    try:
+        os.mkdir(dir_path)
+    except FileExistsError:
+        pass
+    with open(file_path, 'w') as file:
+        file.write(Admin_code)
+    create_checking_account('Admin', Admin_code, 1234567890)
 
     # thread management
     print('Starting background threads:')
@@ -2241,11 +2186,18 @@ def main():
     print('* Session timing thread started at thread id = "' + str(session_thread_ID) + '"')
 
     # create separate thread for savings updates
-    update_thread = threading.Thread(target=savings_update)
+    savings_update_thread = threading.Thread(target=savings_update)
     # run the process
-    update_thread.start()
-    update_thread_ID = update_thread.ident
-    print('* Savings account updating thread started at thread ID = "' + str(update_thread_ID) + '"\n')
+    savings_update_thread.start()
+    savings_update_thread_ID = savings_update_thread.ident
+    print('* Savings account updating thread started at thread ID = "' + str(savings_update_thread_ID) + '"')
+
+    # create separate thread for currency rates updates
+    rates_update_thread = threading.Thread(target=rates_update)
+    # run the process
+    rates_update_thread.start()
+    rates_update_thread_ID = rates_update_thread.ident
+    print('* Currency rates updating thread started at thread ID = "' + str(rates_update_thread_ID) + '"\n')
 
     # create HTTP server with custom request handler
     print('Running main thread at thread ID = "' + str(threading.get_ident()) + '"')
