@@ -29,7 +29,7 @@ def sum_vec(vec: list) -> int:
 def limit_length(num: int) -> int:
     while digit_count(num) < HASH_LENGTH_LIMIT:
         num *= 10
-    return num % 10000000000000000000
+    return num % (10**HASH_LENGTH_LIMIT)
 
 
 def create_value_table():

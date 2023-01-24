@@ -659,19 +659,8 @@ def hash_function(param) -> int:
         val = val ^ (sum_vec(ascii_values) + 95813)
     factor = (((sum_vec(values) + 15984354) | (multiple(values) + 10000009814008)) & ((sum_vec(ascii_values) + 87515557) ^ (multiple(ascii_values) * 8558224)))
     new_val = abs(val ^ factor)
-    if new_val % 10 != 9:
-        new_val += 1
-    else:
-        new_val += 11
     shifts = 64 - math.floor(math.log10(new_val)) + 1
-    new_val = new_val << shifts
-    temp = digit_count(new_val)
-    if temp == 18:
-        new_val = 100 * new_val
-    elif temp == 20:
-        new_val = new_val // 10
-    if new_val < 0:
-        return abs(10 * new_val)
+    new_val = new_val << shifts if shifts >= 0 else new_val >> abs(shifts)
     return limit_length(abs(new_val))
 
 
