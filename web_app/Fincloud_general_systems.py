@@ -78,7 +78,7 @@ class Cloud:  # a financial cloud that allows deposits to be kept and accessed u
                 else:
                     response_code = -4  # insufficient funds to complete allocation
             else:
-                response_code = -5  # account not found
+                response_code = -5  # processing error: account not found
 
         return confirm, response_code
 
@@ -118,7 +118,7 @@ class Cloud:  # a financial cloud that allows deposits to be kept and accessed u
                 else:
                     response_code = -3  # invalid allocation id
             else:
-                response_code = -5  # account not found
+                response_code = -5  # processing error: account not found
 
         return confirm, response_code
 
@@ -752,7 +752,7 @@ def verification(attempt, code_attempt):  # returns: verification answer, respon
         else:
             response_code = -2  # incorrect password
     else:
-        response_code = -3  # system error (user's attempt matches both a name and a number -> impossible situation)
+        response_code = -3  # processing error (user's attempt matches both a name and a number -> impossible situation)
 
     # setting index of account
     index = -1
@@ -786,13 +786,13 @@ def create_savings_account(account_name, account_code, phone_num, returns):
             response_code = -3  # name and code invalid
     if confirm:
         if returns not in [returns_premium, returns_medium, returns_minimum]:
-            response_code = -5
+            response_code = -8
             confirm = False
         if not validate_phone_number(phone_num):
-            response_code = -6
+            response_code = -5
             confirm = False
         if phone_name_table.in_table(hash_function(phone_num)) != -1:
-            response_code = -7
+            response_code = -6
             confirm = False
     if confirm:
         # add account details to tables

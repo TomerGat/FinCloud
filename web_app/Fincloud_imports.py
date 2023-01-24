@@ -13,3 +13,4 @@ import threading
 import time
 import os
 import math
+from enum import Enum

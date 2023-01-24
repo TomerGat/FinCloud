@@ -11,7 +11,6 @@ def session_timing():  # check for session timeout
                 time1 = history[ip].log[log_length - 2].lst[1]
                 time2 = history[ip].log[log_length - 1].lst[1]
                 timeDif = time_dif(time1, time2)
-                # print(timeDif)
                 if timeDif >= SESSION_LIMIT:
                     data.alter_brf(ip, True)
                     addresses.remove(ip)

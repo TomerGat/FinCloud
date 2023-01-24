@@ -53,7 +53,7 @@ class Global:  # object properties: redirect_flags, responses, current_account, 
 
     def __init__(self):  # each object property contains a dictionary {client address : data}
         self.redirect_flags = {}
-        self.responses = {}
+        self.response_codes = {}
         self.current_account = {}
         self.background_redirect_flags = {}
         self.admin_token = hash(random.randint(0, 1000))
@@ -62,7 +62,7 @@ class Global:  # object properties: redirect_flags, responses, current_account, 
         self.redirect_flags[key] = value
 
     def alter_re(self, key, value):  # add/change key:value for responses
-        self.responses[key] = value
+        self.response_codes[key] = value
 
     def alter_ca(self, key, value):  # add/change key:value for current_account
         self.current_account[key] = value
@@ -74,7 +74,7 @@ class Global:  # object properties: redirect_flags, responses, current_account, 
         del self.current_account[key]
 
     def delete_re(self, key):  # delete key:value from current_account
-        del self.responses[key]
+        del self.response_codes[key]
 
     def delete_brf(self, key):
         del self.background_redirect_flags[key]
@@ -104,7 +104,59 @@ history = {}
 # shared list containing addresses connected
 addresses = []
 
+
 # creating backup of last currency rates (relative to USD)
 last_rates = create_value_table()
 for cur in last_rates.keys():
     last_rates[cur] = converter.CurrencyRates().get_rate('USD', cur)
+
+
+# enum with all possible response codes
+class Responses(Enum):
+    # error responses
+    SYSTEM_ERROR = -1
+    SESSION_TIMEOUT = -2
+    PROCESSING_ERROR = -3
+    PHONE_NUM_NOT_FOUND = -4
+    CODES_NOT_MATCH = -5
+    AC_NAME_INVALID = -6
+    AC_CODE_INVALID = -7
+    NAME_AND_CODE_INVALID = -8
+    AC_NAME_EXISTS = -9
+    PHONE_NUM_INVALID = -10
+    PHONE_NUM_EXISTS = -11
+    INVALID_SAVING_RETURNS = -12
+    COMP_NAME_INVALID = -13
+    NAME_AND_COMP_INVALID = -14
+    CODE_AND_COMP_INVALID = -15
+    DATA_INVALID = -16
+    INVALID_TRANSACTION = -17
+    INVALID_INPUT_AMOUNT = -18
+    DEP_NOT_FOUND = -19
+    AC_INSUFFICIENT_AMOUNT = -20
+    TARGET_AC_NOT_FOUND = -21
+    TARGET_DEP_WRONGLY_SET = -22
+    TARGET_DEP_NOT_FOUND = -23
+    TARGET_DEP_WRONGLY_UNSET = -24
+    SOURCE_DEP_NOT_FOUND = -25
+    CURRENCIES_NOT_FOUND = -26
+    DEP_INSUFFICIENT_AMOUNT = -27
+    ALLOCATION_ID_INVALID = -28
+    ALLOCATION_INSUFFICIENT_AMOUNT = -29
+    ALLOCATION_NOT_FOUND = -30
+    DEP_NAME_EXISTS = -31
+    DEP_NAME_INVALID = -32
+    SOURCE_CUR_NOT_FOUND = -33
+    TARGET_CUR_NOT_FOUND = -34
+
+    # confirmation responses
+    ACCOUNT_RECOVERY_CONFIRM = 2
+    NEW_ACCOUNT_CREATED = 3
+    DEPOSIT_CONFIRM = 4
+    WITHDRAWAL_CONFIRM = 5
+    TRANSFER_CONFIRM = 6
+    INNER_TRANSFER_CONFIRM = 7
+    NEW_DEP_OPENED = 8
+    CURRENCY_TRADE_CONFIRM = 9
+    CLOUD_ALLOCATION_CONFIRM = 10
+    CLOUD_WITHDRAWAL_CONFIRM = 11

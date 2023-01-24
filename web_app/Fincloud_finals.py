@@ -1,5 +1,5 @@
 # session timeout limit (in sec)
-SESSION_LIMIT = 1200
+SESSION_LIMIT = 30
 
 # time to wait after updating history logs before checking background redirect flags
 REQUEST_WAIT = 0.75

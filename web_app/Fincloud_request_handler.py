@@ -26,20 +26,20 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
         if self.client_address[0] in data.current_account.keys():
             data.delete_ca(self.client_address[0])
         data.alter_rf(self.client_address[0], True)
-        data.alter_re(self.client_address[0], -1)
+        data.alter_re(self.client_address[0], Responses.SYSTEM_ERROR)
         self.redirect('/')
 
     def timeout_session(self):
         if self.client_address[0] in data.current_account.keys():
             data.delete_ca(self.client_address[0])
         data.alter_rf(self.client_address[0], True)
-        data.alter_re(self.client_address[0], -2)
+        data.alter_re(self.client_address[0], Responses.SESSION_TIMEOUT)
         data.alter_brf(self.client_address[0], False)
         self.redirect('/')
 
     def do_GET(self):  # GET handling function
 
-        # if client address does not have a redirect flag set (first connections), set to false
+        # if client address does not have a redirect flag set (first connections), initialize flag to false
         if self.client_address[0] not in data.redirect_flags.keys():
             data.alter_rf(self.client_address[0], False)
 
@@ -50,6 +50,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
         # add request to history
         history[self.client_address[0]].append(ConnectionEntry('get', get_precise_time()))
 
+        # if address not in background redirect flags, initialize flag to false
         if self.client_address[0] not in data.background_redirect_flags.keys():
             data.alter_brf(self.client_address[0], False)
 
@@ -69,7 +70,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             self.start()
             self.clear()
             output = '<html><body>'
-            self.wfile.write(bytes('<head><title>FinCloud.com</title></head>', "utf-8"))
+            output += '<head><title>FinCloud.com</title></head>'
             output += '<h1>FinCloud - A modern solution for you</h1>'
             output += '<h3><a href="/About">Learn about us</a></h3>'
             output += '<h3><a href="/login">Sign in</a></h3>'
@@ -77,16 +78,16 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.redirect_flags[self.client_address[0]] = False
-                response_code = data.responses[self.client_address[0]]
-                if response_code == -1:
+                response_code = data.response_codes[self.client_address[0]]
+                if response_code == Responses.SYSTEM_ERROR:
                     output += '<h4>System error. Please try again later.</h4>'
-                if response_code == -2:
+                if response_code == Responses.SESSION_TIMEOUT:
                     output += '<h4>Session timed out.</h4>'
                 data.alter_re(self.client_address[0], 0)
             output += '</body></html>'
             self.wfile.write(output.encode())
 
-        if self.path.endswith('/About'):
+        elif self.path.endswith('/About'):
             self.start()
             self.clear()
             output = '<html><body>'
@@ -95,7 +96,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '</body></html>'
             self.wfile.write(output.encode())
 
-        if self.path.endswith('/login'):
+        elif self.path.endswith('/login'):
             self.start()
             self.clear()
             output = '<html><body>'
@@ -111,19 +112,17 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
-                response_code = data.responses[self.client_address[0]]
+                response_code = data.response_codes[self.client_address[0]]
                 if response_code == -1:
                     output += '<h4>Account name/number is incorrect. Please try again.</h4>'
                 elif response_code == -2:
                     output += '<h4>Password is incorrect. Please try again.</h4>'
                 elif response_code == -3:
-                    output += '<h4>System error. Please try again at a later time.</h4>'
+                    output += '<h4>Processing error. Please try again at a later time.</h4>'
                 elif response_code == 2:
                     output += '<h4>Account recovered. Password reset.</h4>'
                 elif response_code == 3:
                     output += '<h4>New account created.</h4>'
-                elif response_code == 4:
-                    output += '<h4>Session timed out. Log in again.'
                 data.alter_re(self.client_address[0], 0)
 
             output += '</br>' + '________      or      ________' + '</br></br></br>'
@@ -132,7 +131,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '</body></html>'
             self.wfile.write(output.encode())
 
-        if self.path.endswith('/account/logout'):
+        elif self.path.endswith('/account/logout'):
             self.start()
             self.clear()
             output = '<html><body>'
@@ -145,7 +144,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '<h4><a href="/account/home">Cancel logout</a></h4>'
             self.wfile.write(output.encode())
 
-        if self.path.endswith('/forgot'):
+        elif self.path.endswith('/forgot'):
             self.start()
             self.clear()
             output = '<html><body>'
@@ -163,7 +162,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
-                response_code = data.responses[self.client_address[0]]
+                response_code = data.response_codes[self.client_address[0]]
                 if response_code == -1:
                     output += '<h4>Phone number does not exist in out system.</h4>'
                 elif response_code == -2:
@@ -177,7 +176,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '</body></html>'
             self.wfile.write(output.encode())
 
-        if self.path.endswith('/new'):
+        elif self.path.endswith('/new'):
             self.start()
             self.clear()
             output = '<html><body>'
@@ -200,7 +199,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '</body></html>'
             self.wfile.write(output.encode())
 
-        if self.path.endswith('/new/checking'):
+        elif self.path.endswith('/new/checking'):
             self.start()
             self.clear()
             output = '<html><body>'
@@ -224,7 +223,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
-                response_code = data.responses[self.client_address[0]]
+                response_code = data.response_codes[self.client_address[0]]
                 if response_code == -1:
                     output += '<h4>Account name is invalid. Please try again.</h4>'
                 elif response_code == -2:
@@ -248,7 +247,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '</body></html>'
             self.wfile.write(output.encode())
 
-        if self.path.endswith('/new/savings'):
+        elif self.path.endswith('/new/savings'):
             self.start()
             self.clear()
             output = '<html><body>'
@@ -282,7 +281,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
-                response_code = data.responses[self.client_address[0]]
+                response_code = data.response_codes[self.client_address[0]]
                 if response_code == -1:
                     output += '<h4>Account name is invalid. Please try again.</h4>'
                 elif response_code == -2:
@@ -293,13 +292,13 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 elif response_code == -4:
                     output += '<h4>An account with this name already exists. Please try again.</h4>'
                 if response_code == -5:
-                    output += '<h4>Returns are invalid for this type of account.</h4>'
-                if response_code == -6:
                     output += '<h4>Phone number not valid.</h4>'
-                if response_code == -7:
+                if response_code == -6:
                     output += '<h4>Phone number already registered to an existing account.</h4>'
-                if response_code == -8:
+                if response_code == -7:
                     output += '<h4>Code confirmation does not match the code you entered. Please try again.</h4>'
+                if response_code == -8:
+                    output += '<h4>Returns are invalid for this type of account.</h4>'
                 data.alter_re(self.client_address[0], 0)
 
             output += 'Want to check out different options? ' + '<a href="/new">Check them out here</a>'
@@ -308,7 +307,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '</body></html>'
             self.wfile.write(output.encode())
 
-        if self.path.endswith('/new/business'):
+        elif self.path.endswith('/new/business'):
             self.start()
             self.clear()
             output = '<html><body>'
@@ -332,7 +331,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
-                response_code = data.responses[self.client_address[0]]
+                response_code = data.response_codes[self.client_address[0]]
                 if response_code == -1:
                     output += '<h4>Account name is invalid. Please try again.</h4>'
                 if response_code == -2:
@@ -363,7 +362,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '</body></html>'
             self.wfile.write(output.encode())
 
-        if self.path.endswith('/admin_access/' + str(data.admin_token)):
+        elif self.path.endswith('/admin_access/' + str(data.admin_token)):
             self.start()
             self.clear()
             output = '<html><body>'
@@ -372,7 +371,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '<a href="/account/logout">Log out</a>'
             self.wfile.write(output.encode())
 
-        if self.path.endswith('/admin_access/' + str(data.admin_token) + '/account_list'):
+        elif self.path.endswith('/admin_access/' + str(data.admin_token) + '/account_list'):
             self.start()
             self.clear()
             output = '<table>' + '<tr>'
@@ -386,15 +385,15 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '</table>'
             self.wfile.write(output.encode())
 
-        if self.path.endswith(str(data.admin_token) + '/account_watch/details'):
+        elif self.path.endswith(str(data.admin_token) + '/account_watch/details'):
             pass
 
-        if self.path.endswith('/admin_access/' + str(data.admin_token) + '/cloud_watch'):
+        elif self.path.endswith('/admin_access/' + str(data.admin_token) + '/cloud_watch'):
             pass
 
-        if self.path.endswith('/account/home'):
+        elif self.path.endswith('/account/home'):
             if name_table.get_key(data.current_account[self.client_address[0]]) == 'Admin':
-                data.admin_token = hash(generate_code())
+                data.admin_token = hash_function(generate_code())
                 self.redirect('/admin_access/' + str(data.admin_token))
             self.start()
             self.clear()
@@ -433,7 +432,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
-                response_code = data.responses[self.client_address[0]]
+                response_code = data.response_codes[self.client_address[0]]
                 if response_code == 2:
                     output += '<h4>Deposit confirmed.</h4>'
                 if response_code == 3:
@@ -450,7 +449,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '</body></html>'
             self.wfile.write(output.encode())
 
-        if self.path.endswith('/account/deposit_funds'):
+        elif self.path.endswith('/account/deposit_funds'):
             self.start()
             self.clear()
             output = '<html><body>'
@@ -471,7 +470,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
-                response_code = data.responses[self.client_address[0]]
+                response_code = data.response_codes[self.client_address[0]]
                 if response_code == -1:
                     output += '<h4>Invalid transaction (null or negative values).</h4>'
                 if response_code == -2:
@@ -484,7 +483,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '</body></html>'
             self.wfile.write(output.encode())
 
-        if self.path.endswith('/account/withdraw_funds'):
+        elif self.path.endswith('/account/withdraw_funds'):
             self.start()
             self.clear()
             output = '<html><body>'
@@ -505,7 +504,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
-                response_code = data.responses[self.client_address[0]]
+                response_code = data.response_codes[self.client_address[0]]
                 if response_code == -1:
                     output += '<h4>Invalid transaction (null or negative values).</h4>'
                 if response_code == -2:
@@ -520,7 +519,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '</body></html>'
             self.wfile.write(output.encode())
 
-        if self.path.endswith('/account/transfer_funds'):
+        elif self.path.endswith('/account/transfer_funds'):
             self.start()
             self.clear()
             ac_index = data.current_account[self.client_address[0]]
@@ -545,7 +544,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
-                response_code = data.responses[self.client_address[0]]
+                response_code = data.response_codes[self.client_address[0]]
                 if response_code == -1:
                     output += '<h4>Invalid transaction (null or negative values).</h4>'
                 if response_code == -2:
@@ -568,7 +567,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '</body></html>'
             self.wfile.write(output.encode())
 
-        if self.path.endswith('/account/holdings'):
+        elif self.path.endswith('/account/holdings'):
             self.start()
             self.clear()
             ac_index = data.current_account[self.client_address[0]]
@@ -584,18 +583,18 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
-                response_code = data.responses[self.client_address[0]]
+                response_code = data.response_codes[self.client_address[0]]
                 if response_code == 2:
                     output += '<h4>Currency trade confirmed.</h4>'
                 data.alter_re(self.client_address[0], 0)
 
             output += '</br></br>' + 'To trade and invest in different currencies ' + \
-                      '<a href="/account/holdings/trade_currencies">Click here</a>' + '</br></br>'
+                      '<a href="/account/holdings/trade_currency">Click here</a>' + '</br></br>'
             output += 'To return to account home page ' + '<a href="/account/home">Click here</a>'
             output += '</body></html>'
             self.wfile.write(output.encode())
 
-        if self.path.endswith('/account/business/departments'):
+        elif self.path.endswith('/account/business/departments'):
             self.start()
             self.clear()
             ac_index = data.current_account[self.client_address[0]]
@@ -617,7 +616,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
-                response_code = data.responses[self.client_address[0]]
+                response_code = data.response_codes[self.client_address[0]]
                 if response_code == 2:
                     output += '<h4>Currency trade confirmed.</h4>'
                 data.alter_re(self.client_address[0], 0)
@@ -626,7 +625,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '</body></html>'
             self.wfile.write(output.encode())
 
-        if self.path.endswith('/account/holdings/trade_currencies'):
+        elif self.path.endswith('/account/holdings/trade_currency'):
             self.start()
             self.clear()
             ac_index = data.current_account[self.client_address[0]]
@@ -642,7 +641,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             if len(available_currencies) == 0:
                 output += '<h2>No funds available.</h2></br>'
             output += '<h2>Trade currencies:</h2>'
-            output += '<form method="POST" enctype="multipart/form-data" action="/account/holdings/trade_currencies">'
+            output += '<form method="POST" enctype="multipart/form-data" action="/account/holdings/trade_currency">'
             output += 'Enter amount to transfer: ' + '<input name="amount" type="text">' + '</br>'
             output += 'Select currency to transfer from: '
             output += '<select id="source_cur" name="source_cur">'
@@ -660,7 +659,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
-                response_code = data.responses[self.client_address[0]]
+                response_code = data.response_codes[self.client_address[0]]
                 if response_code == -1:
                     output += '<h4>Invalid transaction (null or negative values).</h4>'
                 if response_code == -2:
@@ -680,7 +679,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '</body></html>'
             self.wfile.write(output.encode())
 
-        if self.path.endswith('/invest_capital/trade_currencies'):
+        elif self.path.endswith('/invest_capital/trade_currencies'):
             self.start()
             self.clear()
             url_parsed = self.path.split('/')
@@ -717,7 +716,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
-                response_code = data.responses[self.client_address[0]]
+                response_code = data.response_codes[self.client_address[0]]
                 if response_code == -1:
                     output += '<h4>Invalid transaction (null or negative values).</h4>'
                 if response_code == -2:
@@ -731,7 +730,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 if response_code == -6:
                     output += '<h4>Source and target currencies not found.</h4>'
                 if response_code == -7:
-                    self.system_error()
+                    output += '<h4>Processing error. Please try again later.</h4>'
                 data.alter_re(self.client_address[0], 0)
 
             output += '</br>' + '</br>' + 'To return to account holdings page ' + '<a href="/account/business/departments">Click here</a>'
@@ -739,7 +738,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '</body></html>'
             self.wfile.write(output.encode())
 
-        if self.path.endswith('/account/business/inner_transfer'):
+        elif self.path.endswith('/account/business/inner_transfer'):
             self.start()
             self.clear()
             ac_index = data.current_account[self.client_address[0]]
@@ -761,7 +760,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
-                response_code = data.responses[self.client_address[0]]
+                response_code = data.response_codes[self.client_address[0]]
                 if response_code == -1:
                     output += '<h4>Invalid transaction (null or negative values).</h4>'
                 if response_code == -2:
@@ -778,7 +777,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '</body></html>'
             self.wfile.write(output.encode())
 
-        if self.path.endswith('/account/cloud'):
+        elif self.path.endswith('/account/cloud'):
             self.start()
             self.clear()
             output = '<html><body>'
@@ -792,18 +791,18 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
-                response_code = data.responses[self.client_address[0]]
+                response_code = data.response_codes[self.client_address[0]]
                 if response_code == 2:
-                    output += '<h4>Fund allocation confirmed.</h4>'
+                    output += '<h4>Funds allocation confirmed.</h4>'
                 if response_code == 3:
-                    output += '<h4>Fund withdrawal confirmed.</h4>'
+                    output += '<h4>Funds withdrawal confirmed.</h4>'
                 data.alter_re(self.client_address[0], 0)
 
             output += '</br>' + '</br>' + 'To return to account home page ' + '<a href="/account/home">Click here</a>'
             output += '</body></html>'
             self.wfile.write(output.encode())
 
-        if self.path.endswith('/account/cloud/allocate'):
+        elif self.path.endswith('/account/cloud/allocate'):
             self.start()
             self.clear()
             ac_index = data.current_account[self.client_address[0]]
@@ -825,14 +824,24 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
-                # add options for response codes
+                response_code = data.response_codes[self.client_address[0]]
+                if response_code == -1:
+                    output += '<h4>Invalid transaction (null or negative values).</h4>'
+                if response_code == -2:
+                    output += '<h4>Invalid input (amount).</h4>'
+                if response_code == -3:
+                    output += '<h4>Allocation ID is invalid.</h4>'
+                if response_code == -4:
+                    output += '<h4>Insufficient funds in your account to complete allocation.</h4>'
+                if response_code == -5:
+                    output += '<h4>Processing error: account not found. Please try again later</h4>'
                 data.alter_re(self.client_address[0], 0)
 
             output += '</br>' + '</br>' + 'To return to Fincloud page ' + '<a href="/account/cloud">Click here</a>'
             output += '</body></html>'
             self.wfile.write(output.encode())
 
-        if self.path.endswith('/account/cloud/withdraw'):
+        elif self.path.endswith('/account/cloud/withdraw'):
             self.start()
             self.clear()
             ac_index = data.current_account[self.client_address[0]]
@@ -854,14 +863,26 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
-                # add options for response codes
+                response_code = data.response_codes[self.client_address[0]]
+                if response_code == -1:
+                    output += '<h4>Invalid transaction (null or negative values).</h4>'
+                if response_code == -2:
+                    output += '<h4>Invalid input (amount).</h4>'
+                if response_code == -3:
+                    output += '<h4>Allocation ID is invalid.</h4>'
+                if response_code == -4:
+                    output += '<h4>Insufficient funds allocated to complete transaction.</h4>'
+                if response_code == -5:
+                    output += '<h4>Processing error: account not found. Please try again later</h4>'
+                if response_code == -6:
+                    output += '<h4>Allocation not found</h4>'
                 data.alter_re(self.client_address[0], 0)
 
             output += '</br>' + '</br>' + 'To return to Fincloud page ' + '<a href="/account/cloud">Click here</a>'
             output += '</body></html>'
             self.wfile.write(output.encode())
 
-        if self.path.endswith('/account/business/open_dep'):
+        elif self.path.endswith('/account/business/open_dep'):
             self.start()
             self.clear()
             output = '<html><body>'
@@ -879,7 +900,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
-                response_code = data.responses[self.client_address[0]]
+                response_code = data.response_codes[self.client_address[0]]
                 if response_code == -1:
                     output += '<h4>Department name already exists.</h4>'
                 if response_code == -2:
@@ -890,6 +911,9 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '</body></html>'
             self.wfile.write(output.encode())
 
+        else:
+            self.system_error()
+
     def do_POST(self):  # POST handling function
 
         # check if address not in addresses list/history log (system error -> redirect to home page)
@@ -897,7 +921,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             self.system_error()
 
         # add request to history
-        history[self.client_address[0]].append(ConnectionEntry('get', get_precise_time()))
+        history[self.client_address[0]].append(ConnectionEntry('post', get_precise_time()))
 
         # wait before checking background redirect flag
         time.sleep(REQUEST_WAIT)
@@ -963,7 +987,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                         self.redirect('/new/savings')
                 else:
                     data.alter_rf(self.client_address[0], True)
-                    data.alter_re(self.client_address[0], -8)
+                    data.alter_re(self.client_address[0], -7)
                     self.redirect('/new/savings')
             else:
                 self.system_error()
@@ -1213,7 +1237,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             else:
                 self.system_error()
 
-        if self.path.endswith('/account/holdings/trade_currencies'):
+        if self.path.endswith('/account/holdings/trade_currency'):
             # extract user input from headers in POST packet
             ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
             pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
@@ -1233,7 +1257,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 else:
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], response_code)
-                    self.redirect('/account/holdings/trade_currencies')
+                    self.redirect('/account/holdings/trade_currency')
             else:
                 self.system_error()
 
