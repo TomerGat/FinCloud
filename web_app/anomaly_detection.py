@@ -23,7 +23,7 @@ def return_stats(entries: Log) -> (int, float, {str: [Entry]}):
     return median, avg, clusters
 
 
-def find_anomalies(ac_ledger: Log, ac_index: int) -> (bool, []):
+def find_anomalies(ac_ledger: Log, ac_index: int, temp_indices: []) -> (bool, []):
     # if all entries in ledger were already checked, return False and an empty list
     if len(ac_ledger.log) == last_checked_entry[ac_index] + 1:
         return False, []
@@ -39,7 +39,8 @@ def find_anomalies(ac_ledger: Log, ac_index: int) -> (bool, []):
 
     # find anomalies in new entries
     # possible flags: relatively large transaction after x time without activity, largest every transaction by x margin
-    #                 causes change in average above x percentage points...
+    #                 causes change in average transfer stats above x percentage points...
+    # call function recursively if there are additional new entries (each call add index to parameter 'temp_indices')
 
 
 def anomaly_detection():  # background func
@@ -79,7 +80,7 @@ def anomaly_detection():  # background func
                     # check if ledger has sufficient data to run algorithm
                     if len(ledger_to_check.log) >= MIN_LENGTH_FOR_ANOMALY_DETECTION:
                         # find anomalies in department ledger
-                        anomalies_found, anomaly_entry_indices = find_anomalies(ledger_to_check, index)
+                        anomalies_found, anomaly_entry_indices = find_anomalies(ledger_to_check, index, [])
                         if anomalies_found:
                             # if anomalies were found, call handle function for each flagged entry
                             for entry_index in anomaly_entry_indices:

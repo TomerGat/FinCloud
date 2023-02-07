@@ -16,7 +16,7 @@ def main():
         pass
     with open(file_path, 'w') as file:
         file.write(Admin_code)
-    create_checking_account('Admin', Admin_code, 1234567890)
+    create_checking_account('Admin', Admin_code, 1234567890, 0)
     loc_type_table.body[0] = 'admin'
 
     # thread management

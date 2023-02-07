@@ -134,6 +134,7 @@ class Account:
         current_date = get_date()
         self.shift_date = current_date[2]
         self.last_update = current_date
+        self.new_spending_limit = spending_limit
         number_table.add_key_index(self.account_number)
         loc_type_table.add_index_value('reg')
 
@@ -143,6 +144,7 @@ class Account:
         if current_date[2] < self.shift_date:
             months -= 1
         if months > 0:
+            self.monthly_spending_limit = self.new_spending_limit
             self.remaining_spending = self.monthly_spending_limit
             self.last_update = current_date
 
@@ -191,8 +193,11 @@ class Account:
                 response_code = Responses.INSUFFICIENT_AMOUNT  # account value too low
                 confirm = False
 
+        # check remaining spending and possibly deduct fee from account according to set_overspending_fee() function
         if confirm and not self.remaining_spending:
             response_code = Responses.SPENDING_LIMIT_BREACH
+            fee = set_overspending_fee(self.monthly_spending_limit, abs(self.remaining_spending), amount)
+            self.value['USD'] = self.value['USD'] - fee
 
         return confirm, response_code
 
@@ -292,6 +297,8 @@ class Account:
             self.remaining_spending -= amount
             if not self.remaining_spending:
                 response_code = Responses.SPENDING_LIMIT_BREACH
+                fee = set_overspending_fee(self.monthly_spending_limit, abs(self.remaining_spending), amount)
+                self.value['USD'] = self.value['USD'] - fee
 
         return confirm, response_code
 
@@ -644,6 +651,12 @@ def set_fee(returns):
     elif returns == returns_minimum:
         return 50
     return -1
+
+
+def set_overspending_fee(spending_limit, total_spending_breach, last_spending_amount):
+    deviation_percentage = total_spending_breach / spending_limit
+    fee = deviation_percentage * last_spending_amount * OVERSPENDING_BREACH_FEE_RATIO
+    return fee
 
 
 def get_daily_rates(cur1, cur2, amount):

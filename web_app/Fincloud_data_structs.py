@@ -104,11 +104,16 @@ history = {}
 # shared list containing addresses connected
 addresses = []
 
-
 # creating backup of last currency rates (relative to USD)
 last_rates = create_value_table()
-for cur in last_rates.keys():
-    last_rates[cur] = converter.CurrencyRates().get_rate('USD', cur)
+try:
+    for cur in last_rates.keys():
+        last_rates[cur] = converter.CurrencyRates().get_rate('USD', cur)
+except converter.RatesNotAvailableError:
+    # set to rates as of 7/2/2023
+    last_rates = {'USD': 1, 'EUR': 0.93, 'JPY': 131.09, 'BGN': 1.82, 'CZK': 22.19, 'GBP': 0.83, 'CHF': 0.92,
+                  'AUD': 1.44, 'BRL': 5.2, 'CAD': 1.34, 'CNY': 6.79, 'IDR': 15144.65, 'INR': 82.77,
+                  'MXN': 18.91, 'SGD': 1.32}
 
 
 # enum with all possible response codes
@@ -173,7 +178,6 @@ class Responses(Enum):
 # dictionary saving index of last checked entry for each account
 # anomaly detection will start from this index when checking new entries
 last_checked_entry = {}  # {ac index : index of last checked entry}
-
 
 # possible entry types list
 entry_types = ['d', 'w', 'tf', 'tt', 'tfi', 'tti']

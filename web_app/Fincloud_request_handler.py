@@ -217,6 +217,10 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '</br>'
             output += 'Enter your phone number: ' + '<input name="phone" type="text">' + '</br>'
             output += '</br>'
+            output += 'Enter initial monthly spending limit: ' + '<input name="spending_limit" type="text">' + '</br>'
+            output += 'The monthly spending limit you enter here will be relevant for the next month' \
+                      ' and until you alter it in the home page of your account.' + '</br>'
+            output += '</br>'
             output += '<input type="submit" value="Create Account">'
             output += '</form>' + '</br>'
 
@@ -234,9 +238,11 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 elif response_code == Responses.AC_NAME_EXISTS:
                     output += '<h4>An account with this name already exists. Please try again.</h4>'
                 elif response_code == Responses.PHONE_NUM_INVALID:
-                    output += '<h4>Phone number not valid.</h4>'
+                    output += '<h4>Phone number is not valid.</h4>'
                 elif response_code == Responses.PHONE_NUM_EXISTS:
                     output += '<h4>Phone number already registered to an existing account.</h4>'
+                elif response_code == Responses.INVALID_SPENDING_LIMIT:
+                    output += '<h4>Monthly spending limit is invalid.</h4>'
                 elif response_code == Responses.CODES_NOT_MATCH:
                     output += '<h4>Code confirmation does not match the code you entered. Please try again.</h4>'
                 data.alter_re(self.client_address[0], 0)
@@ -954,12 +960,12 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             else:
                 self.system_error()
 
-        if self.path.endswith('/account/logout'):
+        elif self.path.endswith('/account/logout'):
             # logout page does not request input, any post request signals logging out of account
             data.delete_ca(self.client_address[0])
             self.redirect('/login')
 
-        if self.path.endswith('/new/savings'):
+        elif self.path.endswith('/new/savings'):
             # extract user input from headers in POST packet
             ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
             pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
@@ -992,7 +998,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             else:
                 self.system_error()
 
-        if self.path.endswith('/new/business'):
+        elif self.path.endswith('/new/business'):
             # extract user input from headers in POST packet
             ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
             pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
@@ -1023,7 +1029,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             else:
                 self.system_error()
 
-        if self.path.endswith('/new/checking'):
+        elif self.path.endswith('/new/checking'):
             # extract user input from headers in POST packet
             ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
             pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
@@ -1035,9 +1041,10 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 code = fields.get('code')[0]
                 code_confirm = fields.get('code_confirm')[0]
                 account_name = fields.get('user')[0]
+                spending_limit = fields.get('spending_limit')[0]
                 # create account with user input
                 if code == code_confirm:
-                    confirm, index, response_code = create_checking_account(account_name, code, phone_number)
+                    confirm, index, response_code = create_checking_account(account_name, code, phone_number, spending_limit)
                     if confirm:
                         data.alter_re(self.client_address[0], Responses.NEW_ACCOUNT_CREATED)
                         data.alter_rf(self.client_address[0], True)
@@ -1053,7 +1060,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             else:
                 self.system_error()
 
-        if self.path.endswith('/forgot'):
+        elif self.path.endswith('/forgot'):
             # extract user input from headers in POST packet
             ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
             pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
@@ -1102,7 +1109,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             else:
                 self.system_error()
 
-        if self.path.endswith('/account/deposit_funds'):
+        elif self.path.endswith('/account/deposit_funds'):
             # extract user input from headers in POST packet
             ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
             pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
@@ -1130,7 +1137,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             else:
                 self.system_error()
 
-        if self.path.endswith('/account/withdraw_funds'):
+        elif self.path.endswith('/account/withdraw_funds'):
             # extract user input from headers in POST packet
             ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
             pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
@@ -1158,7 +1165,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             else:
                 self.system_error()
 
-        if self.path.endswith('/account/transfer_funds'):
+        elif self.path.endswith('/account/transfer_funds'):
             # extract user input from headers in POST packet
             ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
             pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
@@ -1191,7 +1198,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             else:
                 self.system_error()
 
-        if self.path.endswith('/account/business/inner_transfer'):
+        elif self.path.endswith('/account/business/inner_transfer'):
             # extract user input from headers in POST packet
             ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
             pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
@@ -1215,7 +1222,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             else:
                 self.system_error()
 
-        if self.path.endswith('/account/business/open_dep'):
+        elif self.path.endswith('/account/business/open_dep'):
             # extract user input from headers in POST packet
             ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
             pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
@@ -1237,7 +1244,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             else:
                 self.system_error()
 
-        if self.path.endswith('/account/holdings/trade_currency'):
+        elif self.path.endswith('/account/holdings/trade_currency'):
             # extract user input from headers in POST packet
             ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
             pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
@@ -1261,7 +1268,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             else:
                 self.system_error()
 
-        if self.path.endswith('/invest_capital/trade_currencies'):
+        elif self.path.endswith('/invest_capital/trade_currencies'):
             # extract user input from headers in POST packet
             ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
             pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
@@ -1287,7 +1294,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             else:
                 self.system_error()
 
-        if self.path.endswith('/account/cloud/allocate'):
+        elif self.path.endswith('/account/cloud/allocate'):
             # extract user input from headers in POST packet
             ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
             pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
@@ -1314,7 +1321,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             else:
                 self.system_error()
 
-        if self.path.endswith('/account/cloud/withdraw'):
+        elif self.path.endswith('/account/cloud/withdraw'):
             # extract user input from headers in POST packet
             ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
             pdict['boundary'] = bytes(pdict['boundary'], "utf-8")

@@ -19,3 +19,6 @@ CREDENTIALS_UPDATE_CYCLE = 28800
 
 # minimum length to check for anomalies in ledger (under certain limit , algorithm is not effective
 MIN_LENGTH_FOR_ANOMALY_DETECTION = 10
+
+# ratio between product of deviation percantage times the spending limit, and the fee for the deviation
+OVERSPENDING_BREACH_FEE_RATIO = 0.2
