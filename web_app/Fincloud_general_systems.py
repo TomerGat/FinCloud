@@ -12,6 +12,14 @@ class TradeEntry:
         self.date = date
 
 
+class Message:
+    def __init__(self, subject, message):
+        self.subject = subject
+        self.message = message
+        self.date = get_date()
+        self.precise_time = get_precise_time()
+
+
 class ConnectionEntry:
     def __init__(self, request_type, precise_time):
         self.lst = [request_type, precise_time]
@@ -124,17 +132,18 @@ class Cloud:  # a financial cloud that allows deposits to be kept and accessed u
 
 
 class Account:
-    def __init__(self, spending_limit):  # object properties: value, account_number, ledger
-        self.value = create_value_table()
-        self.account_number = assign_account_number()
-        self.ledger = Log()
-        self.trade_ledger = Log()
-        self.monthly_spending_limit = spending_limit
-        self.remaining_spending = self.monthly_spending_limit
+    def __init__(self, spending_limit):
+        self.value = create_value_table()  # value table
+        self.account_number = assign_account_number()  # account number
+        self.ledger = Log()  # ledger for transaction entries
+        self.trade_ledger = Log()  # ledger for trade entries
+        self.monthly_spending_limit = spending_limit  # current monthly spending limit
+        self.remaining_spending = self.monthly_spending_limit  # remaining funds to spend in month according to spending limit
         current_date = get_date()
-        self.shift_date = current_date[2]
-        self.last_update = current_date
-        self.new_spending_limit = spending_limit
+        self.shift_date = current_date[2]  # date to reset remaining spending
+        self.last_update = current_date  # last update
+        self.new_spending_limit = spending_limit  # spending limit to shift to next month
+        self.inbox = []  # account inbox, contains list of messages
         number_table.add_key_index(self.account_number)
         loc_type_table.add_index_value('reg')
 
@@ -305,13 +314,14 @@ class Account:
 
 class SavingsAccount:  # object properties: value, returns, last_update, account_number, ledger
     def __init__(self, returns):
-        self.value = 0
+        self.value = 0  # account value
         self.returns = pow((1 + returns / 100), 1 / 12)  # returns per month
-        self.last_update = get_date()
-        self.shift_date = get_date()[2]
-        self.account_number = assign_account_number()
-        self.ledger = Log()
+        self.last_update = get_date()  # last update of account value
+        self.shift_date = get_date()[2]  # day of account creation (shift month count +1 when updating)
+        self.account_number = assign_account_number()  # account number
+        self.ledger = Log()  # ledger for transaction entries
         self.fee = set_fee(self.returns)  # monthly fee
+        self.inbox = []  # account inbox, contains list of messages
         number_table.add_key_index(self.account_number)
         loc_type_table.add_index_value('sav')
 
@@ -435,11 +445,12 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
 
 class BusinessAccount:  # object properties: company_name, departments_array, account_number, ledger
     def __init__(self, company_name, department_names):  # department_name is a list of names for each department
-        self.company_name = company_name
-        self.departments = {}
-        self.account_number = assign_account_number()
+        self.company_name = company_name  # name of owning company
+        self.departments = {}  # dictionary containing all departments as keys
+        self.account_number = assign_account_number()  # account number
         number_table.add_key_index(self.account_number)
         loc_type_table.add_index_value('bus')
+        self.inbox = []  # account inbox, contains list of messages
         for name in department_names:
             # each department is assigned a tuple containing a value table, a ledger, and a trade ledger
             self.departments[name] = (create_value_table(), Log(), Log())
