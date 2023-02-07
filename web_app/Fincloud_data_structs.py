@@ -148,6 +148,7 @@ class Responses(Enum):
     TARGET_CUR_NOT_FOUND = -32
     AC_IDENTITY_INCORRECT = -33
     AC_CODE_INCORRECT = -34
+    INVALID_SPENDING_LIMIT = -35
 
     # confirmation responses
     GENERAL_CONFIRM = 1  # general confirmation - no response output to ui
@@ -164,3 +165,15 @@ class Responses(Enum):
 
     # empty response
     EMPTY_RESPONSE = 0
+
+    # miscellaneous responses
+    SPENDING_LIMIT_BREACH = 717
+
+
+# dictionary saving index of last checked entry for each account
+# anomaly detection will start from this index when checking new entries
+last_checked_entry = {}  # {ac index : index of last checked entry}
+
+
+# possible entry types list
+entry_types = ['d', 'w', 'tf', 'tt', 'tfi', 'tti']

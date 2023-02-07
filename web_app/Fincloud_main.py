@@ -1,7 +1,7 @@
 # import system objects/functions
 from Fincloud_general_systems import *
 from Fincloud_request_handler import FinCloudHTTPRequestHandler
-from Fincloud_background_functions import session_timing, savings_update, rates_update, refresh_admin_credentials
+from Fincloud_background_functions import session_timing, accounts_update, rates_update, refresh_admin_credentials
 
 
 # main - driver function
@@ -29,12 +29,12 @@ def main():
     session_thread_ID = session_thread.ident
     print('* Session timing thread started at thread id = "' + str(session_thread_ID) + '"')
 
-    # create separate thread for savings updates
-    savings_update_thread = threading.Thread(target=savings_update)
+    # create separate thread for account updates
+    accounts_update_thread = threading.Thread(target=accounts_update)
     # run the process
-    savings_update_thread.start()
-    savings_update_thread_ID = savings_update_thread.ident
-    print('* Savings account updating thread started at thread ID = "' + str(savings_update_thread_ID) + '"')
+    accounts_update_thread.start()
+    accounts_update_thread_ID = accounts_update_thread.ident
+    print('* Account updating thread started at thread ID = "' + str(accounts_update_thread_ID) + '"')
 
     # create separate thread for currency rates updates
     rates_update_thread = threading.Thread(target=rates_update)

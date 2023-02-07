@@ -124,13 +124,27 @@ class Cloud:  # a financial cloud that allows deposits to be kept and accessed u
 
 
 class Account:
-    def __init__(self):  # object properties: value, account_number, ledger
+    def __init__(self, spending_limit):  # object properties: value, account_number, ledger
         self.value = create_value_table()
         self.account_number = assign_account_number()
         self.ledger = Log()
         self.trade_ledger = Log()
+        self.monthly_spending_limit = spending_limit
+        self.remaining_spending = self.monthly_spending_limit
+        current_date = get_date()
+        self.shift_date = current_date[2]
+        self.last_update = current_date
         number_table.add_key_index(self.account_number)
         loc_type_table.add_index_value('reg')
+
+    def update(self):
+        current_date = get_date()
+        months = current_date[1] - self.last_update[1]
+        if current_date[2] < self.shift_date:
+            months -= 1
+        if months > 0:
+            self.remaining_spending = self.monthly_spending_limit
+            self.last_update = current_date
 
     def get_value_usd(self):
         total = 0
@@ -169,12 +183,16 @@ class Account:
             confirm = False
         else:
             if self.value['USD'] >= amount:
-                response_code = 1
+                response_code = Responses.GENERAL_CONFIRM
                 self.value['USD'] = self.value['USD'] - amount
                 self.ledger.append(Entry('w', amount, get_date(), -1, -1))
+                self.remaining_spending -= amount
             else:
                 response_code = Responses.INSUFFICIENT_AMOUNT  # account value too low
                 confirm = False
+
+        if confirm and not self.remaining_spending:
+            response_code = Responses.SPENDING_LIMIT_BREACH
 
         return confirm, response_code
 
@@ -270,6 +288,11 @@ class Account:
                 response_code = Responses.INSUFFICIENT_AMOUNT  # insufficient funds
                 confirm = False
 
+        if confirm:
+            self.remaining_spending -= amount
+            if not self.remaining_spending:
+                response_code = Responses.SPENDING_LIMIT_BREACH
+
         return confirm, response_code
 
 
@@ -278,7 +301,7 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
         self.value = 0
         self.returns = pow((1 + returns / 100), 1 / 12)  # returns per month
         self.last_update = get_date()
-        self.shift_date = get_date()[0]
+        self.shift_date = get_date()[2]
         self.account_number = assign_account_number()
         self.ledger = Log()
         self.fee = set_fee(self.returns)  # monthly fee
@@ -288,13 +311,15 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
     def get_value_usd(self):
         return str(self.value)
 
-    def update_value(self):
+    def update(self):
         current_date = get_date()
         months = current_date[1] - self.last_update[1]
-        if current_date[0] < self.shift_date:
+        if current_date[2] < self.shift_date:
             months -= 1
         self.value = self.value * (pow((1 + self.returns), months))
         self.value = self.value - self.fee * months
+        if months != 0:
+            self.last_update = current_date
 
     def deposit(self, amount):
         confirm = True
@@ -800,7 +825,7 @@ def create_savings_account(account_name, account_code, phone_num, returns):
     return confirm, name_table.in_table(user_name), response_code
 
 
-def create_checking_account(account_name, account_code, phone_num):  # returns confirms, account index, response code
+def create_checking_account(account_name, account_code, phone_num, monthly_spending_limit):  # returns confirms, account index, response code
     confirm = False  # initialize return value
     user_name = account_name  # saving initial name of account
     response_code = Responses.EMPTY_RESPONSE
@@ -826,6 +851,9 @@ def create_checking_account(account_name, account_code, phone_num):  # returns c
         elif phone_name_table.in_table(hash_function(phone_num)) != -1:
             response_code = Responses.PHONE_NUM_EXISTS  # phone number already registered
             confirm = False
+        elif not validate_number(monthly_spending_limit) or monthly_spending_limit <= 0:
+            response_code = Responses.INVALID_SPENDING_LIMIT
+            confirm = False
     if confirm:
         # add account details to tables
         name_table.add_key_index(account_name)
@@ -833,7 +861,7 @@ def create_checking_account(account_name, account_code, phone_num):  # returns c
         phone_name_table.add_key_value(hash_function(phone_num), account_name)
 
         # create account object
-        new_account = Account()
+        new_account = Account(monthly_spending_limit)
         account_name = "ac" + str(name_table.in_table(account_name))
         globals()[account_name] = new_account
         Accounts.append(globals()[account_name])

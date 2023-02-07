@@ -16,3 +16,6 @@ returns_minimum = 2
 SAVINGS_UPDATE_CYCLE = 600
 RATES_UPDATE_CYCLE = 7200
 CREDENTIALS_UPDATE_CYCLE = 28800
+
+# minimum length to check for anomalies in ledger (under certain limit , algorithm is not effective
+MIN_LENGTH_FOR_ANOMALY_DETECTION = 10

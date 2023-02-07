@@ -23,12 +23,12 @@ def session_timing():  # check for session timeout
         # if background redirect flag is set to true, delete address from addresses set and reset history log
 
 
-def savings_update():  # update value in savings accounts
+def accounts_update():  # update value in savings accounts
     while True:
         time.sleep(SAVINGS_UPDATE_CYCLE)  # update every 10 min
         for index in loc_type_table.body.keys():
-            if loc_type_table.body[index] == 'sav':
-                Accounts.log[index].update_value()
+            if loc_type_table.body[index] != 'bus':
+                Accounts.log[index].update()
 
 
 def rates_update():  # update last currency rates to use if live rates are not available
