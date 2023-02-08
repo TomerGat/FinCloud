@@ -1,8 +1,14 @@
 from FinCloud.web_app.Fincloud_general_systems import *
 
 
-def handle_anomaly(anomaly_entry: Entry):
-    pass
+def handle_anomaly(anomaly_entry: Entry, ac_index):
+    # create subject
+    date = anomaly_entry.date
+    date_str = str(date[0]) + '/' + str(date[1]) + '/' + str(date[2])
+    subject = 'Transaction of type ' + anomaly_entry.action + ' on ' + date_str
+    message = '''
+        Red Flag raised for transaction
+    '''
 
 
 def return_stats(entries: Log) -> (int, float, {str: [Entry]}):
@@ -38,8 +44,12 @@ def find_anomalies(ac_ledger: Log, ac_index: int, temp_indices: []) -> (bool, []
     last_checked_entry[ac_index] = len(ac_ledger.log) - 1
 
     # find anomalies in new entries
-    # possible flags: relatively large transaction after x time without activity, largest every transaction by x margin
-    #                 causes change in average transfer stats above x percentage points...
+    # possible flags: relatively large transaction after x time without activity,
+    #                 largest every transaction by x margin
+    #                 causes change in average transfer stats above x percentage points,
+    #                 large standard deviation,
+    #                 first transaction of certain action type with large clusters of other types
+    #                 transaction from savings account to department of business account that was previously empty
     # call function recursively if there are additional new entries (each call add index to parameter 'temp_indices')
 
 

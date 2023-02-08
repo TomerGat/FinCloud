@@ -88,6 +88,14 @@ class Cloud:  # a financial cloud that allows deposits to be kept and accessed u
             else:
                 response_code = Responses.PROCESSING_ERROR  # processing error: account not found
 
+        if confirm:
+            ac_index = name_table.in_table(ac_name)
+            if loc_type_table.in_table(ac_index) == 'reg':
+                if not Accounts.log[ac_index].remaining_spending:
+                    response_code = Responses.SPENDING_LIMIT_BREACH
+                    fee = set_overspending_fee(Accounts.log[ac_index].monthly_spending_limit, abs(Accounts.log[ac_index].remaining_spending), amount)
+                    Accounts.log[ac_index].value['USD'] = Accounts.log[ac_index].value['USD'] - fee
+
         return confirm, response_code
 
     def withdraw(self, amount, allocation_code, ac_name, dep_name):
@@ -654,6 +662,11 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
 
 
 # functions
+def send_message(ac_index, subject, message):
+    mes = Message(subject, message)
+    Accounts.log[ac_index].inbox.append(mes)
+
+
 def set_fee(returns):
     if returns == returns_premium:
         return 100

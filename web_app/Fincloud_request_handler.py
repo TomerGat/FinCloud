@@ -410,15 +410,15 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '<h1>Account name: ' + account_name + '</h1>'
             output += '<h2>Account number: ' + account_number + '</h2>'
             val = Accounts.log[ac_index].get_value_usd()
-            if loc_type_table.body[ac_index] == 'bus':
+            if loc_type_table.in_table(ac_index) == 'bus':
                 comp_name = str(Accounts.log[ac_index].company_name)
                 output += '<h2>Company name: ' + comp_name + '</h2>'
             output += '</br><h2>Current value in USD: ' + val + '</h2>'
-            if loc_type_table.body[ac_index] == 'reg':
+            if loc_type_table.in_table(ac_index) == 'reg':
                 output += '<h3>See current holdings ' + '<a href="/account/holdings">Here</a></h3>'
-            elif loc_type_table.body[ac_index] == 'bus':
+            elif loc_type_table.in_table(ac_index) == 'bus':
                 output += '<h3>See company departments ' + '<a href="/account/business/departments">Here</a></h3>'
-            if loc_type_table.body[ac_index] == 'bus':
+            if loc_type_table.in_table(ac_index)== 'bus':
                 output += '</br>'
                 output += '<h3>Open a new department for your business account ' + \
                           '<a href="/account/business/open_dep">now</a></h3>'
@@ -428,10 +428,13 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '<h3>To withdraw funds ' + '<a href="/account/withdraw_funds">Click here</a></h3>'
             output += '<h3>To transfer funds to other accounts ' + \
                       '<a href="/account/transfer_funds">Click here</a></h3>'
-            if loc_type_table.body[ac_index] == 'bus':
+            if loc_type_table.in_table(ac_index) == 'bus':
                 output += '</br>'
                 output += '<h3><a href="/account/business/inner_transfer">Transfer between business departments</a></h3>'
             output += '</br>'
+            if loc_type_table.in_table(ac_index) == 'reg':
+                output += '<h3>Change your monthly spending limit ' + '<a href="/account/change_spending_limit">Here</a></h3>'
+                output += '</br></br>'
             output += '<h3>To use Financial Cloud ' + '<a href="/account/cloud">Click here</a></h3>'
             output += '</br>' + '</br>'
 
@@ -467,7 +470,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '<h3>Current value in USD: ' + val + '</h3>' + '</br>' + '</br>'
             output += '<form method="POST" enctype="multipart/form-data" action="/account/deposit_funds">'
             output += 'Enter amount to deposit: ' + '<input name="amount" type="text">' + '</br></br>'
-            if loc_type_table.body[ac_index] == 'bus':
+            if loc_type_table.in_table(ac_index) == 'bus':
                 output += 'Enter department to deposit to: ' + '<input name="dep_name" type="text">' + '</br>'
             output += '</br>'
             output += '<input type="submit" value="Submit">'
@@ -501,7 +504,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '<h3>Current value in USD: ' + val + '</h3>' + '</br>' + '</br>'
             output += '<form method="POST" enctype="multipart/form-data" action="/account/withdraw_funds">'
             output += 'Enter amount to withdraw: ' + '<input name="amount" type="text">' + '</br></br>'
-            if loc_type_table.body[ac_index] == 'bus':
+            if loc_type_table.in_table(ac_index) == 'bus':
                 output += 'Enter department to withdraw from: ' + '<input name="dep_name" type="text">' + '</br>'
             output += '</br>'
             output += '<input type="submit" value="Submit">'
@@ -531,7 +534,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
             val = Accounts.log[ac_index].get_value_usd()
-            ac_type = loc_type_table.body[ac_index]
+            ac_type = loc_type_table.in_table(ac_index)
             output = '<html><body>'
             output += '<h1>Transfer Funds</h1>' + '</br>'
             output += '<h2>Your Account: ' + account_name + '</h2>'
@@ -814,7 +817,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
             val = Accounts.log[ac_index].get_value_usd()
-            ac_type = loc_type_table.body[ac_index]
+            ac_type = loc_type_table.in_table(ac_index)
             output = '<html><body>'
             output += '<h1>Allocate Funds With Fincloud</h1>' + '</br>'
             output += '<h2>Your Account: ' + account_name + '</h2>'
@@ -853,7 +856,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
             val = Accounts.log[ac_index].get_value_usd()
-            ac_type = loc_type_table.body[ac_index]
+            ac_type = loc_type_table.in_table(ac_index)
             output = '<html><body>'
             output += '<h1>Withdraw Funds From Fincloud</h1>' + '</br>'
             output += '<h2>Your Account: ' + account_name + '</h2>'
@@ -887,6 +890,12 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '</br>' + '</br>' + 'To return to Fincloud page ' + '<a href="/account/cloud">Click here</a>'
             output += '</body></html>'
             self.wfile.write(output.encode())
+
+        elif self.path.endswith('/account/change_spending_limit'):
+            self.start()
+            self.clear()
+            output = '<html><body>'
+            # continue
 
         elif self.path.endswith('/account/business/open_dep'):
             self.start()
@@ -1119,7 +1128,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 fields = cgi.parse_multipart(self.rfile, pdict)
                 amount = fields.get('amount')[0]
                 is_bus_account = False
-                if loc_type_table.body[data.current_account[self.client_address[0]]] == 'bus':
+                if loc_type_table.in_table(data.current_account[self.client_address[0]]) == 'bus':
                     is_bus_account = True
                 index = data.current_account[self.client_address[0]]
                 if not is_bus_account:
@@ -1147,7 +1156,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 fields = cgi.parse_multipart(self.rfile, pdict)
                 amount = fields.get('amount')[0]
                 is_bus_account = False
-                if loc_type_table.body[data.current_account[self.client_address[0]]] == 'bus':
+                if loc_type_table.in_table(data.current_account[self.client_address[0]]) == 'bus':
                     is_bus_account = True
                 ac_index = data.current_account[self.client_address[0]]
                 if not is_bus_account:
@@ -1180,7 +1189,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 if target_dep == "":
                     target_dep = "none"
                 ac_index = data.current_account[self.client_address[0]]
-                if loc_type_table.body[ac_index] == 'bus':
+                if loc_type_table.in_table(ac_index) == 'bus':
                     is_bus_account = True
                 if not is_bus_account:
                     confirm, response_code = Accounts.log[ac_index].transfer(amount, target_account, target_dep)
@@ -1305,7 +1314,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 allocation_id = fields.get('allocation_id')[0]
                 amount = fields.get('amount')[0]
                 ac_index = data.current_account[self.client_address[0]]
-                if loc_type_table.body[ac_index] == 'bus':
+                if loc_type_table.in_table(ac_index) == 'bus':
                     dep_name = fields.get('dep_name')[0]
                 else:
                     dep_name = "none"
@@ -1332,7 +1341,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 allocation_id = fields.get('allocation_id')[0]
                 amount = fields.get('amount')[0]
                 ac_index = data.current_account[self.client_address[0]]
-                if loc_type_table.body[ac_index] == 'bus':
+                if loc_type_table.in_table(ac_index) == 'bus':
                     dep_name = fields.get('dep_name')[0]
                 else:
                     dep_name = "none"
