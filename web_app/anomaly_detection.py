@@ -6,9 +6,16 @@ def handle_anomaly(anomaly_entry: Entry, ac_index):
     date = anomaly_entry.date
     date_str = str(date[0]) + '/' + str(date[1]) + '/' + str(date[2])
     subject = 'Transaction of type ' + anomaly_entry.action + ' on ' + date_str
-    message = '''
-        Red Flag raised for transaction
-    '''
+    message = 'Red Flag raised for transaction:' + '\n'
+    message += 'Transaction date: ' + date_str + '\n'
+    message += 'Action type: ' + anomaly_entry.action + '\n'
+    message += 'Transferred to account number: ' + (str(anomaly_entry.target_num) if anomaly_entry.target_num != -1 else 'none') + '\n'
+    message += 'Transferred to department: ' + (str(anomaly_entry.target_dep) if anomaly_entry.target_dep != -1 else 'none') + '\n'
+    message += 'Amount of transaction: ' + str(anomaly_entry.amount) + '\n'
+    message += 'If this transaction is an error, or you suspect that it was caused by a malicious third-party, please file a request to the bank.' + '\n'
+    message += 'Thank you,' + '\n'
+    message += 'Transaction Anomaly Detection Team'
+    send_message(ac_index, subject, message)
 
 
 def return_stats(entries: Log) -> (int, float, {str: [Entry]}):
@@ -77,11 +84,11 @@ def anomaly_detection():  # background func
                 # check if ledger has sufficient data to run algorithm
                 if len(ledger_to_check.log) >= MIN_LENGTH_FOR_ANOMALY_DETECTION:
                     # find anomalies in account ledger
-                    anomalies_found, anomaly_entry_indices = find_anomalies(ledger_to_check, index)
+                    anomalies_found, anomaly_entry_indices = find_anomalies(ledger_to_check, index, [])
                     if anomalies_found:
                         # if anomalies were found, call handle function for each flagged entry
                         for entry_index in anomaly_entry_indices:
-                            handle_anomaly(ledger_to_check[entry_index])
+                            handle_anomaly(ledger_to_check[entry_index], index)
             # handle if account is business
             else:
                 # go over each dep in business account
@@ -94,4 +101,4 @@ def anomaly_detection():  # background func
                         if anomalies_found:
                             # if anomalies were found, call handle function for each flagged entry
                             for entry_index in anomaly_entry_indices:
-                                handle_anomaly(ledger_to_check[entry_index])
+                                handle_anomaly(ledger_to_check[entry_index], index)

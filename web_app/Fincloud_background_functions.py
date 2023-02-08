@@ -25,17 +25,21 @@ def session_timing():  # check for session timeout
 
 def accounts_update():  # update value in savings accounts
     while True:
-        time.sleep(SAVINGS_UPDATE_CYCLE)  # update every 10 min
-        for index in loc_type_table.body.keys():
-            if loc_type_table.body[index] != 'bus':
-                Accounts.log[index].update()
+        time.sleep(ACCOUNTS_UPDATE_CYCLE)  # update every 10 min
+        if len(Accounts.log) != 0:
+            for index in loc_type_table.body.keys():
+                if loc_type_table.body[index] != 'bus':
+                    Accounts.log[index].update()
 
 
 def rates_update():  # update last currency rates to use if live rates are not available
     while True:
         time.sleep(RATES_UPDATE_CYCLE)
         for curr in last_rates.keys():
-            last_rates[curr] = converter.CurrencyRates().get_rate('USD', curr)
+            try:
+                last_rates[curr] = converter.CurrencyRates().get_rate('USD', curr)
+            except converter.RatesNotAvailableError:
+                pass
 
 
 def refresh_admin_credentials():

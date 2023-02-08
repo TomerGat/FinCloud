@@ -161,6 +161,11 @@ class Account:
         if current_date[2] < self.shift_date:
             months -= 1
         if months > 0:
+            if self.remaining_spending > 0:
+                # add bonus if monthly limit not reached
+                bonus = set_underspending_bonus(self.monthly_spending_limit, self.remaining_spending, self.value['USD'])
+                self.value['USD'] = self.value['USD'] + bonus
+            # update monthly_spending_limit to new_spending_limit and reset remaining_spending
             self.monthly_spending_limit = self.new_spending_limit
             self.remaining_spending = self.monthly_spending_limit
             self.last_update = current_date
@@ -668,19 +673,30 @@ def send_message(ac_index, subject, message):
 
 
 def set_fee(returns):
-    if returns == returns_premium:
-        return 100
-    elif returns == returns_medium:
-        return 80
-    elif returns == returns_minimum:
-        return 50
+    if returns == RETURNS_PREMIUM:
+        return PREMIUM_RETURNS_FEE
+    elif returns == RETURNS_MEDIUM:
+        return MEDIUM_RETURNS_FEE
+    elif returns == RETURNS_MINIMUM:
+        return MINIMUM_RETURNS_FEE
     return -1
 
 
 def set_overspending_fee(spending_limit, total_spending_breach, last_spending_amount):
     deviation_percentage = total_spending_breach / spending_limit
-    fee = deviation_percentage * last_spending_amount * OVERSPENDING_BREACH_FEE_RATIO
+    fee = deviation_percentage * last_spending_amount * OVERSPENDING_FEE_RATIO
     return fee
+
+
+def set_underspending_bonus(spending_limit, remaining_spending, total_account_value):
+    # check that spending was at least 15%, otherwise do not give bonus
+    if spending_limit / remaining_spending > (1 - MINIMUM_SPENDING_RATIO_FOR_BONUS):
+        return 0
+    # calculate bonus according to the percentage of underspending and according to the size of the spending limit
+    # also take into consideration total account value to prevent setting high limits in order to get large bonuses
+    underspending_percentage = remaining_spending / spending_limit
+    bonus = underspending_percentage * (total_account_value - spending_limit) * UNDERSPENDING_BONUS_RATIO
+    return bonus
 
 
 def get_daily_rates(cur1, cur2, amount):

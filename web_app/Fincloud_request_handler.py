@@ -276,9 +276,9 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '</br>'
             output += 'Select preferred returns for your savings account: '
             output += '<select id="returns" name="returns">'
-            output += '<option value = "premium">Premium - 4% annually</option>'
-            output += '<option value = "medium">Regular - 2.75% annually</option>'
-            output += '<option value = "minimum">Safe - 2% annually</option>'
+            output += '<option value = "premium">Premium - ' + str(RETURNS_PREMIUM) + '% annually</option>'
+            output += '<option value = "medium">Regular - ' + str(RETURNS_MEDIUM) + '% annually</option>'
+            output += '<option value = "minimum">Safe - ' + str(RETURNS_MINIMUM) + '% annually</option>'
             output += '</select>'
             output += '</br></br>'
             output += '<input type="submit" value="Create Account">'
@@ -406,6 +406,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output = '<html><body>'
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
+            account_name = str(name_table.get_key(ac_index))
             account_number = str(number_table.get_key(ac_index))
             output += '<h1>Account name: ' + account_name + '</h1>'
             output += '<h2>Account number: ' + account_number + '</h2>'
@@ -414,11 +415,14 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 comp_name = str(Accounts.log[ac_index].company_name)
                 output += '<h2>Company name: ' + comp_name + '</h2>'
             output += '</br><h2>Current value in USD: ' + val + '</h2>'
+            output += '<h2>General ' + '<a href="/account/info">info</a></h2>'
+            output += '<h3>Check your ' + '<a href="/account/inbox">inbox</a></h3>'
+            output += '<h3>File a request to the bank ' + '<a href="/account/file_requests">here</a></h3></br></br>'
             if loc_type_table.in_table(ac_index) == 'reg':
                 output += '<h3>See current holdings ' + '<a href="/account/holdings">Here</a></h3>'
             elif loc_type_table.in_table(ac_index) == 'bus':
                 output += '<h3>See company departments ' + '<a href="/account/business/departments">Here</a></h3>'
-            if loc_type_table.in_table(ac_index)== 'bus':
+            if loc_type_table.in_table(ac_index) == 'bus':
                 output += '</br>'
                 output += '<h3>Open a new department for your business account ' + \
                           '<a href="/account/business/open_dep">now</a></h3>'
@@ -452,9 +456,48 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     output += '<h4>Departmental transfer processed.</h4>'
                 elif response_code == Responses.NEW_DEP_OPENED:
                     output += '<h4>New department established.</h4>'
+                elif response_code == Responses.SPENDING_LIMIT_ALTERED:
+                    output += '<h4>Spending limit changed. Your monthly spending limit will be updated at the end of the month.'
+                elif response_code == Responses.REQUEST_FILED:
+                    output += '<h4>Your request will be filed to the bank. Your will receive an update to your personal inbox.'
                 data.alter_re(self.client_address[0], 0)
 
             output += '</br></br>' + '<h4><a href="/account/logout">Log out</a></h4>'
+            output += '</body></html>'
+            self.wfile.write(output.encode())
+
+        elif self.path.endswith('/account/info'):
+            pass
+
+        elif self.path.endswith('/account/inbox'):
+            pass
+
+        elif self.path.endswith('/account/file_requests'):
+            pass
+
+        elif self.path.endswith('/account/change_spending_limit'):
+            self.start()
+            self.clear()
+            output = '<html><body>'
+            ac_index = data.current_account[self.client_address[0]]
+            output += '<h1>Change Monthly Spending limit</h1>' + '</br>'
+            output += '<h3>Current spending limit per month: ' + Accounts.log[ac_index].monthly_spending_limit + '</h3></br>'
+            output += 'Your monthly spending limit allows you to maintain expenses on your account. If you overspend you will encounter a fee,' \
+                      ' but spending less than you monthly spending limit could add value to your account, courtesy of the funds management team.'
+            output += '</br>'
+            output += '<h2>Update your spending limit for next month: </h2></br>'
+            output += '<form method="POST" enctype="multipart/form-data" action="/account/deposit_funds">'
+            output += 'Enter new monthly spending limit: ' + '<input name="new_limit" type="text">' + '</br></br>'
+            output += '<input type="submit" value="Submit">'
+            output += '</form>' + '</br>'
+
+            # print error/response message if redirect flag is set to True
+            if data.redirect_flags[self.client_address[0]]:
+                data.alter_rf(self.client_address[0], False)
+                response_code = data.response_codes[self.client_address[0]]
+                data.alter_re(self.client_address[0], False)
+
+            output += '</br></br>' + 'To cancel and return to account home page ' + '<a href="/account/home">Click here</a>'
             output += '</body></html>'
             self.wfile.write(output.encode())
 
@@ -891,12 +934,6 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '</body></html>'
             self.wfile.write(output.encode())
 
-        elif self.path.endswith('/account/change_spending_limit'):
-            self.start()
-            self.clear()
-            output = '<html><body>'
-            # continue
-
         elif self.path.endswith('/account/business/open_dep'):
             self.start()
             self.clear()
@@ -987,7 +1024,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 code_confirm = fields.get('code_confirm')[0]
                 account_name = fields.get('user')[0]
                 returns_str = fields.get('returns')[0]
-                returns_dict = {'premium': 4, 'medium': 2.75, 'safe': 2}  # to determine returns in numbers
+                returns_dict = {'premium': RETURNS_PREMIUM, 'medium': RETURNS_MEDIUM, 'safe': RETURNS_MINIMUM}  # to determine returns in numbers
                 returns = returns_dict[returns_str]
                 # create account with user input
                 if code == code_confirm:
@@ -1053,7 +1090,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 spending_limit = fields.get('spending_limit')[0]
                 # create account with user input
                 if code == code_confirm:
-                    confirm, index, response_code = create_checking_account(account_name, code, phone_number, spending_limit)
+                    confirm, index, response_code = create_checking_account(account_name, code, phone_number, int(spending_limit))
                     if confirm:
                         data.alter_re(self.client_address[0], Responses.NEW_ACCOUNT_CREATED)
                         data.alter_rf(self.client_address[0], True)
@@ -1230,6 +1267,37 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     self.redirect('/account/business/inner_transfer')
             else:
                 self.system_error()
+
+        elif self.path.endswith('/account/change_spending_limit'):
+            # extract user input from headers in POST packet
+            ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
+            pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
+            content_len = int(self.headers.get('Content-length'))
+            pdict['CONTENT-LENGTH'] = content_len
+            if ctype == 'multipart/form-data':
+                fields = cgi.parse_multipart(self.rfile, pdict)
+                new_limit = fields.get('new_limit')[0]
+                response_code = Responses.SPENDING_LIMIT_ALTERED
+                confirm = False
+                if not validate_number(new_limit):
+                    response_code = Responses.INVALID_SPENDING_LIMIT
+                elif int(new_limit) < 0:
+                    response_code = Responses.INVALID_SPENDING_LIMIT
+                else:
+                    ac_index = data.current_account[self.client_address[0]]
+                    Accounts.log[ac_index].new_spending_limit = new_limit
+                    confirm = True
+                data.alter_re(self.client_address[0], response_code)
+                data.alter_rf(self.client_address[0], True)
+                if confirm:
+                    self.redirect('/account/home')
+                else:
+                    self.redirect('/account/change_spending_limit')
+            else:
+                self.system_error()
+
+        elif self.path.endswith('/account/send_requests'):
+            pass
 
         elif self.path.endswith('/account/business/open_dep'):
             # extract user input from headers in POST packet
