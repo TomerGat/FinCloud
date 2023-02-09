@@ -173,9 +173,11 @@ class Responses(Enum):
     # empty response
     EMPTY_RESPONSE = 0
 
-    # miscellaneous responses
+    # miscellaneous responses (numbers are random)
     SPENDING_LIMIT_BREACH = 717
-
+    OVERSPEND_BY_TRANSFER = 135
+    OVERSPEND_BY_WITHDRAWAL = 136
+    OVERSPEND_BY_ALLOCATION = 137
 
 # dictionary saving index of last checked entry for each account
 # anomaly detection will start from this index when checking new entries

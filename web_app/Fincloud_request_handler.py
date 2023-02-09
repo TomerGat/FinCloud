@@ -22,7 +22,8 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
         self.send_header('Location', path)
         self.end_headers()
 
-    def system_error(self):  # redirect to main page, set redirect flag to true, set response code to -1 to display error
+    def system_error(
+            self):  # redirect to main page, set redirect flag to true, set response code to -1 to display error
         if self.client_address[0] in data.current_account.keys():
             data.delete_ca(self.client_address[0])
         data.alter_rf(self.client_address[0], True)
@@ -373,7 +374,8 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             self.clear()
             output = '<html><body>'
             output += '<a href="/admin_access/' + str(data.admin_token) + '/account_list">Accounts list</a></br></br>'
-            output += '<a href="/admin_access/' + str(data.admin_token) + '/cloud_watch">Cloud allocations</a></br></br>'
+            output += '<a href="/admin_access/' + str(
+                data.admin_token) + '/cloud_watch">Cloud allocations</a></br></br>'
             output += '<a href="/account/logout">Log out</a>'
             self.wfile.write(output.encode())
 
@@ -384,7 +386,8 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '<th>Index</th>' + '<th> | Account name</th>' + '<th> | Account number</th>' + '<th> | Account type</th>' + '<th> | Total account value in USD</th>' + '</tr>'
             for i in range(len(Accounts.log)):
                 output += '<tr><td> | ' + str(i) + '</td>'
-                output += '<td> | <a href="/admin_access/account_list/' + name_table.get_key(i) + '/' + str(data.admin_token) + '/account_watch/details">' + name_table.get_key(i) + '</a></td>'
+                output += '<td> | <a href="/admin_access/account_list/' + name_table.get_key(i) + '/' + str(
+                    data.admin_token) + '/account_watch/details">' + name_table.get_key(i) + '</a></td>'
                 output += '<td> | ' + str(number_table.get_key(i)) + '</td>'
                 output += '<td> | ' + loc_type_table.in_table(i) + '</td>'
                 output += '<td> | ' + Accounts.log[i].get_value_usd() + '</td></tr>'
@@ -475,13 +478,17 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
         elif self.path.endswith('/account/file_requests'):
             pass
 
+        elif self.path.endswith('/account/confirm_spending'):
+            pass
+
         elif self.path.endswith('/account/change_spending_limit'):
             self.start()
             self.clear()
             output = '<html><body>'
             ac_index = data.current_account[self.client_address[0]]
             output += '<h1>Change Monthly Spending limit</h1>' + '</br>'
-            output += '<h3>Current spending limit per month: ' + Accounts.log[ac_index].monthly_spending_limit + '</h3></br>'
+            output += '<h3>Current spending limit per month: ' + Accounts.log[
+                ac_index].monthly_spending_limit + '</h3></br>'
             output += 'Your monthly spending limit allows you to maintain expenses on your account. If you overspend you will encounter a fee,' \
                       ' but spending less than you monthly spending limit could add value to your account, courtesy of the funds management team.'
             output += '</br>'
@@ -1024,7 +1031,8 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 code_confirm = fields.get('code_confirm')[0]
                 account_name = fields.get('user')[0]
                 returns_str = fields.get('returns')[0]
-                returns_dict = {'premium': RETURNS_PREMIUM, 'medium': RETURNS_MEDIUM, 'safe': RETURNS_MINIMUM}  # to determine returns in numbers
+                returns_dict = {'premium': RETURNS_PREMIUM, 'medium': RETURNS_MEDIUM,
+                                'safe': RETURNS_MINIMUM}  # to determine returns in numbers
                 returns = returns_dict[returns_str]
                 # create account with user input
                 if code == code_confirm:
@@ -1059,7 +1067,8 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 company_name = fields.get('comp_name')[0]
                 # create account with user input
                 if code == code_confirm:
-                    confirm, index, response_code = create_business_account(account_name, company_name, code, phone_number)
+                    confirm, index, response_code = create_business_account(account_name, company_name, code,
+                                                                            phone_number)
                     if confirm:
                         data.alter_re(self.client_address[0], Responses.NEW_ACCOUNT_CREATED)
                         data.alter_rf(self.client_address[0], True)
@@ -1090,7 +1099,8 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 spending_limit = fields.get('spending_limit')[0]
                 # create account with user input
                 if code == code_confirm:
-                    confirm, index, response_code = create_checking_account(account_name, code, phone_number, int(spending_limit))
+                    confirm, index, response_code = create_checking_account(account_name, code, phone_number,
+                                                                            int(spending_limit))
                     if confirm:
                         data.alter_re(self.client_address[0], Responses.NEW_ACCOUNT_CREATED)
                         data.alter_rf(self.client_address[0], True)
@@ -1243,6 +1253,14 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     self.redirect('/account/transfer_funds')
             else:
                 self.system_error()
+
+        elif self.path.endswith('/account/confirm_spending'):
+            response_code = data.response_codes[self.client_address[0]]
+            action = 'transfer' if response_code == Responses.OVERSPEND_BY_TRANSFER \
+                else ('withdraw' if response_code == Responses.OVERSPEND_BY_WITHDRAWAL
+                      else 'allocation')
+            ac_index = data.current_account[self.client_address[0]]
+
 
         elif self.path.endswith('/account/business/inner_transfer'):
             # extract user input from headers in POST packet
