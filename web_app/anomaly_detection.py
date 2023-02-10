@@ -18,18 +18,14 @@ def handle_anomaly(anomaly_entry: Entry, ac_index):
     send_message(ac_index, subject, message)
 
 
-def create_id_amount_dict(group: [Entry]) -> {int, int}:
-    amounts_dict = {}
-    keys = [ent.entry_id for ent in group]
-    values = [ent.amount for ent in group]
-    for index, keys in enumerate(keys):
-        amounts_dict[keys] = values[index]
-    return amounts_dict
-
-
 def find_cluster(gap: int, amount: int) -> int:
-    segment = int(amount/gap)
-    return segment
+    cluster = int(amount/gap)
+    return cluster
+
+
+def calc_deviation(amount, avg, stdev):
+    deviation = abs(amount - avg) / stdev
+    return deviation
 
 
 def create_clusters(counter: int) -> [[]]:
@@ -41,7 +37,7 @@ def create_clusters(counter: int) -> [[]]:
 
 def cluster_by_amount(action_clusters: {str: [Entry]}) -> {str: [[Entry]]}:
     general_clusters = {}
-    for action in action_clusters.keys():
+    for action in action_clusters.keys():  # run algorithm for each list of entries that are organized by action type
         group = action_clusters[action]
         counter = int(len(group) * CLUSTER_NUMBER_RATIO)
         largest_amount = 0
@@ -49,20 +45,28 @@ def cluster_by_amount(action_clusters: {str: [Entry]}) -> {str: [[Entry]]}:
         for entry in group:
             if entry.amount > largest_amount:
                 largest_amount = entry.amount
-        gap = largest_amount / counter  # gap - jumps of amount between segments defined by maximum amount and segment counter
-        # create an array of counter length in which each segment has a list which will include entries in the amount range
-        # amount range is index*gap to (index+1)*gap
+        gap = largest_amount / counter  # gap - jumps of amount between clusters defined by maximum amount and cluster counter
+        # create a list of counter length in which each segment has a list which will include entries in the amount range
+        # each index in the list 'clusters' will contain a list (each list is a cluster, entries will be divided to clusters)
+        # amount range is index*gap to (index+1)*gap for each cluster, entries are organized by amount
         clusters = create_clusters(counter)
         for index in range(len(group)):
-            cluster_index = find_cluster(gap, group[index].amount)
+            cluster_index = find_cluster(gap, group[index].amount)  # find cluster index for the entry
             if group[index].amount == largest_amount:
                 cluster_index -= 1  # if amount is largest, index will be out of bounds
-            clusters[cluster_index].append(group[index])
+            clusters[cluster_index].append(group[index])  # add entry to the correct cluster
         general_clusters[action] = clusters
     return general_clusters
 
 
-def return_stats(entries: Log, ac_index: int) -> (int, float, {str: [[Entry]]}):
+def return_stats(entries: Log, ac_index: int) -> (int, float, float, {str: [[Entry]]}):
+    """
+    :param entries: list of entries
+    :param ac_index: index of account (entries are from the account at ac_index in Accounts)
+    :return: median of entry amounts, average of all entry amounts, average of checked entry amounts, clusters of entries
+    clusters: a dictionary in which keys are actions, values are a list of lists of Entries
+    """
+
     amounts = []
     avg = 0
     action_clusters = {}
@@ -86,7 +90,13 @@ def return_stats(entries: Log, ac_index: int) -> (int, float, {str: [[Entry]]}):
     return median, avg, avg_before, clusters
 
 
-def find_anomalies(ac_ledger: Log, ac_index: int, temp_indices: []) -> (bool, []):
+def find_anomalies(ac_ledger: Log, ac_index: int) -> (bool, []):
+    """
+    :param ac_ledger: ledger of account (of log type, property of the account being checked)
+    :param ac_index: index of account (entries are from the account at ac_index in Accounts)
+    :return: a boolean value that identifies wether red flags were found, and a list of flagged entries
+    """
+
     # if all entries in ledger were already checked, return False and an empty list
     if len(ac_ledger.log) == last_checked_entry[ac_index] + 1:
         return False, []
@@ -95,7 +105,7 @@ def find_anomalies(ac_ledger: Log, ac_index: int, temp_indices: []) -> (bool, []
     median, avg, avg_before, general_clusters = return_stats(ac_ledger, ac_index)
 
     # separate entries that were not yet checked
-    entries_to_check = ac_ledger.log[last_checked_entry[ac_index] + 1::]
+    entries_to_check = ac_ledger.log[last_checked_entry[ac_index]::]
 
     # update last_checked_entry to current number of entries
     last_checked_entry[ac_index] = len(ac_ledger.log) - 1
@@ -110,7 +120,8 @@ def find_anomalies(ac_ledger: Log, ac_index: int, temp_indices: []) -> (bool, []
     #                 transaction from savings account to department of business account that was previously empty
     # call function recursively if there are additional new entries (each call add index to parameter 'temp_indices')
 
-    # find outliers in clusters and add to flagged_entries:
+    # find outliers in Entry clusters:
+    # clusters with only one entry, with two adjacent clusters that are empty, will be identified as outliers
     for action in general_clusters.keys():
         clusters = general_clusters[action]
         lonely_clusters = []  # indices for clusters with only one entry
@@ -135,6 +146,16 @@ def find_anomalies(ac_ledger: Log, ac_index: int, temp_indices: []) -> (bool, []
             if clusters[index][0] in entries_to_check:
                 flagged_entries.append(clusters[index][0])
 
+    # find outliers with standard deviation calculation
+    amounts = [entry.amount for entry in ac_ledger.log]
+    standard_deviation = statistics.stdev(amounts)
+    for entry in ac_ledger.log:
+        deviation = calc_deviation(entry.amount, avg, standard_deviation)
+        if deviation >= MIN_DEVIATION_TO_FLAG and entry not in flagged_entries and entry in entries_to_check:
+            flagged_entries.append(entry)
+
+    # continue with additional options for flags
+ 
 
 def anomaly_detection():  # background func
     while True:
@@ -143,15 +164,19 @@ def anomaly_detection():  # background func
         # update last_checked_entry to match number of existing accounts
         if len(last_checked_entry.keys()) != len(Accounts.log):
             counter = len(last_checked_entry.keys())
-            for i in range(len(Accounts.log) - len(last_checked_entry.keys())):
+            for i in range(len(Accounts.log) - counter):
                 # for each account index that does not have a key in last_checked_entry, set to 0
                 last_checked_entry[counter + i] = 0
+
+        # if Accounts is empty, skip to next cycle
+        if len(Accounts.log) == 0:
+            continue
 
         # go over Accounts log
         for index in range(len(Accounts.log)):
             ac_type = loc_type_table.in_table(index)
             anomalies_found = False
-            anomaly_entry_indices = []
+            anomaly_entries = []
             ledger_to_check = Log()
 
             # handle if account is checking or savings
@@ -160,11 +185,11 @@ def anomaly_detection():  # background func
                 # check if ledger has sufficient data to run algorithm
                 if len(ledger_to_check.log) >= MIN_LENGTH_FOR_ANOMALY_DETECTION:
                     # find anomalies in account ledger
-                    anomalies_found, anomaly_entry_indices = find_anomalies(ledger_to_check, index, [])
+                    anomalies_found, anomaly_entries = find_anomalies(ledger_to_check, index)
                     if anomalies_found:
                         # if anomalies were found, call handle function for each flagged entry
-                        for entry_index in anomaly_entry_indices:
-                            handle_anomaly(ledger_to_check[entry_index], index)
+                        for entry in anomaly_entries:
+                            handle_anomaly(entry, index)
             # handle if account is business
             else:
                 # go over each dep in business account
@@ -173,8 +198,8 @@ def anomaly_detection():  # background func
                     # check if ledger has sufficient data to run algorithm
                     if len(ledger_to_check.log) >= MIN_LENGTH_FOR_ANOMALY_DETECTION:
                         # find anomalies in department ledger
-                        anomalies_found, anomaly_entry_indices = find_anomalies(ledger_to_check, index, [])
+                        anomalies_found, anomaly_entries = find_anomalies(ledger_to_check, index)
                         if anomalies_found:
                             # if anomalies were found, call handle function for each flagged entry
-                            for entry_index in anomaly_entry_indices:
-                                handle_anomaly(ledger_to_check[entry_index], index)
+                            for entry in anomaly_entries:
+                                handle_anomaly(entry, index)
