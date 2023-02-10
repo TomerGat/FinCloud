@@ -394,8 +394,24 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '</table>'
             self.wfile.write(output.encode())
 
-        elif self.path.endswith(str(data.admin_token) + '/account_watch/details'):
-            pass
+        elif self.path.endswith('/' + str(data.admin_token) + '/account_watch/details'):
+            self.start()
+            self.clear()
+            url_parsed = self.path.split('/')
+            ac_name = url_parsed[2]
+            ac_index = name_table.in_table(ac_name)
+            output = '<html><body>'
+            ac_values = create_table_output(Accounts.log[ac_index].value)
+            ac_type = loc_type_table.in_table(ac_index)
+            ac_spending_info = [Accounts.log[ac_index].monthly_spending_limit, Accounts.log[ac_index].remaining_spending]
+            ac_number = number_table.get_key(ac_index)
+            output += '<h1>Account Watch - ' + ac_name + '</h1>'
+            output += '<h2>Account number - ' + ac_number + '</h2>'
+            output += '<h2>Account Type - ' + ac_type + '</h2>'
+            output += '<h3>Spending for this month: ' + ac_spending_info[1] + '/' + ac_spending_info[0] + '</h3>'
+            output += '<h3>Account holdings:</h3>'
+            output += ac_values
+            self.wfile.write(output.encode())
 
         elif self.path.endswith('/admin_access/' + str(data.admin_token) + '/cloud_watch'):
             pass
@@ -411,6 +427,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             account_name = str(name_table.get_key(ac_index))
             account_name = str(name_table.get_key(ac_index))
             account_number = str(number_table.get_key(ac_index))
+            ac_type = loc_type_table.in_table(ac_index)
             output += '<h1>Account name: ' + account_name + '</h1>'
             output += '<h2>Account number: ' + account_number + '</h2>'
             val = Accounts.log[ac_index].get_value_usd()
@@ -418,6 +435,10 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 comp_name = str(Accounts.log[ac_index].company_name)
                 output += '<h2>Company name: ' + comp_name + '</h2>'
             output += '</br><h2>Current value in USD: ' + val + '</h2>'
+            if ac_type == 'reg':
+                ac_spending_info = [Accounts.log[ac_index].monthly_spending_limit,
+                                    Accounts.log[ac_index].remaining_spending]
+                output += '<h2>Remaining spending for this month: ' + ac_spending_info[1] + 'of ' + ac_spending_info[0] + '</h2>'
             output += '<h2>General ' + '<a href="/account/info">info</a></h2>'
             output += '<h3>Check your ' + '<a href="/account/inbox">inbox</a></h3>'
             output += '<h3>File a request to the bank ' + '<a href="/account/file_requests">here</a></h3></br></br>'

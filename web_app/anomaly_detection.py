@@ -94,7 +94,7 @@ def find_anomalies(ac_ledger: Log, ac_index: int) -> (bool, []):
     """
     :param ac_ledger: ledger of account (of log type, property of the account being checked)
     :param ac_index: index of account (entries are from the account at ac_index in Accounts)
-    :return: a boolean value that identifies wether red flags were found, and a list of flagged entries
+    :return: a boolean value that identifies whether red flags were found, and a list of flagged entries
     """
 
     # if all entries in ledger were already checked, return False and an empty list
