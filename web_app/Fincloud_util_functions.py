@@ -42,6 +42,11 @@ def validate_phone_number(phone):
     return validate_number(phone) and (len(str(phone)) == 10)
 
 
+def unpack_list(unpack: []) -> ():
+    new_tuple = (item for item in unpack)
+    return new_tuple
+
+
 def validate_number(num):
     valid = True
     decimal_counter = 0

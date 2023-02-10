@@ -97,6 +97,9 @@ data = Global()
 # set containing all existing account numbers
 existing_account_numbers = set()
 
+# existing entries id list
+existing_entry_id = set()
+
 # Shared Dictionary of Logs containing history of received packets  {ip address : Log}
 # after session timeout, log for timed out account is erased
 history = {}
@@ -178,6 +181,7 @@ class Responses(Enum):
     OVERSPEND_BY_TRANSFER = 135
     OVERSPEND_BY_WITHDRAWAL = 136
     OVERSPEND_BY_ALLOCATION = 137
+
 
 # dictionary saving index of last checked entry for each account
 # anomaly detection will start from this index when checking new entries

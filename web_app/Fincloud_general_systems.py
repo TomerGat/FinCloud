@@ -33,6 +33,7 @@ class Entry:  # object properties: action, amount
         self.date = date
         self.target_num = target_num  # if action involves other accounts this is set, otherwise set to -1
         self.target_dep = target_dep  # if action involves other accounts this is set, otherwise set to -1
+        self.entry_id = generate_entry_id()  # entry identification code (unique for every entry)
 
 
 class Cloud:  # a financial cloud that allows deposits to be kept and accessed using an access code
@@ -727,6 +728,21 @@ def assign_account_number():
     return number
 
 
+def generate_entry_id():
+    # Generate a random number between 100000000000 and 999999999999
+    number = random.randint(100000000000, 999999999999)
+
+    # Check if the random number has been generated before
+    while number in existing_entry_id:
+        # If it has, generate a new random number
+        number = random.randint(100000000000, 999999999999)
+
+    # Add the random number to the set of generated numbers
+    existing_entry_id.add(number)
+
+    return number
+
+
 def hash_function(param) -> int:
     input_str = str(param)
     ascii_values = [ord(ch) for ch in input_str]
@@ -853,7 +869,7 @@ def create_savings_account(account_name, account_code, phone_num, returns):
         if not (validate_string(account_name) or validate_string(account_code)):
             response_code = Responses.NAME_AND_CODE_INVALID  # name and code invalid
     if confirm:
-        if returns not in [returns_premium, returns_medium, returns_minimum]:
+        if returns not in [RETURNS_PREMIUM, RETURNS_MEDIUM, RETURNS_MINIMUM]:
             response_code = Responses.INVALID_SAVING_RETURNS  # invalid returns
             confirm = False
         if not validate_phone_number(phone_num):

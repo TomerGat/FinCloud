@@ -12,10 +12,11 @@ RETURNS_PREMIUM = 4
 RETURNS_MEDIUM = 2.75
 RETURNS_MINIMUM = 2
 
-# background threads data
+# background threads data - time (in sec) to wait between running of functions
 ACCOUNTS_UPDATE_CYCLE = 600
 RATES_UPDATE_CYCLE = 7200
 CREDENTIALS_UPDATE_CYCLE = 28800
+ANOMALY_DETECTION_CYCLE = 64800
 
 # minimum length to check for anomalies in ledger (under certain limit , algorithm is not effective)
 MIN_LENGTH_FOR_ANOMALY_DETECTION = 10
@@ -33,3 +34,6 @@ MINIMUM_SPENDING_RATIO_FOR_BONUS = 0.15
 PREMIUM_RETURNS_FEE = 100
 MEDIUM_RETURNS_FEE = 80
 MINIMUM_RETURNS_FEE = 50
+
+# ratio between number of entries and number of clusters to create in anomaly detection algorithm (must be full number)
+CLUSTER_NUMBER_RATIO = 5  # tried 2.5, 3.75, 5.25, 4.75, 5 in tests

@@ -464,6 +464,8 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 elif response_code == Responses.REQUEST_FILED:
                     output += '<h4>Your request will be filed to the bank. Your will receive an update to your personal inbox.'
                 data.alter_re(self.client_address[0], 0)
+            if type(data.response_codes) is not int:
+                data.alter_re(self.client_address[0], 0)
 
             output += '</br></br>' + '<h4><a href="/account/logout">Log out</a></h4>'
             output += '</body></html>'
@@ -479,7 +481,16 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             pass
 
         elif self.path.endswith('/account/confirm_spending'):
-            pass
+            self.start()
+            self.clear()
+            output = '<html><body>'
+            output += '<h1>Transaction Confirmation</h1>'
+            output += '<h3>Completing this transaction will finish your monthly spending limit.</h3>'
+            output += 'If you proceed with the transaction, a fee will be deducted form your account!'
+            output += '<form method="POST" enctype="multipart/form-data" action="/account/confirm_spending">'
+            output += '<input type="submit" value="Submit">'
+            output += '</form>' + '</br>'
+            output += '<h4><a href="/account/home">Cancel transaction</a></h4>'
 
         elif self.path.endswith('/account/change_spending_limit'):
             self.start()
@@ -493,7 +504,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                       ' but spending less than you monthly spending limit could add value to your account, courtesy of the funds management team.'
             output += '</br>'
             output += '<h2>Update your spending limit for next month: </h2></br>'
-            output += '<form method="POST" enctype="multipart/form-data" action="/account/deposit_funds">'
+            output += '<form method="POST" enctype="multipart/form-data" action="/account/change_spending_limit">'
             output += 'Enter new monthly spending limit: ' + '<input name="new_limit" type="text">' + '</br></br>'
             output += '<input type="submit" value="Submit">'
             output += '</form>' + '</br>'
@@ -856,6 +867,8 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 elif response_code == Responses.CLOUD_WITHDRAWAL_CONFIRM:
                     output += '<h4>Funds withdrawal confirmed.</h4>'
                 data.alter_re(self.client_address[0], 0)
+            if type(data.response_codes) is not int:
+                data.alter_re(self.client_address[0], 0)
 
             output += '</br>' + '</br>' + 'To return to account home page ' + '<a href="/account/home">Click here</a>'
             output += '</body></html>'
@@ -1203,9 +1216,14 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 fields = cgi.parse_multipart(self.rfile, pdict)
                 amount = fields.get('amount')[0]
                 is_bus_account = False
-                if loc_type_table.in_table(data.current_account[self.client_address[0]]) == 'bus':
-                    is_bus_account = True
                 ac_index = data.current_account[self.client_address[0]]
+                ac_type = loc_type_table.in_table(ac_index)
+                if ac_type == 'reg':
+                    if Accounts.log[ac_index].remaining_spending < amount:
+                        data.alter_re(self.client_address[0], [Responses.OVERSPEND_BY_WITHDRAWAL, amount])
+                        self.redirect('/account/confirm_spending')
+                elif ac_type == 'bus':
+                    is_bus_account = True
                 if not is_bus_account:
                     confirm, response_code = Accounts.log[ac_index].withdraw(amount)
                 else:
@@ -1236,7 +1254,12 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 if target_dep == "":
                     target_dep = "none"
                 ac_index = data.current_account[self.client_address[0]]
-                if loc_type_table.in_table(ac_index) == 'bus':
+                ac_type = loc_type_table.in_table(ac_index)
+                if ac_type == 'reg':
+                    if Accounts.log[ac_index].remaining_spending < amount:
+                        data.alter_re(self.client_address[0], [Responses.OVERSPEND_BY_TRANSFER, amount, target_account, target_dep])
+                        self.redirect('/account/confirm_spending')
+                elif ac_type == 'bus':
                     is_bus_account = True
                 if not is_bus_account:
                     confirm, response_code = Accounts.log[ac_index].transfer(amount, target_account, target_dep)
@@ -1255,12 +1278,32 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 self.system_error()
 
         elif self.path.endswith('/account/confirm_spending'):
-            response_code = data.response_codes[self.client_address[0]]
+            action_description = data.response_codes[self.client_address[0]]
+            response_code = action_description['response_code']
             action = 'transfer' if response_code == Responses.OVERSPEND_BY_TRANSFER \
                 else ('withdraw' if response_code == Responses.OVERSPEND_BY_WITHDRAWAL
-                      else 'allocation')
+                      else 'allocate')
             ac_index = data.current_account[self.client_address[0]]
-
+            if action == 'transfer':
+                (response_code, amount, target_account, target_dep) = unpack_list(action_description)
+                confirm, response_code = Accounts.log[ac_index].transfer(amount, target_account, target_dep)
+            elif action == 'withdraw':
+                (response_code, amount) = unpack_list(action_description)
+                confirm, response_code = Accounts.log[ac_index].withdraw(amount)
+            else:
+                (response_code, amount, allocation_code, ac_name, dep_name) = unpack_list(action_description)
+                confirm, response_code = Cloud().allocate(amount, allocation_code, ac_name, dep_name)
+            data.alter_rf(self.client_address[0], True)
+            data.alter_re(self.client_address[0], response_code)
+            if not confirm:
+                if action == 'transfer':
+                    self.redirect('/account/transfer_funds')
+                if action == 'withdraw':
+                    self.redirect('/account/withdraw_funds')
+                else:
+                    self.redirect('/account/cloud/allocate')
+            else:
+                self.redirect('/account/home')
 
         elif self.path.endswith('/account/business/inner_transfer'):
             # extract user input from headers in POST packet
@@ -1400,10 +1443,14 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 allocation_id = fields.get('allocation_id')[0]
                 amount = fields.get('amount')[0]
                 ac_index = data.current_account[self.client_address[0]]
-                if loc_type_table.in_table(ac_index) == 'bus':
-                    dep_name = fields.get('dep_name')[0]
-                else:
-                    dep_name = "none"
+                ac_type = loc_type_table.in_table(ac_index)
+                dep_name = dep_name = fields.get('dep_name')[0]
+                if ac_type != 'bus':
+                    dep_name = 'none'
+                if ac_type == 'reg':
+                    if Accounts.log[ac_index].remaining_spending < amount:
+                        data.alter_re(self.client_address[0], [Responses.OVERSPEND_BY_ALLOCATION, amount, allocation_id, name_table.get_key(ac_index), dep_name])
+                        self.redirect('/account/confirm_spending')
                 confirm, response_code = Cloud().allocate(amount, allocation_id, name_table.get_key(ac_index), dep_name)
                 if confirm:
                     data.alter_rf(self.client_address[0], True)
