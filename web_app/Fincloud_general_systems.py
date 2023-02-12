@@ -22,18 +22,19 @@ class Message:
 
 class ConnectionEntry:
     def __init__(self, request_type, precise_time):
-        self.lst = [request_type, precise_time]
+        self.lst = (request_type, precise_time)
 
 
 class Entry:  # object properties: action, amount
     # entries are saved in the ledger of an account
-    def __init__(self, action, amount, date, target_num, target_dep):
+    def __init__(self, action, amount, date, target_num, target_dep, entry_index):
         self.action = action  # type of action (deposit, withdrawal, transfer_sent, transfer_received)
         self.amount = amount  # value moved in the action
         self.date = date
         self.target_num = target_num  # if action involves other accounts this is set, otherwise set to -1
         self.target_dep = target_dep  # if action involves other accounts this is set, otherwise set to -1
         self.entry_id = generate_entry_id()  # entry identification code (unique for every entry)
+        self.entry_index = entry_index
 
 
 class Cloud:  # a financial cloud that allows deposits to be kept and accessed using an access code
@@ -191,7 +192,7 @@ class Account:
         else:
             response_code = Responses.GENERAL_CONFIRM
             self.value['USD'] = self.value['USD'] + amount
-            self.ledger.append(Entry('d', amount, get_date(), -1, -1))
+            self.ledger.append(Entry('d', amount, get_date(), -1, -1, len(self.ledger.log)))
 
         return confirm, response_code
 
@@ -210,7 +211,7 @@ class Account:
             if self.value['USD'] >= amount:
                 response_code = Responses.GENERAL_CONFIRM
                 self.value['USD'] = self.value['USD'] - amount
-                self.ledger.append(Entry('w', amount, get_date(), -1, -1))
+                self.ledger.append(Entry('w', amount, get_date(), -1, -1, len(self.ledger.log)))
                 self.remaining_spending -= amount
             else:
                 response_code = Responses.INSUFFICIENT_AMOUNT  # account value too low
@@ -293,9 +294,9 @@ class Account:
                     else:
                         self.value['USD'] = self.value['USD'] - amount
                         self.ledger.append(
-                            Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, -1))
+                            Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, -1, len(self.ledger.log)))
                         Accounts.log[target_index].ledger.append(
-                            Entry('tt', amount, get_date(), self.account_number, -1))
+                            Entry('tt', amount, get_date(), self.account_number, -1, len(self.ledger.log)))
                 else:
                     if loc_type_table.in_table(target_index) == 'bus':
                         if target_dep in Accounts.log[target_index].departments.keys():
@@ -303,9 +304,9 @@ class Account:
                                 Accounts.log[target_index].departments[target_dep][0]['USD'] + amount
                             self.value['USD'] = self.value['USD'] - amount
                             self.ledger.append(
-                                Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, target_dep))
+                                Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, target_dep, len(self.ledger.log)))
                             Accounts.log[target_index].departments[target_dep][1].append(
-                                Entry('tt', amount, get_date(), self.account_number, -1))
+                                Entry('tt', amount, get_date(), self.account_number, -1, len(self.ledger.log)))
                         else:
                             response_code = Responses.TARGET_DEP_NOT_FOUND  # department name does not exist
                             confirm = False
@@ -367,7 +368,7 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
             confirm = True
             response_code = Responses.GENERAL_CONFIRM
             self.value = self.value + amount
-            self.ledger.append(Entry('d', amount, get_date(), -1, -1))
+            self.ledger.append(Entry('d', amount, get_date(), -1, -1, len(self.ledger.log)))
 
         return confirm, response_code
 
@@ -387,7 +388,7 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
                 confirm = True
                 response_code = Responses.GENERAL_CONFIRM
                 self.value = self.value - amount
-                self.ledger.append(Entry('w', amount, get_date(), -1, -1))
+                self.ledger.append(Entry('w', amount, get_date(), -1, -1, len(self.ledger.log)))
             else:
                 response_code = Responses.INSUFFICIENT_AMOUNT  # insufficient amount
                 confirm = False
@@ -431,9 +432,9 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
                     else:
                         self.value = self.value - amount
                         self.ledger.append(
-                            Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, -1))
+                            Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, -1, len(self.ledger.log)))
                         Accounts.log[target_index].ledger.append(
-                            Entry('tt', amount, get_date(), self.account_number, -1))
+                            Entry('tt', amount, get_date(), self.account_number, -1, len(self.ledger.log)))
                 else:
                     if loc_type_table.in_table(target_index) == 'bus':
                         if target_dep in Accounts.log[target_index].departments.keys():
@@ -441,9 +442,9 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
                                 Accounts.log[target_index].departments[target_dep][0]['USD'] + amount
                             self.value = self.value - amount
                             self.ledger.append(
-                                Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, target_dep))
+                                Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, target_dep, len(self.ledger.log)))
                             Accounts.log[target_index].departments[target_dep][1].append(
-                                Entry('tt', amount, get_date(), self.account_number, -1))
+                                Entry('tt', amount, get_date(), self.account_number, -1, len(self.ledger.log)))
                         else:
                             response_code = Responses.TARGET_DEP_NOT_FOUND  # target department name does not exist
                             confirm = False
@@ -552,9 +553,9 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
                     else:
                         self.departments[source_dep][0]['USD'] = self.departments[source_dep][0]['USD'] - amount
                         self.departments[source_dep][1].append(
-                            Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, -1))
+                            Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, -1, len(self.departments[source_dep][1].log)))
                         Accounts.log[target_index].ledger.append(
-                            Entry('tt', amount, get_date(), self.account_number, source_dep))
+                            Entry('tt', amount, get_date(), self.account_number, source_dep, len(Accounts.log[target_index].departments[target_dep][1].log)))
                 else:
                     if loc_type_table.in_table(target_index) == 'bus':
                         if target_dep in Accounts.log[target_index].departments.keys():
@@ -562,9 +563,9 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
                                 Accounts.log[target_index].departments[target_dep][0]['USD'] + amount
                             self.departments[source_dep][0]['USD'] = self.departments[source_dep][0]['USD'] - amount
                             self.departments[source_dep][1].append(
-                                Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, target_dep))
+                                Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, target_dep, len(self.departments[source_dep][1].log)))
                             Accounts.log[target_index].departments[target_dep][1].append(
-                                Entry('tt', amount, get_date(), self.account_number, source_dep))
+                                Entry('tt', amount, get_date(), self.account_number, source_dep, len(Accounts.log[target_index].departments[target_dep][1].log)))
                         else:
                             response_code = Responses.TARGET_DEP_NOT_FOUND  # target department name does not exist
                             confirm = False
@@ -598,8 +599,8 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
             if self.departments[source_dep][0]['USD'] >= amount:
                 self.departments[source_dep][0]['USD'] = self.departments[source_dep][0]['USD'] - amount
                 self.departments[target_dep][0]['USD'] = self.departments[target_dep][0]['USD'] + amount
-                self.departments[source_dep][1].append(Entry('tfi', amount, get_date(), -1, target_dep))
-                self.departments[target_dep][1].append(Entry('tti', amount, get_date(), -1, source_dep))
+                self.departments[source_dep][1].append(Entry('tfi', amount, get_date(), -1, target_dep, len(self.departments[source_dep][1].log)))
+                self.departments[target_dep][1].append(Entry('tti', amount, get_date(), -1, source_dep, len(self.departments[target_dep][1].log)))
             else:
                 confirm = False
                 response_code = Responses.INSUFFICIENT_AMOUNT  # insufficient funds
@@ -623,7 +624,7 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
         else:
             response_code = 1
             self.departments[dep_name][0]['USD'] = self.departments[dep_name][0]['USD'] + amount
-            self.departments[dep_name][1].append(Entry('d', amount, get_date(), -1, -1))
+            self.departments[dep_name][1].append(Entry('d', amount, get_date(), -1, -1, len(self.departments[dep_name][1].log)))
 
         return confirm, response_code
 
@@ -645,7 +646,7 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
             if self.departments[dep_name][0]['USD'] >= amount:
                 response_code = Responses.GENERAL_CONFIRM
                 self.departments[dep_name][0]['USD'] = self.departments[dep_name][0]['USD'] - amount
-                self.departments[dep_name][1].append(Entry('d', amount, get_date(), -1, -1))
+                self.departments[dep_name][1].append(Entry('d', amount, get_date(), -1, -1, len(self.departments[dep_name][1].log)))
             else:
                 confirm = False
                 response_code = Responses.INSUFFICIENT_AMOUNT  # insufficient funds
@@ -773,47 +774,13 @@ def create_table_output(value_table):
     return output
 
 
-# fix
-def send_recovery_email(email_address):
-    # create an SMTP server object
-    mail_server = smtplib.SMTP('smtp.example.com', 587)
-
-    # starting server encryption
-    mail_server.starttls()
-
-    # create the email data, including the email content and recipients
-    message = """\
-    From: FinCloud@server.com
-    To: {}
-    Subject: Recovery for FinCloud account
-
-    Recovery code for your account: {}""".format(email_address, generate_code())
-
-    # send the email using the server object
-    mail_server.sendmail('FinCloud@server.com', [email_address], message)
-
-
-# fix
-def send_confirmation_email(email_address):
-    # create an SMTP server object
-    mail_server = smtplib.SMTP('smtp.example.com', 587)
-
-    # starting server encryption
-    mail_server.starttls()
-
-    # create the email data, including the email content and recipients
-    message = """\
-    From: FinCloud@server.com
-    To: {}
-    Subject: Recovery for FinCloud account
-
-    Confirm your email with this code: {}""".format(email_address, generate_code())
-
-    # send the email using the server object
-    mail_server.sendmail('FinCloud@server.com', [email_address], message)
-
-
 def verification(attempt, code_attempt):  # returns: verification answer, response code, account index
+    """
+    :param attempt: user attempt for account name/number
+    :param code_attempt: user attempt for account code
+    :return: answer for verification, response code, index of account that was logged into (if verified)
+    """
+
     # initialize return values
     verify = False
     response_code = Responses.EMPTY_RESPONSE

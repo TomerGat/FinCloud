@@ -51,6 +51,10 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
         # add request to history
         history[self.client_address[0]].append(ConnectionEntry('get', get_precise_time()))
 
+        # check if first action in history log is of post type (system error / attempt by user to exploit)
+        if history[self.client_address[0]].log[0][1] == 'post':
+            self.system_error()
+
         # if address not in background redirect flags, initialize flag to false
         if self.client_address[0] not in data.background_redirect_flags.keys():
             data.alter_brf(self.client_address[0], False)
@@ -534,6 +538,8 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
                 response_code = data.response_codes[self.client_address[0]]
+                if response_code == Responses.INVALID_SPENDING_LIMIT:
+                    output += '<h4>Spending limit is not valid.</h4>'
                 data.alter_re(self.client_address[0], False)
 
             output += '</br></br>' + 'To cancel and return to account home page ' + '<a href="/account/home">Click here</a>'
@@ -1015,6 +1021,10 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         # add request to history
         history[self.client_address[0]].append(ConnectionEntry('post', get_precise_time()))
+
+        # check if first action in history log is of post type (system error / attempt by user to exploit)
+        if history[self.client_address[0]].log[0][1] == 'post':
+            self.system_error()
 
         # wait before checking background redirect flag
         time.sleep(REQUEST_WAIT)

@@ -24,28 +24,28 @@ def main():
 
     # create separate thread for session timings
     session_thread = threading.Thread(target=session_timing)
-    # run the process
+    # run the thread
     session_thread.start()
     session_thread_ID = session_thread.ident
     print('* Session timing thread started at thread id = "' + str(session_thread_ID) + '"')
 
     # create separate thread for account updates
     accounts_update_thread = threading.Thread(target=accounts_update)
-    # run the process
+    # run the thread
     accounts_update_thread.start()
     accounts_update_thread_ID = accounts_update_thread.ident
     print('* Account updating thread started at thread ID = "' + str(accounts_update_thread_ID) + '"')
 
     # create separate thread for currency rates updates
     rates_update_thread = threading.Thread(target=rates_update)
-    # run the process
+    # run the thread
     rates_update_thread.start()
     rates_update_thread_ID = rates_update_thread.ident
     print('* Currency rates updating thread started at thread ID = "' + str(rates_update_thread_ID) + '"')
 
     # create separate thread for admin credentials updates
     credentials_update_thread = threading.Thread(target=refresh_admin_credentials)
-    # run the process
+    # run the thread
     credentials_update_thread.start()
     credentials_update_thread_ID = credentials_update_thread.ident
     print('* Admin credentials updating thread started at thread ID = "' + str(credentials_update_thread_ID) + '"\n')

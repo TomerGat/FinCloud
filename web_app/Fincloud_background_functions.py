@@ -23,7 +23,7 @@ def session_timing():  # check for session timeout
         # if background redirect flag is set to true, delete address from addresses set and reset history log
 
 
-def accounts_update():  # update value in savings accounts
+def accounts_update():  # run update functions in savings and checking accounts
     while True:
         time.sleep(ACCOUNTS_UPDATE_CYCLE)  # update every 10 min
         if len(Accounts.log) != 0:
