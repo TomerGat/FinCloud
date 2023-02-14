@@ -53,7 +53,7 @@ def main():
     # create separate thread for anomaly detection and handling
     anomaly_detection_thread = threading.Thread(target=anomaly_detection)
     # run the thread
-    anomaly_detection().start()
+    anomaly_detection_thread.start()
     anomaly_detection_thread_ID = anomaly_detection_thread.ident
     print('* Anomaly detection thread started at thread ID = "' + str(anomaly_detection_thread_ID) + '"\n')
 

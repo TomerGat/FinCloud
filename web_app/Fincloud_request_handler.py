@@ -52,7 +52,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
         history[self.client_address[0]].append(ConnectionEntry('get', get_precise_time()))
 
         # check if first action in history log is of post type (system error / attempt by user to exploit)
-        if history[self.client_address[0]].log[0][1] == 'post':
+        if history[self.client_address[0]].log[0].lst[0] == 'post':
             self.system_error()
 
         # if address not in background redirect flags, initialize flag to false
@@ -1028,7 +1028,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
         history[self.client_address[0]].append(ConnectionEntry('post', get_precise_time()))
 
         # check if first action in history log is of post type (system error / attempt by user to exploit)
-        if history[self.client_address[0]].log[0][1] == 'post':
+        if history[self.client_address[0]].log[0].lst[0] == 'post':
             self.system_error()
 
         # wait before checking background redirect flag
