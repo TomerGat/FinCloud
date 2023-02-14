@@ -104,6 +104,9 @@ existing_entry_id = set()
 # after session timeout, log for timed out account is erased
 history = {}
 
+# active requests, dictionary containing all current requests from accounts {ac index: [entries]}
+active_requests = {}
+
 # shared list containing addresses connected
 addresses = []
 

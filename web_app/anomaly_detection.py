@@ -49,6 +49,13 @@ def cluster_by_date(action_clusters: {str: [Entry]}) -> {str: [[Entry]]}:
     for action in action_clusters.keys():
         group = action_clusters[action]
         counter = int(len(group) * CLUSTER_NUMBER_RATIO)
+
+        # find first date (later subtract first date from all dates to cluster correctly
+        first_date = date_to_num(group[0].date)
+        for entry in group:
+            if date_to_num(entry.date) < first_date:
+                first_date = date_to_num(entry.date)
+
         last_date = 0
         for entry in group:
             if date_to_num(entry.date) > last_date:
@@ -61,7 +68,7 @@ def cluster_by_date(action_clusters: {str: [Entry]}) -> {str: [[Entry]]}:
         # amount range is index*gap to (index+1)*gap for each cluster, entries are organized by amount
         clusters = create_clusters(counter)
         for index in range(len(group)):
-            cluster_index = find_cluster(gap, date_to_num(group[index].date))  # find cluster index for the entry
+            cluster_index = find_cluster(gap, date_to_num(group[index].date) - first_date)  # find cluster index for the entry
             if group[index].amount == last_date:
                 cluster_index -= 1  # if amount is largest, index will be out of bounds
             clusters[cluster_index].append(group[index])  # add entry to the correct cluster
@@ -222,10 +229,11 @@ def find_anomalies(ac_ledger: Log, ac_index: int) -> (bool, []):
 
     # specific flags:
     # largest transfer in transaction history to an account never transferred to before
+    # find largest transfer amount (also save index of entry)
     largest_amount = 0
     largest_amount_index = 0
     for entry in ac_ledger.log:
-        if entry.amount > largest_amount:
+        if entry.amount > largest_amount and entry.action == 'tf':
             largest_amount = entry.amount
             largest_amount_index = entry.entry_index
 
@@ -234,17 +242,16 @@ def find_anomalies(ac_ledger: Log, ac_index: int) -> (bool, []):
         # create the following dictionary {ac number transferred to: list of amounts to this index}
         transfer_dict = {}
         for entry in ac_ledger.log:
-            if entry.target_num not in transfer_dict.keys():
+            if entry.target_num not in transfer_dict.keys() and entry.action == 'tf':
                 transfer_dict[entry.target_num] = []
             transfer_dict[entry.target_num].append(entry.amount)
-
-        # go over values and check if largest amount is alone in a list
+        # go over values and check if largest amount is alone in a list (if so, flag entry)
         for amounts in transfer_dict.values():
             if len(amounts) == 1:
                 if amounts[0] == largest_amount:
                     flagged_entries.append(ac_ledger.log[largest_amount_index])
 
-    # return bool to answer if red flags were found and return flagged_entries
+    # return red_flags_found (bool value) and list of flagged entries
     red_flags_found = (len(flagged_entries) != 0)
     return red_flags_found, flagged_entries
 

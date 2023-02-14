@@ -16,7 +16,6 @@ class Message:
     def __init__(self, subject, message):
         self.subject = subject
         self.message = message
-        self.date = get_date()
         self.precise_time = get_precise_time()
 
 
@@ -669,6 +668,10 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
 
 
 # functions
+def cancel_transaction(ac_index: int, transaction_entry: Entry) -> bool:
+    return True
+
+
 def send_message(ac_index, subject, message):
     mes = Message(subject, message)
     Accounts.log[ac_index].inbox.append(mes)

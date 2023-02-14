@@ -113,6 +113,8 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '</form>'
             temp = '<p style = "color: black" style = "text-decoration: none">Forgot your password?</p>'
             output += '<h5><a href="/forgot">' + temp + '</a></h5>' + '</br>'
+            temp = '<p style = "color: black" style = "text-decoration: none">Recover username and password?</p>'
+            output += '<h5><a href="/forgot_data">' + temp + '</a></h5>' + '</br>'
 
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
@@ -148,6 +150,9 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '<input type="submit" value="Confirm">' + '</form>'
             output += '<h4><a href="/account/home">Cancel logout</a></h4>'
             self.wfile.write(output.encode())
+
+        elif self.path.endswith('/forgot_data'):
+            pass
 
         elif self.path.endswith('/forgot'):
             self.start()
