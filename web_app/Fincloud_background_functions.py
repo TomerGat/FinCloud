@@ -56,3 +56,51 @@ def refresh_admin_credentials():
             pass
         with open(file_path, 'w') as file:
             file.write(new_credentials)
+
+
+def anomaly_detection():
+    while True:
+        time.sleep(ANOMALY_DETECTION_CYCLE)  # wait
+
+        # update last_checked_entry to match number of existing accounts
+        if len(last_checked_entry.keys()) != len(Accounts.log):
+            counter = len(last_checked_entry.keys())
+            for i in range(len(Accounts.log) - counter):
+                # for each account index that does not have a key in last_checked_entry, set to 0
+                last_checked_entry[counter + i] = 0
+
+        # if Accounts is empty, skip to next cycle
+        if len(Accounts.log) == 0:
+            continue
+
+        # go over Accounts log
+        for index in range(len(Accounts.log)):
+            ac_type = loc_type_table.in_table(index)
+            anomalies_found = False
+            anomaly_entries = []
+            ledger_to_check = Log()
+
+            # handle if account is checking or savings
+            if ac_type == 'reg' or ac_type == 'sav':
+                ledger_to_check = Accounts.log[index].ledger
+                # check if ledger has sufficient data to run algorithm
+                if len(ledger_to_check.log) >= MIN_LENGTH_FOR_ANOMALY_DETECTION:
+                    # find anomalies in account ledger
+                    anomalies_found, anomaly_entries = find_anomalies(ledger_to_check, index)
+                    if anomalies_found:
+                        # if anomalies were found, call handle function for each flagged entry
+                        for entry in anomaly_entries:
+                            handle_anomaly(entry, index)
+            # handle if account is business
+            else:
+                # go over each dep in business account
+                for dep_name in Accounts.log[index].departments.keys():
+                    ledger_to_check = Accounts.log[index].departments[dep_name][1]
+                    # check if ledger has sufficient data to run algorithm
+                    if len(ledger_to_check.log) >= MIN_LENGTH_FOR_ANOMALY_DETECTION:
+                        # find anomalies in department ledger
+                        anomalies_found, anomaly_entries = find_anomalies(ledger_to_check, index)
+                        if anomalies_found:
+                            # if anomalies were found, call handle function for each flagged entry
+                            for entry in anomaly_entries:
+                                handle_anomaly(entry, index)

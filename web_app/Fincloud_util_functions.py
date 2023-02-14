@@ -168,3 +168,25 @@ def time_dif(last, current):
     delta += 30 * 24 * 60 * 60 * (current[1] - last[1])  # add months
     delta += 365 * 24 * 60 * 60 * (current[0] - last[0])  # add years
     return delta  # time delta in seconds
+
+
+def find_cluster(gap: float, amount: int) -> int:
+    cluster = int(amount / gap)
+    return cluster
+
+
+def calc_deviation(amount, avg, stdev):
+    deviation = abs(amount - avg) / stdev
+    return deviation
+
+
+def date_to_num(date: []) -> int:
+    num = date[2] + 30 * date[1] + 365 * date[0]
+    return num
+
+
+def create_clusters(counter: int) -> [[]]:
+    clusters = []
+    for i in range(counter):
+        clusters.append([])
+    return clusters

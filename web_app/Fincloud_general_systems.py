@@ -33,7 +33,7 @@ class Entry:  # object properties: action, amount
         self.target_num = target_num  # if action involves other accounts this is set, otherwise set to -1
         self.target_dep = target_dep  # if action involves other accounts this is set, otherwise set to -1
         self.entry_id = generate_entry_id()  # entry identification code (unique for every entry)
-        self.entry_index = entry_index
+        self.entry_index = entry_index  # index of entry in log
 
 
 class Cloud:  # a financial cloud that allows deposits to be kept and accessed using an access code
@@ -668,8 +668,50 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
 
 
 # functions
-def cancel_transaction(ac_index: int, transaction_entry: Entry) -> bool:
-    return True
+def reverse_transaction(source_index: int, source_dep, target_index: int, target_dep: int, action_type: str, amount: int) -> bool:
+    """
+    :param source_index: index of source account
+    :param source_dep: name of source department (if exists)
+    :param target_index: index of target account (if exists)
+    :param target_dep: name of target department (if exists)
+    :param action_type: action type (d/w/tf/tt)
+    :param amount: amount of funds moved in transaction
+    :return: bool (whether or not reversal is confirmed
+    """
+
+    save_action_type = ''
+    if action_type == 'tf':  # if the action is transfer away, change action to deposit and save withdraw for target account
+        save_action_type = 'w'
+        action_type = 'd'
+    elif action_type == 'tt':  # if the action is transfer to, change action to withdraw and save deposit for source account
+        save_action_type = 'd'
+        action_type = 'w'
+    else:
+        if action_type != 'd' and action_type != 'w':
+            return False
+
+    ac_type = loc_type_table.in_table(source_index)
+    if action_type == 'd':  # deposit
+        if ac_type == 'reg':
+            Accounts.log[source_index].value['USD'] = Accounts.log[source_index].value['USD'] - amount
+        elif ac_type == 'sav':
+            Accounts.log[source_index].value = Accounts.log[source_index].value - amount
+        else:
+            Accounts.log[source_index].departments[source_dep][0]['USD'] = Accounts.log[source_index].departments[source_dep][0]['USD'] - amount
+
+    elif action_type == 'w':  # withdraw
+        if ac_type == 'reg':
+            Accounts.log[source_index].value['USD'] = Accounts.log[source_index].value['USD'] + amount
+        elif ac_type == 'sav':
+            Accounts.log[source_index].value = Accounts.log[source_index].value + amount
+        else:
+            Accounts.log[source_index].departments[source_dep][0]['USD'] = Accounts.log[source_index].departments[source_dep][0]['USD'] + amount
+
+    if save_action_type == '':
+        return True
+
+    # call function for target account with opposite action
+    return reverse_transaction(target_index, target_dep, -1, -1, save_action_type, amount)
 
 
 def send_message(ac_index, subject, message):
@@ -963,3 +1005,236 @@ def create_business_account(account_name, company_name, account_code, phone_num)
 
     # return values (confirmation, account index, response code)
     return confirm, name_table.in_table(user_name), response_code
+
+
+def cluster_by_date(action_clusters: {str: [Entry]}) -> {str: [[Entry]]}:
+    general_clusters = {}
+    for action in action_clusters.keys():
+        group = action_clusters[action]
+        counter = int(len(group) * CLUSTER_NUMBER_RATIO)
+
+        # find first date (later subtract first date from all dates to cluster correctly
+        first_date = date_to_num(group[0].date)
+        for entry in group:
+            if date_to_num(entry.date) < first_date:
+                first_date = date_to_num(entry.date)
+
+        last_date = 0
+        for entry in group:
+            if date_to_num(entry.date) > last_date:
+                last_date = date_to_num(entry.date)
+
+        gap = last_date / counter  # gap - jumps of amount between clusters defined by maximum amount and cluster counter
+
+        # create a list of counter length in which each segment has a list which will include entries in the amount range
+        # each index in the list 'clusters' will contain a list (each list is a cluster, entries will be divided to clusters)
+        # amount range is index*gap to (index+1)*gap for each cluster, entries are organized by amount
+        clusters = create_clusters(counter)
+        for index in range(len(group)):
+            cluster_index = find_cluster(gap, date_to_num(group[index].date) - first_date)  # find cluster index for the entry
+            if group[index].amount == last_date:
+                cluster_index -= 1  # if amount is largest, index will be out of bounds
+            clusters[cluster_index].append(group[index])  # add entry to the correct cluster
+        general_clusters[action] = clusters
+
+    return general_clusters
+
+
+def cluster_by_amount(action_clusters: {str: [Entry]}) -> {str: [[Entry]]}:
+    """
+    :param action_clusters: dictionary in which keys are actions and values are lists of transaction entries
+    :return: action_clusters but lists of entries are divided into clusters by amounts
+    """
+    general_clusters = {}
+    for action in action_clusters.keys():  # run algorithm for each list of entries that are organized by action type
+        group = action_clusters[action]
+        counter = int(len(group) * CLUSTER_NUMBER_RATIO)
+        largest_amount = 0
+        # find largest amount in group
+        for entry in group:
+            if entry.amount > largest_amount:
+                largest_amount = entry.amount
+
+        gap = largest_amount / counter  # gap - jumps of amount between clusters defined by maximum amount and cluster counter
+
+        # create a list of counter length in which each segment has a list which will include entries in the amount range
+        # each index in the list 'clusters' will contain a list (each list is a cluster, entries will be divided to clusters)
+        # amount range is index*gap to (index+1)*gap for each cluster, entries are organized by amount
+        clusters = create_clusters(counter)
+        for index in range(len(group)):
+            cluster_index = find_cluster(gap, group[index].amount)  # find cluster index for the entry
+            if group[index].amount == largest_amount:
+                cluster_index -= 1  # if amount is largest, index will be out of bounds
+            clusters[cluster_index].append(group[index])  # add entry to the correct cluster
+        general_clusters[action] = clusters
+
+    return general_clusters
+
+
+def return_stats(entries: Log, ac_index: int) -> (int, float, float, {str: [[Entry]]}):
+    """
+    :param entries: list of entries
+    :param ac_index: index of account (entries are from the account at ac_index in Accounts)
+    :return: median of entry amounts, average of all entry amounts, average of checked entry amounts, clusters of entries
+    clusters: a dictionary in which keys are actions, values are a list of lists of Entries
+    """
+    amounts = []
+    avg = 0
+    action_clusters = {}
+    ledger_len = len(entries.log)
+    checked_entries = entries.log[0:last_checked_entry[ac_index]]
+    already_checked = len(checked_entries)
+    avg_before = 0
+    for entry in checked_entries:
+        avg_before += entry.amount / already_checked
+    for etype in entry_types:
+        action_clusters[etype] = []
+    for index in range(len(entries.log)):
+        entry_amount = entries.log[index].amount
+        avg += entry_amount / ledger_len
+        amounts.append(entry_amount)
+        action_clusters[entries.log[index].action].append(entries.log[index])
+    amounts.sort()
+    median = amounts[int(ledger_len / 2) + 1] if ledger_len % 2 == 1 \
+        else (amounts[int(ledger_len / 2)] + amounts[int(ledger_len / 2) + 1]) / 2
+    amount_clusters = cluster_by_amount(action_clusters)
+    date_clusters = cluster_by_date(action_clusters)
+
+    return median, avg, avg_before, amount_clusters, date_clusters
+
+
+def find_anomalies(ac_ledger: Log, ac_index: int) -> (bool, []):
+    """
+    :param ac_ledger: ledger of account (of log type, property of the account being checked)
+    :param ac_index: index of account (entries are from the account at ac_index in Accounts)
+    :return: a boolean value that identifies whether red flags were found, and a list of flagged entries
+    """
+
+    # if all entries in ledger were already checked, return False and an empty list
+    if len(ac_ledger.log) == last_checked_entry[ac_index] + 1:
+        return False, []
+
+    # get stats on complete entry ledger
+    median, avg, avg_before, amount_clusters, date_clusters = return_stats(ac_ledger, ac_index)
+
+    # separate entries that were not yet checked
+    entries_to_check = ac_ledger.log[last_checked_entry[ac_index]::]
+
+    # update last_checked_entry to current number of entries
+    last_checked_entry[ac_index] = len(ac_ledger.log) - 1
+
+    flagged_entries = []
+    # find anomalies in new entries
+    # possible flags: relatively large transaction after x time without activity,
+    #                 largest every transaction by x margin
+    #                 causes change in average transfer stats above x percentage points,
+    #                 large standard deviation,
+    #                 first transaction of certain action type with large clusters of other types
+    #                 transaction from savings account to department of business account that was previously empty
+
+    # find outliers in Entry clusters (with amount clustering and date clustering:
+    # clusters with only one entry, with two adjacent clusters that are empty, will be identified as outliers
+    for action in amount_clusters.keys():
+        clusters = amount_clusters[action]
+        lonely_clusters = []  # indices for clusters with only one entry
+        empty_clusters = []  # indices for clusters with no entries
+        for index in range(len(clusters)):
+            if len(clusters[index]) == 1:
+                lonely_clusters.append(index)
+            elif len(clusters[index]) == 0:
+                empty_clusters.append(index)
+        red_flag_indices = []
+        for index in lonely_clusters:
+            if index == 0:
+                if (index + 1) in empty_clusters:
+                    red_flag_indices.append(index)
+            elif index == len(clusters) - 1:
+                if (index - 1) in empty_clusters:
+                    red_flag_indices.append(index)
+            else:
+                if (index + 1) in empty_clusters and (index - 1) in empty_clusters:
+                    red_flag_indices.append(index)
+        for index in red_flag_indices:
+            if clusters[index][0] in entries_to_check:
+                flagged_entries.append(clusters[index][0])
+
+    # find unreasonably large gaps in time between transactions
+    for action in date_clusters.keys():
+        clusters = date_clusters[action]
+        lonely_clusters = []  # indices for clusters with only one entry
+        empty_clusters = []  # indices for clusters with no entries
+        for index in range(len(clusters)):
+            if len(clusters[index]) == 1:
+                lonely_clusters.append(index)
+            elif len(clusters[index]) == 0:
+                empty_clusters.append(index)
+        red_flag_indices = []
+        for index in lonely_clusters:
+            if (index + 1) in empty_clusters and (index + 2) in empty_clusters:
+                red_flag_indices.append(index)
+            elif index == len(clusters) - 1:
+                if (index - 1) in empty_clusters and (index - 2) in empty_clusters:
+                    red_flag_indices.append(index)
+            else:
+                if (index + 1) in empty_clusters and (index + 2) in empty_clusters and (index - 1) in empty_clusters and (index - 2) in empty_clusters:
+                    red_flag_indices.append(index)
+        for index in red_flag_indices:
+            if clusters[index][0] in entries_to_check:
+                flagged_entries.append(clusters[index][0])
+
+    # find outliers with standard deviation calculation
+    amounts = [entry.amount for entry in ac_ledger.log]
+    standard_deviation = statistics.stdev(amounts)
+    for entry in ac_ledger.log:
+        deviation = calc_deviation(entry.amount, avg, standard_deviation)
+        if deviation >= MIN_DEVIATION_TO_FLAG and entry not in flagged_entries and entry in entries_to_check:
+            flagged_entries.append(entry)
+
+    # specific flags:
+    # largest transfer in transaction history to an account never transferred to before
+    # find largest transfer amount (also save index of entry)
+    largest_amount = 0
+    largest_amount_index = 0
+    for entry in ac_ledger.log:
+        if entry.amount > largest_amount and entry.action == 'tf':
+            largest_amount = entry.amount
+            largest_amount_index = entry.entry_index
+
+    # check if entry is in entries_to_check, if so check for flag
+    if largest_amount_index > last_checked_entry[ac_index]:
+        # create the following dictionary {ac number transferred to: list of amounts to this index}
+        transfer_dict = {}
+        for entry in ac_ledger.log:
+            if entry.target_num not in transfer_dict.keys() and entry.action == 'tf':
+                transfer_dict[entry.target_num] = []
+            transfer_dict[entry.target_num].append(entry.amount)
+        # go over values and check if largest amount is alone in a list (if so, flag entry)
+        for amounts in transfer_dict.values():
+            if len(amounts) == 1:
+                if amounts[0] == largest_amount:
+                    flagged_entries.append(ac_ledger.log[largest_amount_index])
+
+    # return red_flags_found (bool value) and list of flagged entries
+    red_flags_found = (len(flagged_entries) != 0)
+    return red_flags_found, flagged_entries
+
+
+def handle_anomaly(anomaly_entry: Entry, ac_index):
+    # create subject
+    date = anomaly_entry.date
+    date_str = str(date[0]) + '/' + str(date[1]) + '/' + str(date[2])
+    subject = 'Transaction of type ' + anomaly_entry.action + ' on ' + date_str
+    message = 'Red Flag raised for transaction:' + '\n'
+    message += 'Entry ID: ' + str(anomaly_entry.entry_id) + '\n'
+    message += 'Entry number: ' + str(anomaly_entry.entry_index) + '\n'
+    message += 'Transaction date: ' + date_str + '\n'
+    message += 'Action type: ' + anomaly_entry.action + '\n'
+    message += 'Transferred to account number: ' + (
+        str(anomaly_entry.target_num) if anomaly_entry.target_num != -1 else 'none') + '\n'
+    message += 'Transferred to department: ' + (
+        str(anomaly_entry.target_dep) if anomaly_entry.target_dep != -1 else 'none') + '\n'
+    message += 'Amount of transaction: ' + str(anomaly_entry.amount) + '\n'
+    message += 'If this transaction is an error, or you suspect that it was caused by a malicious third-party, please file a request to the bank.' + '\n'
+    message += 'Thank you,' + '\n'
+    message += 'Transaction Anomaly Detection Team'
+    send_message(ac_index, subject, message)

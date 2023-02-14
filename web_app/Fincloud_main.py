@@ -1,7 +1,7 @@
 # import system objects/functions
 from Fincloud_general_systems import *
 from Fincloud_request_handler import FinCloudHTTPRequestHandler
-from Fincloud_background_functions import session_timing, accounts_update, rates_update, refresh_admin_credentials
+from Fincloud_background_functions import session_timing, accounts_update, rates_update, refresh_admin_credentials, anomaly_detection
 
 
 # main - driver function
@@ -48,7 +48,14 @@ def main():
     # run the thread
     credentials_update_thread.start()
     credentials_update_thread_ID = credentials_update_thread.ident
-    print('* Admin credentials updating thread started at thread ID = "' + str(credentials_update_thread_ID) + '"\n')
+    print('* Admin credentials updating thread started at thread ID = "' + str(credentials_update_thread_ID) + '"')
+
+    # create separate thread for anomaly detection and handling
+    anomaly_detection_thread = threading.Thread(target=anomaly_detection)
+    # run the thread
+    anomaly_detection().start()
+    anomaly_detection_thread_ID = anomaly_detection_thread.ident
+    print('* Anomaly detection thread started at thread ID = "' + str(anomaly_detection_thread_ID) + '"\n')
 
     # create HTTP server with custom request handler
     print('Running main thread at thread ID = "' + str(threading.get_ident()) + '"')
