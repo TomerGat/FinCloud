@@ -111,7 +111,7 @@ history = {}
 active_requests = {}
 
 # dict from ac_index to personal questions/answers for security verification that is used when recovering an account
-# will contain {question: answer, question: answer} as dict(int, dict(str, str))
+# will contain {account index: {question: answer, question: answer}} as dict(int, dict(str, str))
 security_questions = {}
 
 # shared list containing addresses connected
@@ -168,6 +168,8 @@ class Responses(Enum):
     AC_CODE_INCORRECT = -34
     INVALID_SPENDING_LIMIT = -35
     INVALID_SECURITY_DETAILS = -36
+    INVALID_SECURITY_ANSWER = -37
+    SECURITY_ANSWER_INCORRECT = -38
 
     # confirmation responses
     GENERAL_CONFIRM = 1  # general confirmation - no response output to ui
@@ -183,6 +185,7 @@ class Responses(Enum):
     CLOUD_WITHDRAWAL_CONFIRM = 11
     SPENDING_LIMIT_ALTERED = 12
     REQUEST_FILED = 13
+    IDENTITY_CONFIRMED = 14
 
     # empty response
     EMPTY_RESPONSE = 0

@@ -158,7 +158,7 @@ class Cloud:  # a financial cloud that allows deposits to be kept and accessed u
 class Account:
     def __init__(self, spending_limit):
         self.value = create_value_table()  # value table
-        self.account_number = assign_account_number()  # account number
+        self.account_number = generate_account_number()  # account number
         self.ledger = Log()  # ledger for transaction entries
         self.trade_ledger = Log()  # ledger for trade entries
         self.monthly_spending_limit = spending_limit  # current monthly spending limit
@@ -347,7 +347,7 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
         self.returns = pow((1 + returns / 100), 1 / 12)  # returns per month
         self.last_update = get_date()  # last update of account value
         self.shift_date = get_date()[2]  # day of account creation (shift month count +1 when updating)
-        self.account_number = assign_account_number()  # account number
+        self.account_number = generate_account_number()  # account number
         self.ledger = Log()  # ledger for transaction entries
         self.fee = set_fee(self.returns)  # monthly fee
         self.inbox = []  # account inbox, contains list of messages
@@ -476,7 +476,7 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
     def __init__(self, company_name, department_names):  # department_name is a list of names for each department
         self.company_name = company_name  # name of owning company
         self.departments = {}  # dictionary containing all departments as keys
-        self.account_number = assign_account_number()  # account number
+        self.account_number = generate_account_number()  # account number
         number_table.add_key_index(self.account_number)
         loc_type_table.add_index_value('bus')
         self.inbox = []  # account inbox, contains list of messages
@@ -797,49 +797,47 @@ def currency_rates(cur1, cur2, amount):
         return round(amount_new, 3)
 
 
-def assign_account_number():
+def generate_account_number() -> int:
     # Generate a random number between 1000000000 and 9999999999
     number = random.randint(1000000000, 9999999999)
 
-    # Check if the random number has been generated before
-    while number in existing_account_numbers:
-        # If it has, generate a new random number
-        number = random.randint(1000000000, 9999999999)
+    # Check if the random number is already assigned
+    if number in existing_account_numbers:
+        # If it is, return a number recursively
+        return generate_account_number()
 
-    # Add the random number to the set of generated numbers
+    # Add the random number to the set of generated numbers and return the number
     existing_account_numbers.add(number)
-
     return number
 
 
-def generate_entry_id():
+def generate_entry_id() -> int:
     # Generate a random number between 100000000000 and 999999999999
     number = random.randint(100000000000, 999999999999)
 
-    # Check if the random number has been generated before
-    while number in existing_entry_id:
-        # If it has, generate a new random number
-        number = random.randint(100000000000, 999999999999)
+    # Check if the random number is already assigned
+    if number in existing_entry_id:
+        # If it is, return a number recursively
+        return generate_entry_id()
 
-    # Add the random number to the set of generated numbers
+    # Add the random number to the set of generated numbers and return the number
     existing_entry_id.add(number)
-
     return number
 
 
-def generate_request_id():
+def generate_request_id() -> int:
     # Generate a random number between 100000000000 and 999999999999
     number = random.randint(100000000000, 999999999999)
 
-    # Check if the random number has been generated before
-    while number in existing_request_id:
-        # If it has, generate a new random number
-        number = random.randint(100000000000, 999999999999)
+    # Check if the random number is already assigned
+    if number in existing_request_id:
+        # If it is, return a number recursively
+        return generate_request_id()
 
-    # Add the random number to the set of generated numbers
+    # Add the random number to the set of generated numbers and return the number
     existing_entry_id.add(number)
-
     return number
+
 
 def hash_function(param) -> int:
     input_str = str(param)
@@ -869,6 +867,32 @@ def create_table_output(value_table):
     output += '</table>'
 
     return output
+
+
+def security_verification(ac_index, question, answer_attempt) -> (bool, int):
+    """
+    :param ac_index: index of account being recovered
+    :param question: number of question (1/2)
+    :param answer_attempt: user answer for security verification question
+    :return: verify (bool), response_code (int)
+    """
+
+    # initialize return values
+    verify = False
+    response_code = Responses.EMPTY_RESPONSE
+    # validate the input
+    if not validate_string(answer_attempt):
+        response_code = Responses.INVALID_SECURITY_ANSWER
+    else:
+        correct_answer = security_questions[ac_index][question]
+        # compare attempt with correct answer
+        if answer_attempt != correct_answer:
+            response_code = Responses.SECURITY_ANSWER_INCORRECT
+        else:
+            verify = True
+            response_code = Responses.GENERAL_CONFIRM
+
+    return verify, response_code
 
 
 def verification(attempt, code_attempt):  # returns: verification answer, response code, account index

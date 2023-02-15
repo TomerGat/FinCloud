@@ -112,8 +112,8 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '<input type="submit" value="Login">'
             output += '</form>'
             temp = '<p style = "color: black" style = "text-decoration: none">Forgot your password?</p>'
-            output += '<h5><a href="/forgot">' + temp + '</a></h5>' + '</br>'
-            temp = '<p style = "color: black" style = "text-decoration: none">Recover username and password?</p>'
+            output += '<h5><a href="/forgot">' + temp + '</a></h5>'
+            temp = '<p style = "color: black" style = "text-decoration: none">Forgot your username and password?</p>'
             output += '<h5><a href="/forgot_data">' + temp + '</a></h5>' + '</br>'
 
             # print error/response message if redirect flag is set to True
@@ -127,9 +127,13 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 elif response_code == Responses.PROCESSING_ERROR:
                     output += '<h4>Processing error. Please try again at a later time.</h4>'
                 elif response_code == Responses.ACCOUNT_RECOVERY_CONFIRM:
-                    output += '<h4>Account recovered. Password reset.</h4>'
+                    output += '<h4>Account recovered. Username/password reset.</h4>'
                 elif response_code == Responses.NEW_ACCOUNT_CREATED:
                     output += '<h4>New account created.</h4>'
+                elif response_code == Responses.SECURITY_ANSWER_INCORRECT:
+                    output += '<h4>Security verification failed: Incorrect answer. Please try again later.</h4>'
+                elif response_code == Responses.INVALID_SECURITY_ANSWER:
+                    output += '<h4>Security verification failed: Invalid answer. Please try again later.</h4>'
                 data.alter_re(self.client_address[0], 0)
 
             output += '</br>' + '________      or      ________' + '</br></br></br>'
@@ -147,12 +151,58 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '<h1>Your Account: ' + account_name + '</h1>'
             output += '<h2><Are you sure you want to log out of your account?</h2>'
             output += '<form method="POST" enctype="multipart/form-data" action="/account/logout">'
-            output += '<input type="submit" value="Confirm">' + '</form>'
-            output += '<h4><a href="/account/home">Cancel logout</a></h4>'
+            output += '<input type="submit" value="Confirm Logout">' + '</form>'
+            output += '<h4><a href="/account/home">Cancel and return to account home page</a></h4>'
+            self.wfile.write(output.encode())
+
+        elif self.path.endswith('/confirm_identity'):
+            self.start()
+            self.clear()
+            question_num = random.randint(1, 2) - 1
+            recovery_data = data.response_codes[self.client_address[0]]
+            ac_index = recovery_data['index']
+            questions = list(security_questions[ac_index].keys())
+            question_to_ask = questions[question_num]
+            data.response_codes[self.client_address[0]]['question'] = question_to_ask
+            output = '<html><body>'
+            output += '<h1>Confirm Identity - Security Question</h1>'
+            output += '<h2>Answer a security question to confirm your identity and recover your account</h3>'
+            output += 'Security question: ' + question_to_ask + '</br>'
+            output += '<form method="POST" enctype="multipart/form-data" action="/confirm_identity">'
+            output += 'Enter your answer: ' + '<input name="answer" type="text">' + '</br></br>'
+            output += '<input type="submit" value="Recover Account"></form></br>'
+            output += '</br><h4><a href="/login">Return to log in page</a></h4>'
+            output += '</body></html>'
             self.wfile.write(output.encode())
 
         elif self.path.endswith('/forgot_data'):
-            pass
+            self.start()
+            self.clear()
+            output = '<html><body>'
+            output += '<h1>Recover your account</h1>'
+            output += '<form method="POST" enctype="multipart/form-data" action="/forgot_data">'
+            output += 'Enter your phone number: ' + '<input name="phone" type="text">' + '</br>'
+            output += '</br>'
+            output += 'Enter your new account password: ' + '<input name="code" type="text">' + '</br>'
+            output += 'Confirm your new account password: ' + '<input name="code_confirm" type="text">' + '</br>'
+            output += '</br>'
+            output += '<input type="submit" value="Continue">'
+            output += '</form>' + '</br>'
+
+            # print error/response message if redirect flag is set to True
+            if data.redirect_flags[self.client_address[0]]:
+                data.alter_rf(self.client_address[0], False)
+                response_code = data.response_codes[self.client_address[0]]
+                if response_code == Responses.PHONE_NUM_NOT_FOUND:
+                    output += '<h4>Phone number does not exist in out system.</h4>'
+                elif response_code == Responses.CODES_NOT_MATCH:
+                    output += '<h4>Codes do not match</h4>'
+                data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
+
+            output += '</br>'
+            output += '<h4><a href="/login">Cancel and return to log in page</a></h4>'
+            output += '</body></html>'
+            self.wfile.write(output.encode())
 
         elif self.path.endswith('/forgot'):
             self.start()
@@ -166,7 +216,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += 'Enter your new account password: ' + '<input name="code" type="text">' + '</br>'
             output += 'Confirm your new account password: ' + '<input name="code_confirm" type="text">' + '</br>'
             output += '</br>'
-            output += '<input type="submit" value="Submit">'
+            output += '<input type="submit" value="Continue">'
             output += '</form>' + '</br>'
 
             # print error/response message if redirect flag is set to True
@@ -179,7 +229,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     output += '<h4>Account name/number incorrect.</h4>'
                 elif response_code == Responses.CODES_NOT_MATCH:
                     output += '<h4>Codes do not match</h4>'
-                data.alter_re(self.client_address[0], 0)
+                data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
             output += '</br>'
             output += '<h4><a href="/login">Return to log in page</a></h4>'
@@ -222,14 +272,14 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += 'Remember: the security question is critical in case you need to recover you account!'
             output += 'So make sure you do not make mistakes when entering you answers, and make sure you remember them!'
             output += '<form method="POST" enctype="multipart/form-data" action="/new/set_security_details">'
-            output += '<h3>Question 1:</h3'
+            output += '<h3>Question 1:</h3>'
             output += '</br>Enter your question here: ' + '<input name="question1" type="text">' + '</br>'
             output += '</br>Enter your answer here: ' + '<input name="answer1" type="text">' + '</br></br>'
-            output += '<h3>Question 2:</h3'
+            output += '<h3>Question 2:</h3>'
             output += '</br>Enter your question here: ' + '<input name="question2" type="text">' + '</br>'
             output += '</br>Enter your answer here: ' + '<input name="answer2" type="text">' + '</br></br>'
             output += '<input type="submit" value="Create Account">'
-            output += '</form>' + '</br>'
+            output += '</form>' + '</br></br>'
 
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
@@ -238,7 +288,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 if response_code == Responses.INVALID_SECURITY_DETAILS:
                     output += '</h4>Invalid input. Please try again.</h4>'
 
-            output += '<a href="/new">Cancel account opening</a>'
+            output += '</br><a href="/new">Cancel account creation</a>'
             output += '</body></html>'
             self.wfile.write(output.encode())
 
@@ -288,7 +338,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     output += '<h4>Monthly spending limit is invalid.</h4>'
                 elif response_code == Responses.CODES_NOT_MATCH:
                     output += '<h4>Code confirmation does not match the code you entered. Please try again.</h4>'
-                data.alter_re(self.client_address[0], 0)
+                data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
             output += 'Want to check out different options? ' + '<a href="/new">Check them out here</a>'
             output += '</br></br></br>'
@@ -348,7 +398,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     output += '<h4>Code confirmation does not match the code you entered. Please try again.</h4>'
                 elif response_code == Responses.INVALID_SAVING_RETURNS:
                     output += '<h4>Returns are invalid for this type of account.</h4>'
-                data.alter_re(self.client_address[0], 0)
+                data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
             output += 'Want to check out different options? ' + '<a href="/new">Check them out here</a>'
             output += '</br></br></br>'
@@ -403,7 +453,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     output += '<h4>Account name already registered to an existing account.</h4>'
                 elif response_code == Responses.CODES_NOT_MATCH:
                     output += '<h4>Code confirmation does not match the code you entered. Please try again.</h4>'
-                data.alter_re(self.client_address[0], 0)
+                data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
             output += 'Want to check out different options? ' + '<a href="/new">Check them out here</a>'
             output += '</br></br></br>'
@@ -531,9 +581,9 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     output += '<h4>Spending limit changed. Your monthly spending limit will be updated at the end of the month.'
                 elif response_code == Responses.REQUEST_FILED:
                     output += '<h4>Your request will be filed to the bank. Your will receive an update to your personal inbox.'
-                data.alter_re(self.client_address[0], 0)
+                data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
             if type(data.response_codes) is not int:
-                data.alter_re(self.client_address[0], 0)
+                data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
             output += '</br></br>' + '<h4><a href="/account/logout">Log out</a></h4>'
             output += '</body></html>'
@@ -580,7 +630,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 response_code = data.response_codes[self.client_address[0]]
                 if response_code == Responses.INVALID_SPENDING_LIMIT:
                     output += '<h4>Spending limit is not valid.</h4>'
-                data.alter_re(self.client_address[0], False)
+                data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
             output += '</br></br>' + 'To cancel and return to account home page ' + '<a href="/account/home">Click here</a>'
             output += '</body></html>'
@@ -614,7 +664,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     output += '<h4>Invalid input (amount).</h4>'
                 elif response_code == Responses.DEP_NOT_FOUND:
                     output += '<h4>Department name not found</h4>'
-                data.alter_re(self.client_address[0], False)
+                data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
             output += '</br></br>' + 'To return to account home page ' + '<a href="/account/home">Click here</a>'
             output += '</body></html>'
@@ -650,7 +700,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     output += '<h4>Account value in USD is insufficient for this withdrawal.</h4>'
                 elif response_code == Responses.DEP_NOT_FOUND:
                     output += '<h4>Department name not found</h4>'
-                data.alter_re(self.client_address[0], False)
+                data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
             output += '</br></br>' + 'To return to account home page ' + '<a href="/account/home">Click here</a>'
             output += '</body></html>'
@@ -698,7 +748,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     output += '<h4>Target department not set although target account is a business account.</h4>'
                 elif response_code == Responses.SOURCE_DEP_NOT_FOUND:
                     output += '<h4>Source department not found.</h4>'
-                data.alter_re(self.client_address[0], 0)
+                data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
             output += '</br>' + '</br>' + 'To return to account home page ' + '<a href="/account/home">Click here</a>'
             output += '</body></html>'
@@ -723,7 +773,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 response_code = data.response_codes[self.client_address[0]]
                 if response_code == Responses.CURRENCY_TRADE_CONFIRM:
                     output += '<h4>Currency trade confirmed.</h4>'
-                data.alter_re(self.client_address[0], 0)
+                data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
             output += '</br></br>' + 'To trade and invest in different currencies ' + \
                       '<a href="/account/holdings/trade_currency">Click here</a>' + '</br></br>'
@@ -756,7 +806,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 response_code = data.response_codes[self.client_address[0]]
                 if response_code == Responses.CURRENCY_TRADE_CONFIRM:
                     output += '<h4>Currency trade confirmed.</h4>'
-                data.alter_re(self.client_address[0], 0)
+                data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
             output += '</br></br>' + 'To return to account home page ' + '<a href="/account/home">Click here</a>'
             output += '</body></html>'
@@ -809,7 +859,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     output += '<h4>Target currency not found.</h4>'
                 elif response_code == Responses.CURRENCIES_NOT_FOUND:
                     output += '<h4>Source and target currencies not found.</h4>'
-                data.alter_re(self.client_address[0], 0)
+                data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
             output += '</br>' + '</br>' + 'To return to account holdings page ' + '<a href="/account/holdings">Click here</a>'
             output += '</br>' + '</br>' + 'Return to account home page ' + '<a href="/account/home">Click here</a>'
@@ -868,7 +918,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     output += '<h4>Source and target currencies not found.</h4>'
                 elif response_code == Responses.PROCESSING_ERROR:
                     output += '<h4>Processing error. Please try again later.</h4>'
-                data.alter_re(self.client_address[0], 0)
+                data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
             output += '</br>' + '</br>' + 'To return to account holdings page ' + '<a href="/account/business/departments">Click here</a>'
             output += '</br>' + '</br>' + 'Return to account home page ' + '<a href="/account/home">Click here</a>'
@@ -908,7 +958,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     output += '<h4>Target department not found.</h4>'
                 elif response_code == Responses.INSUFFICIENT_AMOUNT:
                     output += '<h4>Department value in USD is insufficient for this transfer.</h4>'
-                data.alter_re(self.client_address[0], 0)
+                data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
             output += '</br>' + '</br>' + 'To return to account home page ' + '<a href="/account/home">Click here</a>'
             output += '</body></html>'
@@ -933,9 +983,9 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     output += '<h4>Funds allocation confirmed.</h4>'
                 elif response_code == Responses.CLOUD_WITHDRAWAL_CONFIRM:
                     output += '<h4>Funds withdrawal confirmed.</h4>'
-                data.alter_re(self.client_address[0], 0)
+                data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
             if type(data.response_codes) is not int:
-                data.alter_re(self.client_address[0], 0)
+                data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
             output += '</br>' + '</br>' + 'To return to account home page ' + '<a href="/account/home">Click here</a>'
             output += '</body></html>'
@@ -974,7 +1024,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     output += '<h4>Insufficient funds in your account to complete allocation.</h4>'
                 elif response_code == Responses.PROCESSING_ERROR:
                     output += '<h4>Processing error: account not found. Please try again later</h4>'
-                data.alter_re(self.client_address[0], 0)
+                data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
             output += '</br>' + '</br>' + 'To return to Fincloud page ' + '<a href="/account/cloud">Click here</a>'
             output += '</body></html>'
@@ -1015,7 +1065,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     output += '<h4>Processing error: account not found. Please try again later</h4>'
                 elif response_code == Responses.ALLOCATION_NOT_FOUND:
                     output += '<h4>Allocation not found</h4>'
-                data.alter_re(self.client_address[0], 0)
+                data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
             output += '</br>' + '</br>' + 'To return to Fincloud page ' + '<a href="/account/cloud">Click here</a>'
             output += '</body></html>'
@@ -1044,7 +1094,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     output += '<h4>Department name already exists.</h4>'
                 if response_code == Responses.DEP_NAME_INVALID:
                     output += '<h4>Department name invalid. Please try again.</h4>'
-                data.alter_re(self.client_address[0], 0)
+                data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
             output += '</br>' + '</br>' + 'To return to account home page ' + '<a href="/account/home">Click here</a>'
             output += '</body></html>'
@@ -1122,7 +1172,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 param_list = data.response_codes[self.client_address[0]]
                 ac_type = param_list['type']
                 confirm = False
-                response_code = Responses.GENERAL_CONFIRM
+                response_code = Responses.EMPTY_RESPONSE
                 index = -1
                 if ac_type == 'reg':
                     confirm, index, response_code = create_checking_account(param_list['account name'],
@@ -1246,6 +1296,38 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             else:
                 self.system_error()
 
+        elif self.path.endswith('/confirm_identity'):
+            # extract user input from headers in POST packet
+            ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
+            pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
+            content_len = int(self.headers.get('Content-length'))
+            pdict['CONTENT-LENGTH'] = content_len
+            if ctype == 'multipart/form-data':
+                fields = cgi.parse_multipart(self.rfile, pdict)
+                answer = fields.get('answer')[0]
+                recovery_data = data.response_codes[self.client_address[0]]
+                new_code = recovery_data['new code']
+                ac_index = recovery_data['index']
+                new_user = ''
+                if 'new user' in recovery_data.keys():
+                    new_user = recovery_data['new user']
+
+                # verify recovery
+                confirm, response_code = security_verification(ac_index, recovery_data['question'], answer)
+                if confirm:
+                    pass_table.alter_key_index(ac_index, hash_function(new_code))
+                    if 'new user' in recovery_data.keys():
+                        name_table.alter_key_index(ac_index, new_user)
+                    data.alter_rf(self.client_address[0], True)
+                    data.alter_re(self.client_address[0], Responses.ACCOUNT_RECOVERY_CONFIRM)
+                    self.redirect('/login')
+                else:
+                    data.alter_rf(self.client_address[0], True)
+                    data.alter_re(self.client_address[0], response_code)
+                    self.redirect('/login')
+            else:
+                self.system_error()
+
         elif self.path.endswith('/forgot'):
             # extract user input from headers in POST packet
             ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
@@ -1265,12 +1347,12 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                         if phone_name_table.in_table(hash_function(phone_number)) != -1:
                             account_name = phone_name_table.in_table(hash_function(phone_number))
                             account_loc = name_table.in_table(account_name)
-                            pass_table.alter_key_index(account_loc, hash_function(new_code))
+                            recovery_data = {'index': account_loc, 'new code': new_code}
 
-                            # redirect to login page and send approval
-                            data.alter_rf(self.client_address[0], True)
-                            data.alter_re(self.client_address[0], Responses.ACCOUNT_RECOVERY_CONFIRM)
-                            self.redirect('/login')
+                            # redirect to identity confirmation page and send approval
+                            data.alter_rf(self.client_address[0], False)
+                            data.alter_re(self.client_address[0], recovery_data)
+                            self.redirect('/confirm_identity')
                         else:
                             # redirect to forgot page and send error message (phone number does not exist in our system)
                             data.alter_rf(self.client_address[0], True)
@@ -1292,6 +1374,43 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                         data.alter_rf(self.client_address[0], True)
                         data.alter_re(self.client_address[0], Responses.CODES_NOT_MATCH)
                         self.redirect('/forgot')
+            else:
+                self.system_error()
+
+        elif self.path.endswith('/forgot_data'):
+            # extract user input from headers in POST packet
+            ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
+            pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
+            content_len = int(self.headers.get('Content-length'))
+            pdict['CONTENT-LENGTH'] = content_len
+            if ctype == 'multipart/form-data':
+                fields = cgi.parse_multipart(self.rfile, pdict)
+                phone_number = fields.get('phone')[0]
+                new_code = fields.get('code')[0]
+                code_confirm = fields.get('code_confirm')[0]
+                new_user = fields.get('user')[0]
+
+                # account code reset process with user input
+                if new_code == code_confirm:
+                    if phone_name_table.in_table(hash_function(phone_number)) != -1:
+                        account_name = phone_name_table.in_table(hash_function(phone_number))
+                        account_loc = name_table.in_table(account_name)
+                        recovery_data = {'index': account_loc, 'new code': new_code, 'new user': new_user}
+
+                        # redirect to identity confirmation page and send approval
+                        data.alter_rf(self.client_address[0], False)
+                        data.alter_re(self.client_address[0], recovery_data)
+                        self.redirect('/confirm_identity')
+                    else:
+                        # redirect to forgot page and send error message (phone number does not exist in our system)
+                        data.alter_rf(self.client_address[0], True)
+                        data.alter_re(self.client_address[0], Responses.PHONE_NUM_NOT_FOUND)
+                        self.redirect('/forgot_data')
+                else:
+                    # redirect to forgot page send error message (codes do not match)
+                    data.alter_rf(self.client_address[0], True)
+                    data.alter_re(self.client_address[0], Responses.CODES_NOT_MATCH)
+                    self.redirect('/forgot_data')
             else:
                 self.system_error()
 
