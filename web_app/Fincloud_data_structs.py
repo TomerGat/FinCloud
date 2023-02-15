@@ -97,14 +97,17 @@ data = Global()
 # set containing all existing account numbers
 existing_account_numbers = set()
 
-# existing entries id list
+# existing entries id set
 existing_entry_id = set()
+
+# existing requests id set
+existing_request_id = set()
 
 # Shared Dictionary of Logs containing history of received packets  {ip address : Log}
 # after session timeout, log for timed out account is erased
 history = {}
 
-# active requests, dictionary containing all current requests from accounts {ac index: [entries]}
+# active requests, dictionary containing all current requests from accounts {ac index: [requests]}
 active_requests = {}
 
 # shared list containing addresses connected

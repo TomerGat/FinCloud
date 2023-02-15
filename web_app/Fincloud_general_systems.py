@@ -36,6 +36,20 @@ class Entry:  # object properties: action, amount
         self.entry_index = entry_index  # index of entry in log
 
 
+class Request:
+    def __init__(self, entry: Entry, source_index: int, source_dep: str):
+        if source_index not in active_requests.keys():
+            active_requests[source_index] = []
+        self.source_index = source_index
+        self.source_dep = source_dep
+        self.target_index = number_table.get_key(entry.target_num)
+        self.target_dep = entry.target_dep
+        self.action_type = entry.action
+        self.amount = entry.amount
+        self.request_id = generate_request_id()
+        active_requests[source_index].append(self)
+
+
 class Cloud:  # a financial cloud that allows deposits to be kept and accessed using an access code
     def __new__(cls):
         if not hasattr(cls, 'instance'):
@@ -668,6 +682,29 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
 
 
 # functions
+def handle_request(request_to_handle: Request, response: 'str') -> bool:
+    """
+    :param response: should request be aproved/denied
+    :param request_to_handle: request to handle
+    :return: handling confirmation
+    """
+
+    # make sure response is valid
+    if response != 'yes' and response != 'no':
+        return False
+
+    # remove request from active requests and delete request id
+    active_requests[request_to_handle.source_index] = \
+        [request for request in active_requests[request_to_handle.source_index] if request.request_id != request_to_handle.request_id]
+    existing_request_id.remove(request_to_handle.request_id)
+
+    # reverse the transaction
+    confirm = reverse_transaction(request_to_handle.source_index, request_to_handle.source_dep,
+                                  request_to_handle.target_index, request_to_handle.target_dep,
+                                  request_to_handle.action_type, request_to_handle.amount)
+    return confirm
+
+
 def reverse_transaction(source_index: int, source_dep, target_index: int, target_dep: int, action_type: str, amount: int) -> bool:
     """
     :param source_index: index of source account
@@ -676,7 +713,7 @@ def reverse_transaction(source_index: int, source_dep, target_index: int, target
     :param target_dep: name of target department (if exists)
     :param action_type: action type (d/w/tf/tt)
     :param amount: amount of funds moved in transaction
-    :return: bool (whether or not reversal is confirmed
+    :return: bool (whether reversal is confirmed)
     """
 
     save_action_type = ''
@@ -788,6 +825,20 @@ def generate_entry_id():
 
     return number
 
+
+def generate_request_id():
+    # Generate a random number between 100000000000 and 999999999999
+    number = random.randint(100000000000, 999999999999)
+
+    # Check if the random number has been generated before
+    while number in existing_request_id:
+        # If it has, generate a new random number
+        number = random.randint(100000000000, 999999999999)
+
+    # Add the random number to the set of generated numbers
+    existing_entry_id.add(number)
+
+    return number
 
 def hash_function(param) -> int:
     input_str = str(param)
