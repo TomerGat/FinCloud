@@ -209,6 +209,39 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '</body></html>'
             self.wfile.write(output.encode())
 
+        elif self.path.endswith('/new/set_security_details'):
+            self.start()
+            self.clear()
+            output = '<html><body>'
+            output += '<h1>Complete Your Account</h1>'
+            output += '<h2>Set security question:</h2>'
+            output += 'The security questions you set will allow us to verify your identity in case you ever need to recover your account. '
+            output += 'Choose questions that you are certain you will always be able to answer, and make sure the question is private enough to be secure.'
+            output += 'Enter the answer to each question, and make sure your answer is correct and that you are confident in your ability to remember it.'
+            output += 'Enter two different questions. When you recover your account we will randomly choose one to protect your account as much as possible.'
+            output += 'Remember: the security question is critical in case you need to recover you account!'
+            output += 'So make sure you do not make mistakes when entering you answers, and make sure you remember them!'
+            output += '<form method="POST" enctype="multipart/form-data" action="/new/set_security_details">'
+            output += '<h3>Question 1:</h3'
+            output += '</br>Enter your question here: ' + '<input name="question1" type="text">' + '</br>'
+            output += '</br>Enter your answer here: ' + '<input name="answer1" type="text">' + '</br></br>'
+            output += '<h3>Question 2:</h3'
+            output += '</br>Enter your question here: ' + '<input name="question2" type="text">' + '</br>'
+            output += '</br>Enter your answer here: ' + '<input name="answer2" type="text">' + '</br></br>'
+            output += '<input type="submit" value="Create Account">'
+            output += '</form>' + '</br>'
+
+            # print error/response message if redirect flag is set to True
+            if data.redirect_flags[self.client_address[0]]:
+                data.alter_rf(self.client_address[0], False)
+                response_code = data.response_codes[self.client_address[0]]
+                if response_code == Responses.INVALID_SECURITY_DETAILS:
+                    output += '</h4>Invalid input. Please try again.</h4>'
+
+            output += '<a href="/new">Cancel account opening</a>'
+            output += '</body></html>'
+            self.wfile.write(output.encode())
+
         elif self.path.endswith('/new/checking'):
             self.start()
             self.clear()
@@ -231,7 +264,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += 'The monthly spending limit you enter here will be relevant for the next month' \
                       ' and until you alter it in the home page of your account.' + '</br>'
             output += '</br>'
-            output += '<input type="submit" value="Create Account">'
+            output += '<input type="submit" value="Continue">'
             output += '</form>' + '</br>'
 
             # print error/response message if redirect flag is set to True
@@ -291,7 +324,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '<option value = "minimum">Safe - ' + str(RETURNS_MINIMUM) + '% annually</option>'
             output += '</select>'
             output += '</br></br>'
-            output += '<input type="submit" value="Create Account">'
+            output += '<input type="submit" value="Continue">'
             output += '</form>' + '</br>'
 
             # print error/response message if redirect flag is set to True
@@ -342,7 +375,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += 'Enter your phone number: ' + '<input name="phone" type="text">' + '</br></br>'
             output += 'After opening the account, you will have the option to open departments and ' \
                       'distribute company funds' + '</br></br>'
-            output += '<input type="submit" value="Create Account">'
+            output += '<input type="submit" value="Continue">'
             output += '</form>' + '</br>'
 
             if data.redirect_flags[self.client_address[0]]:
@@ -392,14 +425,18 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             self.start()
             self.clear()
             output = '<table>' + '<tr>'
-            output += '<th>Index</th>' + '<th> | Account name</th>' + '<th> | Account number</th>' + '<th> | Account type</th>' + '<th> | Total account value in USD</th>' + '</tr>'
+            output += '<th>Index</th>' + '<th> | Account name</th>' + '<th> | Account number</th>' + '<th> | Account type</th>' + '<th> | Total account value in USD</th>' + '<th> | Current active requests</th>' + '</tr>'
             for i in range(len(Accounts.log)):
                 output += '<tr><td> | ' + str(i) + '</td>'
                 output += '<td> | <a href="/admin_access/account_list/' + name_table.get_key(i) + '/' + str(
                     data.admin_token) + '/account_watch/details">' + name_table.get_key(i) + '</a></td>'
                 output += '<td> | ' + str(number_table.get_key(i)) + '</td>'
                 output += '<td> | ' + loc_type_table.in_table(i) + '</td>'
-                output += '<td> | ' + Accounts.log[i].get_value_usd() + '</td></tr>'
+                output += '<td> | ' + Accounts.log[i].get_value_usd() + '</td>'
+                active_request_count = str(0)
+                if i in active_requests.keys():
+                    active_request_count = str(len(active_requests[i]))
+                output += '<td> | ' + active_request_count + '</td></tr>'
             output += '</table>'
             self.wfile.write(output.encode())
 
@@ -412,7 +449,8 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output = '<html><body>'
             ac_values = create_table_output(Accounts.log[ac_index].value)
             ac_type = loc_type_table.in_table(ac_index)
-            ac_spending_info = [Accounts.log[ac_index].monthly_spending_limit, Accounts.log[ac_index].remaining_spending]
+            ac_spending_info = [Accounts.log[ac_index].monthly_spending_limit,
+                                Accounts.log[ac_index].remaining_spending]
             ac_number = number_table.get_key(ac_index)
             output += '<h1>Account Watch - ' + ac_name + '</h1>'
             output += '<h2>Account number - ' + ac_number + '</h2>'
@@ -447,10 +485,10 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             if ac_type == 'reg':
                 ac_spending_info = [Accounts.log[ac_index].monthly_spending_limit,
                                     Accounts.log[ac_index].remaining_spending]
-                output += '<h2>Remaining spending for this month: ' + ac_spending_info[1] + 'of ' + ac_spending_info[0] + '</h2>'
+                output += '<h2>Remaining spending for this month: ' + str(ac_spending_info[1]) \
+                          + ' of ' + str(ac_spending_info[0]) + '</h2>'
             output += '<h2>General ' + '<a href="/account/info">info</a></h2>'
             output += '<h3>Check your ' + '<a href="/account/inbox">inbox</a></h3>'
-            output += '<h3>File a request to the bank ' + '<a href="/account/file_requests">here</a></h3></br></br>'
             if loc_type_table.in_table(ac_index) == 'reg':
                 output += '<h3>See current holdings ' + '<a href="/account/holdings">Here</a></h3>'
             elif loc_type_table.in_table(ac_index) == 'bus':
@@ -505,9 +543,6 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             pass
 
         elif self.path.endswith('/account/inbox'):
-            pass
-
-        elif self.path.endswith('/account/file_requests'):
             pass
 
         elif self.path.endswith('/account/confirm_spending'):
@@ -1067,6 +1102,66 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             data.delete_ca(self.client_address[0])
             self.redirect('/login')
 
+        elif self.path.endswith('/new/set_security_details'):
+            # extract user input from headers in POST packet
+            ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
+            pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
+            content_len = int(self.headers.get('Content-length'))
+            pdict['CONTENT-LENGTH'] = content_len
+            if ctype == 'multipart/form-data':
+                fields = cgi.parse_multipart(self.rfile, pdict)
+                security_fields = [fields.get('question1')[0], fields.get('answer1')[0], fields.get('question2')[0], fields.get('answer2')[0]]
+                for field in security_fields:
+                    if not validate_string(field):
+                        data.alter_rf(self.client_address[0], True)
+                        data.alter_re(self.client_address[0], Responses.INVALID_SECURITY_DETAILS)
+                        self.redirect('/new/set_security_details')
+
+                questions_data = {fields.get('question1')[0]: fields.get('answer1')[0],
+                                  fields.get('question2')[0]: fields.get('answer2')[0]}
+                param_list = data.response_codes[self.client_address[0]]
+                ac_type = param_list['type']
+                confirm = False
+                response_code = Responses.GENERAL_CONFIRM
+                index = -1
+                if ac_type == 'reg':
+                    confirm, index, response_code = create_checking_account(param_list['account name'],
+                                                                            param_list['code'],
+                                                                            param_list['phone num'],
+                                                                            param_list['spending limit'])
+                elif ac_type == 'sav':
+                    confirm, index, response_code = create_savings_account(param_list['account name'],
+                                                                           param_list['code'],
+                                                                           param_list['phone num'],
+                                                                           param_list['returns'])
+                elif ac_type == 'bus':
+                    confirm, index, response_code = create_business_account(param_list['account name'],
+                                                                            param_list['company name'],
+                                                                            param_list['code'],
+                                                                            param_list['phone num'])
+                else:
+                    self.system_error()
+
+                if confirm:
+                    if index >= 0:
+                        security_questions[index] = questions_data
+                    else:
+                        self.system_error()
+                    data.alter_rf(self.client_address[0], True)
+                    data.alter_re(self.client_address[0], Responses.NEW_ACCOUNT_CREATED)
+                    self.redirect('/login')
+                else:
+                    data.alter_rf(self.client_address[0], True)
+                    data.alter_re(self.client_address[0], response_code)
+                    if ac_type == 'reg':
+                        self.redirect('/new/checking')
+                    elif ac_type == 'sav':
+                        self.redirect('/new/savings')
+                    else:
+                        self.redirect('/new/business')
+            else:
+                self.system_error()
+
         elif self.path.endswith('/new/savings'):
             # extract user input from headers in POST packet
             ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
@@ -1085,15 +1180,11 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 returns = returns_dict[returns_str]
                 # create account with user input
                 if code == code_confirm:
-                    confirm, index, response_code = create_savings_account(account_name, code, phone_number, returns)
-                    if confirm:
-                        data.alter_re(self.client_address[0], Responses.NEW_ACCOUNT_CREATED)
-                        data.alter_rf(self.client_address[0], True)
-                        self.redirect('/login')
-                    else:
-                        data.alter_re(self.client_address[0], response_code)
-                        data.alter_rf(self.client_address[0], True)
-                        self.redirect('/new/savings')
+                    param_list = {'type': 'sav', 'account name': account_name, 'code': code, 'phone num': phone_number,
+                                  'returns': returns}
+                    data.alter_re(self.client_address[0], param_list)
+                    data.alter_rf(self.client_address[0], True)
+                    self.redirect('/new/set_security_details')
                 else:
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], Responses.CODES_NOT_MATCH)
@@ -1116,16 +1207,11 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 company_name = fields.get('comp_name')[0]
                 # create account with user input
                 if code == code_confirm:
-                    confirm, index, response_code = create_business_account(account_name, company_name, code,
-                                                                            phone_number)
-                    if confirm:
-                        data.alter_re(self.client_address[0], Responses.NEW_ACCOUNT_CREATED)
-                        data.alter_rf(self.client_address[0], True)
-                        self.redirect('/login')
-                    else:
-                        data.alter_re(self.client_address[0], response_code)
-                        data.alter_rf(self.client_address[0], True)
-                        self.redirect('/new/business')
+                    param_list = {'type': 'bus', 'account name': account_name, 'code': code, 'phone num': phone_number,
+                                  'company name': company_name}
+                    data.alter_re(self.client_address[0], param_list)
+                    data.alter_rf(self.client_address[0], True)
+                    self.redirect('/new/set_security_details')
                 else:
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], Responses.CODES_NOT_MATCH)
@@ -1148,16 +1234,11 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 spending_limit = fields.get('spending_limit')[0]
                 # create account with user input
                 if code == code_confirm:
-                    confirm, index, response_code = create_checking_account(account_name, code, phone_number,
-                                                                            int(spending_limit))
-                    if confirm:
-                        data.alter_re(self.client_address[0], Responses.NEW_ACCOUNT_CREATED)
-                        data.alter_rf(self.client_address[0], True)
-                        self.redirect('/login')
-                    else:
-                        data.alter_re(self.client_address[0], response_code)
-                        data.alter_rf(self.client_address[0], True)
-                        self.redirect('/new/checking')
+                    param_list = {'type': 'reg', 'account name': account_name, 'code': code, 'phone num': phone_number,
+                                  'spending limit': int(spending_limit)}
+                    data.alter_re(self.client_address[0], param_list)
+                    data.alter_rf(self.client_address[0], True)
+                    self.redirect('/new/set_security_details')
                 else:
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], Responses.CODES_NOT_MATCH)
@@ -1293,7 +1374,8 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 ac_type = loc_type_table.in_table(ac_index)
                 if ac_type == 'reg':
                     if Accounts.log[ac_index].remaining_spending < amount:
-                        data.alter_re(self.client_address[0], [Responses.OVERSPEND_BY_TRANSFER, amount, target_account, target_dep])
+                        data.alter_re(self.client_address[0],
+                                      [Responses.OVERSPEND_BY_TRANSFER, amount, target_account, target_dep])
                         self.redirect('/account/confirm_spending')
                 elif ac_type == 'bus':
                     is_bus_account = True
@@ -1485,7 +1567,8 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     dep_name = 'none'
                 if ac_type == 'reg':
                     if Accounts.log[ac_index].remaining_spending < amount:
-                        data.alter_re(self.client_address[0], [Responses.OVERSPEND_BY_ALLOCATION, amount, allocation_id, name_table.get_key(ac_index), dep_name])
+                        data.alter_re(self.client_address[0], [Responses.OVERSPEND_BY_ALLOCATION, amount, allocation_id,
+                                                               name_table.get_key(ac_index), dep_name])
                         self.redirect('/account/confirm_spending')
                 confirm, response_code = Cloud().allocate(amount, allocation_id, name_table.get_key(ac_index), dep_name)
                 if confirm:

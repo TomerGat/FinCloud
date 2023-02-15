@@ -47,6 +47,7 @@ class Request:
         self.action_type = entry.action
         self.amount = entry.amount
         self.request_id = generate_request_id()
+        self.date = get_date()
         active_requests[source_index].append(self)
 
 
@@ -1238,7 +1239,7 @@ def find_anomalies(ac_ledger: Log, ac_index: int) -> (bool, []):
     standard_deviation = statistics.stdev(amounts)
     for entry in ac_ledger.log:
         deviation = calc_deviation(entry.amount, avg, standard_deviation)
-        if deviation >= MIN_DEVIATION_TO_FLAG and entry not in flagged_entries and entry in entries_to_check:
+        if deviation >= MIN_DEVIATION_RATIO_TO_FLAG * standard_deviation and entry not in flagged_entries and entry in entries_to_check:
             flagged_entries.append(entry)
 
     # specific flags:

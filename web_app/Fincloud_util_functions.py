@@ -69,7 +69,7 @@ def validate_string(word):
     word = str(word)
     characters = []
     valid = True
-    non_valid = [':', '(', '{', ')', '}', ',', '^', '<', '>', '+', '-', '*', '/', '%', '=', '|']
+    non_valid = [':', '(', '{', ')', '}', ',', '^', '<', '>', '+', '-', '*', '/', '%', '=', '|', '!']
     counter = 0
     while counter < len(word):
         ch = word[counter]
