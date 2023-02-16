@@ -110,6 +110,9 @@ history = {}
 # active requests, dictionary containing all current requests from accounts {ac index: [requests]}
 active_requests = {}
 
+# previous requests dict, same format as active
+previous_requests = {}
+
 # dict from ac_index to personal questions/answers for security verification that is used when recovering an account
 # will contain {account index: {question: answer, question: answer}} as dict(int, dict(str, str))
 security_questions = {}

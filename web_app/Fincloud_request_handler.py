@@ -1667,9 +1667,6 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             else:
                 self.system_error()
 
-        elif self.path.endswith('/account/send_requests'):
-            pass
-
         elif self.path.endswith('/account/business/open_dep'):
             # extract user input from headers in POST packet
             ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
