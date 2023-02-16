@@ -225,7 +225,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 response_code = data.response_codes[self.client_address[0]]
                 if response_code == Responses.PHONE_NUM_NOT_FOUND:
                     output += '<h4>Phone number does not exist in out system.</h4>'
-                elif response_code == -Responses.AC_IDENTITY_INCORRECT:
+                elif response_code == Responses.AC_IDENTITY_INCORRECT:
                     output += '<h4>Account name/number incorrect.</h4>'
                 elif response_code == Responses.CODES_NOT_MATCH:
                     output += '<h4>Codes do not match</h4>'
@@ -653,6 +653,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '<input type="submit" value="Confirm Transaction">'
             output += '</form>' + '</br>'
             output += '<h4><a href="/account/home">Cancel transaction</a></h4>'
+            self.wfile.write(output.encode())
 
         elif self.path.endswith('/account/change_spending_limit'):
             self.start()
@@ -1478,7 +1479,8 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], Responses.INVALID_MESSAGE_INPUT)
                     self.redirect('/admin_access/' + str(data.admin_token) + '/send_announcements')
-                send_announcement(subject, message, sender)
+                mes_type = 'announcement'
+                send_announcement(subject, message, sender, mes_type)
                 data.alter_rf(self.client_address[0], True)
                 data.alter_re(Responses.MESSAGE_SENT)
                 self.redirect('/admin_access/' + str(data.admin_token))

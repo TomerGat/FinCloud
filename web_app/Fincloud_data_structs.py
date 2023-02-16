@@ -205,3 +205,6 @@ last_checked_entry = {}  # {ac index : index of last checked entry}
 
 # possible entry types list
 entry_types = ['d', 'w', 'tf', 'tt', 'tfi', 'tti']
+
+# possible message types list
+mes_types = ['notif', 'red flag', 'announcement']

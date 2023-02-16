@@ -13,7 +13,7 @@ class TradeEntry:
 
 
 class Message:
-    def __init__(self, subject, message, sender):
+    def __init__(self, subject, message, sender, message_type):
         self.subject = subject
         self.message = message
         self.sender = sender
@@ -187,7 +187,8 @@ class Account:
                 send_message(number_table.in_table(self.account_number),
                              'Underspending Bonus',
                              message_str,
-                             'Fincloud Awards Team')
+                             'Fincloud Awards Team',
+                             'notif')
             # update monthly_spending_limit to new_spending_limit and reset remaining_spending
             self.monthly_spending_limit = self.new_spending_limit
             self.remaining_spending = self.monthly_spending_limit
@@ -195,7 +196,8 @@ class Account:
             send_message(number_table.in_table(self.account_number),
                          'Monthly spending limit update',
                          'Monthly spending limit updated to ' + str(self.monthly_spending_limit),
-                         'Fincloud Account Management Team')
+                         'Fincloud Account Management Team',
+                         'notif')
 
     def get_value_usd(self):
         total = 0
@@ -763,15 +765,17 @@ def reverse_transaction(source_index: int, source_dep, target_index: int, target
     return reverse_transaction(target_index, target_dep, -1, -1, save_action_type, amount)
 
 
-def send_message(ac_index: int, subject: str, message: str, sender):
-    mes = Message(subject, message, sender)
+def send_message(ac_index: int, subject: str, message: str, sender: str, mes_type: str):
+    mes = Message(subject, message, sender, mes_type)
     Accounts.log[ac_index].inbox.append(mes)
 
 
-def send_announcement(subject, message, sender):
-    mes = Message(subject, message, sender)
+def send_announcement(subject, message, sender, mes_type: str, type_modification=None):
+    mes = Message(subject, message, sender, mes_type)
     for ac_index in range(len(Accounts.log)):
-        Accounts.log[ac_index].inbox.append(mes)
+        if (type_modification is None) or \
+                (type_modification is not None and loc_type_table.in_table(ac_index) == type_modification):
+            Accounts.log[ac_index].inbox.append(mes)
 
 
 def set_fee(returns):
@@ -1285,7 +1289,7 @@ def find_anomalies(ac_ledger: Log, ac_index: int) -> (bool, []):
 
     # specific flags:
     # largest transfer in transaction history to an account never transferred to before
-    # find largest transfer amount (also save index of entry)
+    # find the largest transfer amount (also save index of entry)
     largest_amount = 0
     largest_amount_index = 0
     for entry in ac_ledger.log:
@@ -1327,8 +1331,10 @@ def build_anomaly_message(anomaly_entry: Entry, ac_index):
     message += 'Transferred to department: ' + (
         str(anomaly_entry.target_dep) if anomaly_entry.target_dep != -1 else 'none') + '\n'
     message += 'Amount of transaction: ' + str(anomaly_entry.amount) + '\n'
-    message += 'If this transaction is an error, or you suspect that it was caused by a malicious third-party, please file a request to the bank.' + '\n'
+    message += 'If this transaction is an error, or you suspect that it was caused by a malicious third-party,' \
+               ' please file a request to the bank.' + '\n'
     message += 'Thank you,' + '\n'
     message += 'Anomaly Detection Team'
     sender = 'Fincloud Anomaly Detection Team'
-    send_message(ac_index, subject, message, sender)
+    mes_type = 'red flag'
+    send_message(ac_index, subject, message, sender, mes_type)
