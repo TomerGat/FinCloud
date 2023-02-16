@@ -287,6 +287,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 response_code = data.response_codes[self.client_address[0]]
                 if response_code == Responses.INVALID_SECURITY_DETAILS:
                     output += '</h4>Invalid input. Please try again.</h4>'
+                data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
             output += '</br><a href="/new">Cancel account creation</a>'
             output += '</body></html>'
@@ -466,9 +467,40 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             self.clear()
             output = '<html><body>'
             output += '<a href="/admin_access/' + str(data.admin_token) + '/account_list">Accounts list</a></br></br>'
-            output += '<a href="/admin_access/' + str(
-                data.admin_token) + '/cloud_watch">Cloud allocations</a></br></br>'
+            output += '<a href="/admin_access/' + str(data.admin_token) + \
+                      '/cloud_watch">Cloud allocations</a></br></br>'
+            output += '<a href="/admin_access/' + str(data.admin_token) + '/send_announcements'
             output += '<a href="/account/logout">Log out</a>'
+
+            # print error/response message if redirect flag is set to True
+            if data.redirect_flags[self.client_address[0]]:
+                data.alter_rf(self.client_address[0], False)
+                response_code = data.response_codes[self.client_address[0]]
+                if response_code == Responses.MESSAGE_SENT:
+                    output += '</h4>Announcement sent.</h4>'
+                data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
+
+            self.wfile.write(output.encode())
+
+        elif self.path.endswith('/admin_access/' + str(data.admin_token) + '/send_announcements'):
+            self.start()
+            self.clear()
+            output = '<html><body>'
+            output += '<h1>Send an Announcement</h1>'
+            path = '/admin_access/' + str(data.admin_token) + '/send_announcements'
+            output += '<form method="POST" enctype="multipart/form-data" action="' + path + '">'
+            output += 'Enter announcement subject: ' + '<input name="subject" type="text"></br>'
+            output += 'Enter announcement message: ' + '<input name="message" type="text"></br>'
+            output += 'From: ' + '<input name="sender" type="text"></br>'
+            output += '<input type="submit" value="Send Announcement">'
+            output += '</form></br>'
+
+            if data.redirect_flags[self.client_address[0]]:
+                data.alter_rf(self.client_address[0], False)
+                response_code = data.response_codes[self.client_address[0]]
+                if response_code == Responses.INVALID_MESSAGE_INPUT:
+                    output += '<h4>Message Invalid. Please try again.<h4>'
+
             self.wfile.write(output.encode())
 
         elif self.path.endswith('/admin_access/' + str(data.admin_token) + '/account_list'):
@@ -511,7 +543,17 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(output.encode())
 
         elif self.path.endswith('/admin_access/' + str(data.admin_token) + '/cloud_watch'):
-            pass
+            self.start()
+            self.clear()
+            output = '<html><body>'
+            allocations = Cloud().allocated
+            output += '<h1>Cloud Allocations</h1></br>'
+            output += '<table><tr><th>Allocation Code</th><th> | Allocated Funds</th></tr>'
+            for alloc_code in allocations.keys():
+                output += '<tr><td> | ' + str(alloc_code) + '</td>'
+                output += '<td>' + str(allocations[alloc_code]) + '</td></tr>'
+            output += '</table>'
+            self.wfile.write(output.encode())
 
         elif self.path.endswith('/account/home'):
             if name_table.get_key(data.current_account[self.client_address[0]]) == 'Admin':
@@ -593,17 +635,22 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             pass
 
         elif self.path.endswith('/account/inbox'):
-            pass
+            self.start()
+            self.clear()
+            output = '<html><body>'
+            output += '<h1>Account Inbox</h1>'
+            output += 'Receive messages and updates from the bank, see announcements regarding new features and upgrades,' \
+                      ' and get notified about flagged transactions in your account.'
 
         elif self.path.endswith('/account/confirm_spending'):
             self.start()
             self.clear()
             output = '<html><body>'
             output += '<h1>Transaction Confirmation</h1>'
-            output += '<h3>Completing this transaction will finish your monthly spending limit.</h3>'
+            output += '<h3>Completing this transaction will place you in a monthly sending deficit and likely result in fees.</h3>'
             output += 'If you proceed with the transaction, a fee will be deducted form your account!'
             output += '<form method="POST" enctype="multipart/form-data" action="/account/confirm_spending">'
-            output += '<input type="submit" value="Submit">'
+            output += '<input type="submit" value="Confirm Transaction">'
             output += '</form>' + '</br>'
             output += '<h4><a href="/account/home">Cancel transaction</a></h4>'
 
@@ -615,8 +662,10 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '<h1>Change Monthly Spending limit</h1>' + '</br>'
             output += '<h3>Current spending limit per month: ' + Accounts.log[
                 ac_index].monthly_spending_limit + '</h3></br>'
-            output += 'Your monthly spending limit allows you to maintain expenses on your account. If you overspend you will encounter a fee,' \
-                      ' but spending less than you monthly spending limit could add value to your account, courtesy of the funds management team.'
+            output += 'Your monthly spending limit allows you to maintain expenses on your account. ' \
+                      'If you overspend you will encounter a fee,' \
+                      ' but spending less than you monthly spending limit could add value to your account,' \
+                      ' courtesy of the funds management team.'
             output += '</br>'
             output += '<h2>Update your spending limit for next month: </h2></br>'
             output += '<form method="POST" enctype="multipart/form-data" action="/account/change_spending_limit">'
@@ -1411,6 +1460,28 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], Responses.CODES_NOT_MATCH)
                     self.redirect('/forgot_data')
+            else:
+                self.system_error()
+
+        elif self.path.endswith('/admin_access/' + str(data.admin_token) + '/send_announcements'):
+            # extract user input from headers in POST packet
+            ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
+            pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
+            content_len = int(self.headers.get('Content-length'))
+            pdict['CONTENT-LENGTH'] = content_len
+            if ctype == 'multipart/form-data':
+                fields = cgi.parse_multipart(self.rfile, pdict)
+                subject = fields.get('subject')[0]
+                message = fields.get('message')[0]
+                sender = fields.get('sender')[0]
+                if not validate_string(subject) or not validate_string(message) or not validate_string(sender):
+                    data.alter_rf(self.client_address[0], True)
+                    data.alter_re(self.client_address[0], Responses.INVALID_MESSAGE_INPUT)
+                    self.redirect('/admin_access/' + str(data.admin_token) + '/send_announcements')
+                send_announcement(subject, message, sender)
+                data.alter_rf(self.client_address[0], True)
+                data.alter_re(Responses.MESSAGE_SENT)
+                self.redirect('/admin_access/' + str(data.admin_token))
             else:
                 self.system_error()
 

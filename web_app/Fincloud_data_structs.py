@@ -170,6 +170,8 @@ class Responses(Enum):
     INVALID_SECURITY_DETAILS = -36
     INVALID_SECURITY_ANSWER = -37
     SECURITY_ANSWER_INCORRECT = -38
+    INVALID_MESSAGE_INPUT = -39
+    MESSAGE_SENT = -40
 
     # confirmation responses
     GENERAL_CONFIRM = 1  # general confirmation - no response output to ui

@@ -13,9 +13,10 @@ class TradeEntry:
 
 
 class Message:
-    def __init__(self, subject, message):
+    def __init__(self, subject, message, sender):
         self.subject = subject
         self.message = message
+        self.sender = sender
         self.precise_time = get_precise_time()
 
 
@@ -162,7 +163,7 @@ class Account:
         self.ledger = Log()  # ledger for transaction entries
         self.trade_ledger = Log()  # ledger for trade entries
         self.monthly_spending_limit = spending_limit  # current monthly spending limit
-        self.remaining_spending = self.monthly_spending_limit  # remaining funds to spend in month according to spending limit
+        self.remaining_spending = self.monthly_spending_limit  # remaining funds to spend in month (limit - spending)
         current_date = get_date()
         self.shift_date = current_date[2]  # date to reset remaining spending
         self.last_update = current_date  # last update
@@ -181,10 +182,20 @@ class Account:
                 # add bonus if monthly limit not reached
                 bonus = set_underspending_bonus(self.monthly_spending_limit, self.remaining_spending, self.value['USD'])
                 self.value['USD'] = self.value['USD'] + bonus
+                message_str = 'Congratulations! In the last month you spent less that your monthly spending limit,' \
+                              ' so we decided to award you with a bonus of ' + str(bonus) + ' USD to your account.'
+                send_message(number_table.in_table(self.account_number),
+                             'Underspending Bonus',
+                             message_str,
+                             'Fincloud Awards Team')
             # update monthly_spending_limit to new_spending_limit and reset remaining_spending
             self.monthly_spending_limit = self.new_spending_limit
             self.remaining_spending = self.monthly_spending_limit
             self.last_update = current_date
+            send_message(number_table.in_table(self.account_number),
+                         'Monthly spending limit update',
+                         'Monthly spending limit updated to ' + str(self.monthly_spending_limit),
+                         'Fincloud Account Management Team')
 
     def get_value_usd(self):
         total = 0
@@ -752,9 +763,15 @@ def reverse_transaction(source_index: int, source_dep, target_index: int, target
     return reverse_transaction(target_index, target_dep, -1, -1, save_action_type, amount)
 
 
-def send_message(ac_index, subject, message):
-    mes = Message(subject, message)
+def send_message(ac_index: int, subject: str, message: str, sender):
+    mes = Message(subject, message, sender)
     Accounts.log[ac_index].inbox.append(mes)
+
+
+def send_announcement(subject, message, sender):
+    mes = Message(subject, message, sender)
+    for ac_index in range(len(Accounts.log)):
+        Accounts.log[ac_index].inbox.append(mes)
 
 
 def set_fee(returns):
@@ -1295,7 +1312,7 @@ def find_anomalies(ac_ledger: Log, ac_index: int) -> (bool, []):
     return red_flags_found, flagged_entries
 
 
-def handle_anomaly(anomaly_entry: Entry, ac_index):
+def build_anomaly_message(anomaly_entry: Entry, ac_index):
     # create subject
     date = anomaly_entry.date
     date_str = str(date[0]) + '/' + str(date[1]) + '/' + str(date[2])
@@ -1312,5 +1329,6 @@ def handle_anomaly(anomaly_entry: Entry, ac_index):
     message += 'Amount of transaction: ' + str(anomaly_entry.amount) + '\n'
     message += 'If this transaction is an error, or you suspect that it was caused by a malicious third-party, please file a request to the bank.' + '\n'
     message += 'Thank you,' + '\n'
-    message += 'Transaction Anomaly Detection Team'
-    send_message(ac_index, subject, message)
+    message += 'Anomaly Detection Team'
+    sender = 'Fincloud Anomaly Detection Team'
+    send_message(ac_index, subject, message, sender)
