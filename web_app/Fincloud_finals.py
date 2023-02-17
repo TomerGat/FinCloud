@@ -40,3 +40,6 @@ CLUSTER_NUMBER_RATIO = 5  # tried 2.5, 3.75, 5.25, 4.75, 5 in tests
 
 # minimum deviation from standard to flag transaction
 MIN_DEVIATION_RATIO_TO_FLAG = 2.75  # change
+
+# whether or not to flag inner transfers (config - can be changed)
+FLAG_INNER_TRANSFERS = False

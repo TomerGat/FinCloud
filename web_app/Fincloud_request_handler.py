@@ -467,10 +467,9 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             self.clear()
             output = '<html><body>'
             output += '<a href="/admin_access/' + str(data.admin_token) + '/account_list">Accounts list</a></br></br>'
-            output += '<a href="/admin_access/' + str(data.admin_token) + \
-                      '/cloud_watch">Cloud allocations</a></br></br>'
-            output += '<a href="/admin_access/' + str(data.admin_token) + '/send_announcements'
-            output += '<a href="/account/logout">Log out</a>'
+            output += '<a href="/admin_access/' + str(data.admin_token) + '/cloud_watch">Cloud allocations</a></br></br>'
+            output += '<a href="/admin_access/' + str(data.admin_token) + '/send_announcements">Send Announcements</a></br></br>'
+            output += '<a href="/account/logout">Log out</a></br></br></br>'
 
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
@@ -500,6 +499,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 response_code = data.response_codes[self.client_address[0]]
                 if response_code == Responses.INVALID_MESSAGE_INPUT:
                     output += '<h4>Message Invalid. Please try again.<h4>'
+                data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
             self.wfile.write(output.encode())
 
@@ -637,10 +637,119 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
         elif self.path.endswith('/account/inbox'):
             self.start()
             self.clear()
+            ac_index = data.current_account[self.client_address[0]]
+            messages = Accounts.log[ac_index].inbox
+            # Define the CSS styles
+            css = '''
+            body {
+                font-family: Arial, sans-serif;
+            }
+
+            header {
+            background-color: navy;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            }
+
+            h1 {
+                margin: 0;
+            }
+
+            .message {
+                padding: 10px;
+            }
+
+            .message:hover {
+                background-color: #f0f0f0;
+            }
+
+            .details {
+                display: none;
+                padding: 10px;
+                background-color: #f8f8f8;
+            }
+
+            .show-details {
+                cursor: pointer;
+                color: navy;
+            }
+            '''
+
+            # Define the HTML code
+            html = '''
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Account Inbox</title>
+                <style>{}</style>
+            </head>
+            <body>
+                <header>
+                    <img src="./vault/logo_transparent.png">
+                    <h1>Account Inbox</h1>
+                </header>
+                {}
+            </body>
+            </html>
+            '''
+
+            # Generate the HTML code for the list of messages
+            messages_html = ''
+            for message in messages:
+                message_html = f'''
+                    <div class="message">
+                      <div>
+                        <span>{message.sender}</span>
+                        <span>{date_to_str(message.date)}</span>
+                      </div>
+                      <div>
+                        <a href="/account/{message.message_id}/file_request">
+                          <span style="color: red;">File request to reverse transaction</span>
+                        </a>
+                      </div>
+                      <div>
+                        <a href="/account/{message.message_id}">
+                          {message.subject}
+                        </a>
+                        <div class="details">
+                          {message.message}
+                          <br>
+                          Id: {message.message_id}
+                        </div>
+                        <div class="show-details">Show details</div>
+                      </div>
+                      <hr>
+                    </div>
+                '''
+                messages_html += message_html
+
+            # Combine the CSS and HTML code to create the output
+            output = html.format(css, messages_html)
+            self.wfile.write(output.encode())
+
+        elif self.path.endswith('/account/inbox123'):  # return to /account/inbox or delete
+            self.start()
+            self.clear()
+            ac_index = data.current_account[self.client_address[0]]
+            messages = Accounts.log[ac_index].inbox
             output = '<html><body>'
             output += '<h1>Account Inbox</h1>'
             output += 'Receive messages and updates from the bank, see announcements regarding new features and upgrades,' \
                       ' and get notified about flagged transactions in your account.'
+            output += '<h2>Your messages:</h2>'
+            for mes in messages:
+                output += mes.subject + '(' + date_to_str(mes.date) + ')' + '<a href="/account/inbox/' + mes.message_id + '/display_message">See more</a>' + '</br>'
+            self.wfile.write(output.encode())
+
+        elif self.path.endswith('/display_message'):
+            self.start()
+            self.clear()
+            url_parsed = self.path.split('/')
+            mes_id = None  # continue
 
         elif self.path.endswith('/account/confirm_spending'):
             self.start()
@@ -1211,54 +1320,57 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             if ctype == 'multipart/form-data':
                 fields = cgi.parse_multipart(self.rfile, pdict)
                 security_fields = [fields.get('question1')[0], fields.get('answer1')[0], fields.get('question2')[0], fields.get('answer2')[0]]
+                confirm = True
                 for field in security_fields:
                     if not validate_string(field):
+                        confirm = False
                         data.alter_rf(self.client_address[0], True)
                         data.alter_re(self.client_address[0], Responses.INVALID_SECURITY_DETAILS)
                         self.redirect('/new/set_security_details')
 
-                questions_data = {fields.get('question1')[0]: fields.get('answer1')[0],
-                                  fields.get('question2')[0]: fields.get('answer2')[0]}
-                param_list = data.response_codes[self.client_address[0]]
-                ac_type = param_list['type']
-                confirm = False
-                response_code = Responses.EMPTY_RESPONSE
-                index = -1
-                if ac_type == 'reg':
-                    confirm, index, response_code = create_checking_account(param_list['account name'],
-                                                                            param_list['code'],
-                                                                            param_list['phone num'],
-                                                                            param_list['spending limit'])
-                elif ac_type == 'sav':
-                    confirm, index, response_code = create_savings_account(param_list['account name'],
-                                                                           param_list['code'],
-                                                                           param_list['phone num'],
-                                                                           param_list['returns'])
-                elif ac_type == 'bus':
-                    confirm, index, response_code = create_business_account(param_list['account name'],
-                                                                            param_list['company name'],
-                                                                            param_list['code'],
-                                                                            param_list['phone num'])
-                else:
-                    self.system_error()
-
                 if confirm:
-                    if index >= 0:
-                        security_questions[index] = questions_data
+                    questions_data = {fields.get('question1')[0]: fields.get('answer1')[0],
+                                      fields.get('question2')[0]: fields.get('answer2')[0]}
+                    param_list = data.response_codes[self.client_address[0]]
+                    ac_type = param_list['type']
+                    confirm = False
+                    response_code = Responses.EMPTY_RESPONSE
+                    index = -1
+                    if ac_type == 'reg':
+                        confirm, index, response_code = create_checking_account(param_list['account name'],
+                                                                                param_list['code'],
+                                                                                param_list['phone num'],
+                                                                                param_list['spending limit'])
+                    elif ac_type == 'sav':
+                        confirm, index, response_code = create_savings_account(param_list['account name'],
+                                                                               param_list['code'],
+                                                                               param_list['phone num'],
+                                                                               param_list['returns'])
+                    elif ac_type == 'bus':
+                        confirm, index, response_code = create_business_account(param_list['account name'],
+                                                                                param_list['company name'],
+                                                                                param_list['code'],
+                                                                                param_list['phone num'])
                     else:
                         self.system_error()
-                    data.alter_rf(self.client_address[0], True)
-                    data.alter_re(self.client_address[0], Responses.NEW_ACCOUNT_CREATED)
-                    self.redirect('/login')
-                else:
-                    data.alter_rf(self.client_address[0], True)
-                    data.alter_re(self.client_address[0], response_code)
-                    if ac_type == 'reg':
-                        self.redirect('/new/checking')
-                    elif ac_type == 'sav':
-                        self.redirect('/new/savings')
+
+                    if confirm:
+                        if index >= 0:
+                            security_questions[index] = questions_data
+                        else:
+                            self.system_error()
+                        data.alter_rf(self.client_address[0], True)
+                        data.alter_re(self.client_address[0], Responses.NEW_ACCOUNT_CREATED)
+                        self.redirect('/login')
                     else:
-                        self.redirect('/new/business')
+                        data.alter_rf(self.client_address[0], True)
+                        data.alter_re(self.client_address[0], response_code)
+                        if ac_type == 'reg':
+                            self.redirect('/new/checking')
+                        elif ac_type == 'sav':
+                            self.redirect('/new/savings')
+                        else:
+                            self.redirect('/new/business')
             else:
                 self.system_error()
 
@@ -1283,7 +1395,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     param_list = {'type': 'sav', 'account name': account_name, 'code': code, 'phone num': phone_number,
                                   'returns': returns}
                     data.alter_re(self.client_address[0], param_list)
-                    data.alter_rf(self.client_address[0], True)
+                    data.alter_rf(self.client_address[0], False)
                     self.redirect('/new/set_security_details')
                 else:
                     data.alter_rf(self.client_address[0], True)
@@ -1310,7 +1422,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     param_list = {'type': 'bus', 'account name': account_name, 'code': code, 'phone num': phone_number,
                                   'company name': company_name}
                     data.alter_re(self.client_address[0], param_list)
-                    data.alter_rf(self.client_address[0], True)
+                    data.alter_rf(self.client_address[0], False)
                     self.redirect('/new/set_security_details')
                 else:
                     data.alter_rf(self.client_address[0], True)
@@ -1337,7 +1449,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     param_list = {'type': 'reg', 'account name': account_name, 'code': code, 'phone num': phone_number,
                                   'spending limit': int(spending_limit)}
                     data.alter_re(self.client_address[0], param_list)
-                    data.alter_rf(self.client_address[0], True)
+                    data.alter_rf(self.client_address[0], False)
                     self.redirect('/new/set_security_details')
                 else:
                     data.alter_rf(self.client_address[0], True)
@@ -1482,7 +1594,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 mes_type = 'announcement'
                 send_announcement(subject, message, sender, mes_type)
                 data.alter_rf(self.client_address[0], True)
-                data.alter_re(Responses.MESSAGE_SENT)
+                data.alter_re(self.client_address[0], Responses.MESSAGE_SENT)
                 self.redirect('/admin_access/' + str(data.admin_token))
             else:
                 self.system_error()

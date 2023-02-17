@@ -67,9 +67,11 @@ def validate_number(num):
 
 def validate_string(word):
     word = str(word)
+    if len(word) == 0:
+        return False
     characters = []
     valid = True
-    non_valid = [':', '(', '{', ')', '}', ',', '^', '<', '>', '+', '-', '*', '/', '%', '=', '|', '!']
+    non_valid = [':', '(', '{', ')', '}', ',', '^', '<', '>', '+', '*', '/', '%', '=', '|', '!']
     counter = 0
     while counter < len(word):
         ch = word[counter]
@@ -180,9 +182,14 @@ def calc_deviation(amount, avg, stdev):
     return deviation
 
 
-def date_to_num(date: []) -> int:
+def date_to_num(date: np.array) -> int:
     num = date[2] + 30 * date[1] + 365 * date[0]
     return num
+
+
+def date_to_str(date: []) -> str:
+    date_str = str(date[0]) + '/' + str(date[1]) + '/' + str(date[2])
+    return date_str
 
 
 def create_clusters(counter: int) -> [[]]:

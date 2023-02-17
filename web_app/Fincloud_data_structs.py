@@ -103,6 +103,9 @@ existing_entry_id = set()
 # existing requests id set
 existing_request_id = set()
 
+# existing message id set
+existing_message_id = set()
+
 # Shared Dictionary of Logs containing history of received packets  {ip address : Log}
 # after session timeout, log for timed out account is erased
 history = {}
@@ -210,4 +213,4 @@ last_checked_entry = {}  # {ac index : index of last checked entry}
 entry_types = ['d', 'w', 'tf', 'tt', 'tfi', 'tti']
 
 # possible message types list
-mes_types = ['notif', 'red flag', 'announcement']
+mes_types = ['notif', 'red flag', 'announcement', 'update']
