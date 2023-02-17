@@ -639,117 +639,185 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             self.clear()
             ac_index = data.current_account[self.client_address[0]]
             messages = Accounts.log[ac_index].inbox
-            # Define the CSS styles
-            css = '''
-            body {
-                font-family: Arial, sans-serif;
-            }
+            logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'vault', 'logo_transparent.png')
 
-            header {
-            background-color: navy;
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px;
-            }
+            # Define the CSS styling for the page
+            css = """
+                body {
+                    background-color: #F9F9F9;
+                    font-family: Arial, sans-serif;
+                    font-size: 14px;
+                    margin: 0;
+                }
 
-            h1 {
-                margin: 0;
-            }
+                header {
+                    background-color: #001F54;
+                    color: #fff;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 10px 20px;
+                }
 
-            .message {
-                padding: 10px;
-            }
+                .logo img {
+                    display: inline-block;
+                    float: right;
+                    height: 60px;
+                }
 
-            .message:hover {
-                background-color: #f0f0f0;
-            }
+                .title {
+                    font-size: 28px;
+                    font-weight: bold;
+                    margin: 0;
+                }
 
-            .details {
-                display: none;
-                padding: 10px;
-                background-color: #f8f8f8;
-            }
+                .message {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 20px;
+                }
 
-            .show-details {
-                cursor: pointer;
-                color: navy;
-            }
-            '''
+                .message-details {
+                    display: none;
+                    margin-top: 10px;
+                    text-align: left;
+                    margin-left: 20px;
+                }
 
-            # Define the HTML code
-            html = '''
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <title>Account Inbox</title>
-                <style>{}</style>
-            </head>
-            <body>
-                <header>
-                    <img src="./vault/logo_transparent.png">
-                    <h1>Account Inbox</h1>
-                </header>
-                {}
-            </body>
-            </html>
-            '''
+                .subject {
+                    font-weight: bold;
+                }
 
-            # Generate the HTML code for the list of messages
-            messages_html = ''
+                .show-details {
+                    color: #001F54;
+                    cursor: pointer;
+                    text-decoration: underline;
+                }
+
+                .hide-details {
+                    color: #001F54;
+                    cursor: pointer;
+                    text-decoration: underline;
+                }
+
+                .horizontal-line {
+                    border-bottom: 1px solid #D9D9D9;
+                    margin: 10px 0;
+                }
+
+                .red-flag {
+                    color: red;
+                }
+
+                .no-messages {
+                    font-size: 32px;
+                    font-weight: bold;
+                    text-align: center;
+                    margin-top: 50px;
+                }
+            """
+            # Generate HTML for each message in the messages list
+            messages_html = ""
             for message in messages:
-                message_html = f'''
-                    <div class="message">
-                      <div>
-                        <span>{message.sender}</span>
-                        <span>{date_to_str(message.date)}</span>
-                      </div>
-                      <div>
-                        <a href="/account/{message.message_id}/file_request">
-                          <span style="color: red;">File request to reverse transaction</span>
-                        </a>
-                      </div>
-                      <div>
-                        <a href="/account/{message.message_id}">
-                          {message.subject}
-                        </a>
-                        <div class="details">
-                          {message.message}
-                          <br>
-                          Id: {message.message_id}
-                        </div>
-                        <div class="show-details">Show details</div>
-                      </div>
-                      <hr>
+                details_html = f"""
+                    <div class="message-details" id="message-details-{message.message_id}">
+                        <p><b>Message:</b> {message.message}</p>
+                        <p><b>Message ID:</b> {message.message_id}</p>
                     </div>
-                '''
+                    <hr class="horizontal-line">
+                """
+                if message.message_type == 'red flag':
+                    message_html = f"""
+                    <div class="message red-flag" id="message-{message.message_id}">
+                        <div>
+                            <p class="subject">{message.subject}</p>
+                            <p>{message.sender}</p>
+                        </div>
+                        <div>
+                            <p>{date_to_str(message.date)}</p>
+                            <p class="show-details" onclick="showDetails({message.message_id})">Show Details</p>
+                            <p class="hide-details" onclick="hideDetails({message.message_id})" style="display:none">Hide Details</p>
+                        </div>
+                    </div>
+                    {details_html}
+                """
+                else:
+                    message_html = f"""
+                        <div class="message" id="message-{message.message_id}">
+                            <div>
+                                <p class="subject">{message.subject}</p>
+                                <p>{message.sender}</p>
+                            </div>
+                            <div>
+                                <p>{date_to_str(message.date)}</p>
+                                <p class="show-details" onclick="showDetails({message.message_id})">Show Details</p>
+                                <p class="hide-details" onclick="hideDetails({message.message_id})" style="display:none">Hide Details</p>
+                            </div>
+                        </div>
+                        {details_html}
+                    """
                 messages_html += message_html
-
-            # Combine the CSS and HTML code to create the output
-            output = html.format(css, messages_html)
+            if messages:
+                page_html = f"""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                <title>Account Inbox</title>
+                <style>{css}</style>
+                <script>
+                function showDetails(message_id) {{
+                var details = document.getElementById("message-details-" + message_id);
+                var showLink = document.querySelector("#message-" + message_id + " .show-details");
+                var hideLink = document.querySelector("#message-" + message_id + " .hide-details");
+                details.style.display = "block";
+                showLink.style.display = "none";
+                hideLink.style.display = "inline";
+                }}
+                            function hideDetails(message_id) {{
+                                var details = document.getElementById("message-details-" + message_id);
+                                var showLink = document.querySelector("#message-" + message_id + " .show-details");
+                                var hideLink = document.querySelector("#message-" + message_id + " .hide-details");
+                                details.style.display = "none";
+                                showLink.style.display = "inline";
+                                hideLink.style.display = "none";
+                            }}
+                        </script>
+                    </head>
+                    <body>
+                        <header>
+                            <h1 class="title">Account Inbox</h1>
+                            <div class="logo">
+                                <img src="{logo_path}" alt="Logo">
+                            </div>
+                        </header>
+                        <div class="horizontal-line"></div>
+                        {messages_html}
+                    </body>
+                    </html>
+                """
+            else:
+                page_html = f"""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                <title>Account Inbox</title>
+                <style>{css}</style>
+                </head>
+                <body>
+                <header>
+                <h1 class="title">Account Inbox</h1>
+                <div class="logo">
+                <img src="{logo_path}" alt="Logo">
+                </div>
+                </header>
+                <div class="horizontal-line"></div>
+                <p class="no-messages">No messages to display</p>
+                </body>
+                </html>
+                """
+            output = page_html
             self.wfile.write(output.encode())
-
-        elif self.path.endswith('/account/inbox123'):  # return to /account/inbox or delete
-            self.start()
-            self.clear()
-            ac_index = data.current_account[self.client_address[0]]
-            messages = Accounts.log[ac_index].inbox
-            output = '<html><body>'
-            output += '<h1>Account Inbox</h1>'
-            output += 'Receive messages and updates from the bank, see announcements regarding new features and upgrades,' \
-                      ' and get notified about flagged transactions in your account.'
-            output += '<h2>Your messages:</h2>'
-            for mes in messages:
-                output += mes.subject + '(' + date_to_str(mes.date) + ')' + '<a href="/account/inbox/' + mes.message_id + '/display_message">See more</a>' + '</br>'
-            self.wfile.write(output.encode())
-
-        elif self.path.endswith('/display_message'):
-            self.start()
-            self.clear()
-            url_parsed = self.path.split('/')
-            mes_id = None  # continue
 
         elif self.path.endswith('/account/confirm_spending'):
             self.start()

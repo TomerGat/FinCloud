@@ -7,6 +7,7 @@ from Fincloud_background_functions import session_timing, accounts_update, rates
 # main - driver function
 def main():
     # admin account and credentials setup
+    print('Setting up credentials')
     Admin_code = str(hash_function(generate_code()))
     dir_path = str(os.path.dirname(os.path.abspath(__file__))) + '\\credentials'
     file_path = dir_path + '\\Admin_credentials.txt'
@@ -16,6 +17,8 @@ def main():
         pass
     with open(file_path, 'w') as file:
         file.write(Admin_code)
+
+    print('Creating Admin account')
     create_checking_account('Admin', Admin_code, 1234567890, 1)
     loc_type_table.body[0] = 'admin'
 
