@@ -90,7 +90,7 @@ def anomaly_detection():
                     if anomalies_found:
                         # if anomalies were found, call handle function for each flagged entry
                         for entry in anomaly_entries:
-                            handle_anomaly(entry, index)
+                            send_anomaly_message(entry, index)
             # handle if account is business
             else:
                 # go over each dep in business account
@@ -103,4 +103,4 @@ def anomaly_detection():
                         if anomalies_found:
                             # if anomalies were found, call handle function for each flagged entry
                             for entry in anomaly_entries:
-                                handle_anomaly(entry, index)
+                                send_anomaly_message(entry, index)

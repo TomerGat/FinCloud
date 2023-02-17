@@ -1392,7 +1392,7 @@ def find_anomalies(ac_ledger: Log, ac_index: int) -> (bool, []):
     return red_flags_found, flagged_entries
 
 
-def build_anomaly_message(anomaly_entry: Entry, ac_index):
+def send_anomaly_message(anomaly_entry: Entry, ac_index):
     # create subject
     date = anomaly_entry.date
     date_str = str(date[0]) + '/' + str(date[1]) + '/' + str(date[2])
