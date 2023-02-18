@@ -12,6 +12,11 @@ class TradeEntry:
         self.date = date
 
 
+class ConnectionEntry:
+    def __init__(self, request_type, precise_time):
+        self.lst = (request_type, precise_time)
+
+
 class Message:
     def __init__(self, subject, message, sender, message_type):
         self.subject = subject
@@ -20,11 +25,6 @@ class Message:
         self.message_type = message_type
         self.date = get_date()
         self.message_id = generate_message_id()
-
-
-class ConnectionEntry:
-    def __init__(self, request_type, precise_time):
-        self.lst = (request_type, precise_time)
 
 
 class Entry:  # object properties: action, amount
@@ -760,7 +760,7 @@ def generate_request_id() -> int:
         return generate_request_id()
 
     # Add the random number to the set of generated numbers and return the number
-    existing_entry_id.add(number)
+    existing_request_id.add(number)
     return number
 
 
@@ -1395,8 +1395,8 @@ def find_anomalies(ac_ledger: Log, ac_index: int) -> (bool, []):
 def send_anomaly_message(anomaly_entry: Entry, ac_index):
     # create subject
     date = anomaly_entry.date
-    date_str = str(date[0]) + '/' + str(date[1]) + '/' + str(date[2])
-    subject = 'Transaction of type ' + anomaly_entry.action + ' on ' + date_str
+    date_str = date_to_str(date)
+    subject = 'Transaction of type ' + anomaly_entry.action + ' on ' + date_str + '(Entry ID: ' + str(anomaly_entry.entry_id) + ')'
     message = 'Red Flag raised for transaction:' + '\n'
     message += 'Entry ID: ' + str(anomaly_entry.entry_id) + '\n'
     message += 'Transaction date: ' + date_str + '\n'
@@ -1413,3 +1413,11 @@ def send_anomaly_message(anomaly_entry: Entry, ac_index):
     sender = 'Fincloud Anomaly Detection Team'
     mes_type = 'red flag'
     send_message(ac_index, subject, message, sender, mes_type)
+
+
+def find_id_in_message(mes: Message) -> int:
+    subject = mes.subject
+    # message subject structure - 'Transaction of type <type> on <dd/mm/yyyy> (Entry ID: <id>)'
+    subject_parsed = subject.split(': ')  # dividing the subject into two parts, leaving the second part as '<id>)'
+    entry_id = subject_parsed[1].split(')')[0]
+    return entry_id

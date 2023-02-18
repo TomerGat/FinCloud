@@ -177,7 +177,8 @@ class Responses(Enum):
     INVALID_SECURITY_ANSWER = -37
     SECURITY_ANSWER_INCORRECT = -38
     INVALID_MESSAGE_INPUT = -39
-    MESSAGE_SENT = -40
+    REQUEST_ALREADY_FILED = -40
+    INVALID_MESSAGE_ID = -41
 
     # confirmation responses
     GENERAL_CONFIRM = 1  # general confirmation - no response output to ui
@@ -194,6 +195,7 @@ class Responses(Enum):
     SPENDING_LIMIT_ALTERED = 12
     REQUEST_FILED = 13
     IDENTITY_CONFIRMED = 14
+    MESSAGE_SENT = 15
 
     # empty response
     EMPTY_RESPONSE = 0

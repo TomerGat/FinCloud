@@ -188,7 +188,7 @@ def date_to_num(date: np.array) -> int:
 
 
 def date_to_str(date: []) -> str:
-    date_str = str(date[0]) + '/' + str(date[1]) + '/' + str(date[2])
+    date_str = str(date[2]) + '/' + str(date[1]) + '/' + str(date[0])
     return date_str
 
 

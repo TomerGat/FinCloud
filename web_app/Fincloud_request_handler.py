@@ -467,8 +467,10 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             self.clear()
             output = '<html><body>'
             output += '<a href="/admin_access/' + str(data.admin_token) + '/account_list">Accounts list</a></br></br>'
-            output += '<a href="/admin_access/' + str(data.admin_token) + '/cloud_watch">Cloud allocations</a></br></br>'
-            output += '<a href="/admin_access/' + str(data.admin_token) + '/send_announcements">Send Announcements</a></br></br>'
+            output += '<a href="/admin_access/' + str(
+                data.admin_token) + '/cloud_watch">Cloud allocations</a></br></br>'
+            output += '<a href="/admin_access/' + str(
+                data.admin_token) + '/send_announcements">Send Announcements</a></br></br>'
             output += '<a href="/account/logout">Log out</a></br></br></br>'
 
             # print error/response message if redirect flag is set to True
@@ -658,7 +660,19 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     align-items: center;
                     padding: 10px 20px;
                 }
-
+                
+                .file-request-link {
+                    display: inline-block;
+                    float: right;
+                    color: #fff;
+                    text-decoration: none;
+                    margin-right: 10px;
+                }
+            
+                .file-request-link:hover {
+                    text-decoration: underline;
+                }
+                
                 .logo img {
                     display: inline-block;
                     float: right;
@@ -670,7 +684,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     font-weight: bold;
                     margin: 0;
                 }
-
+                
                 .message {
                     display: flex;
                     justify-content: space-between;
@@ -787,6 +801,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     <body>
                         <header>
                             <h1 class="title">Account Inbox</h1>
+                            <a class="file-request-link" href="/account/inbox/file_requests">File Request</a>
                             <div class="logo">
                                 <img src="{logo_path}" alt="Logo">
                             </div>
@@ -817,6 +832,48 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 </html>
                 """
             output = page_html
+            self.wfile.write(output.encode())
+
+        elif self.path.endswith('/account/inbox/file_requests'):
+            self.start()
+            self.clear()
+            ac_index = data.current_account[self.client_address[0]]
+            messages = Accounts.log[ac_index].inbox
+            red_flag_messages = [message for message in messages if message.message_type == 'red flag']
+            red_flag_message_id_list = [message.message_id for message in red_flag_messages]
+            output = '<html><body>'
+            output += '<h1>File Request</h1>'
+            output += 'If you have been notified regarding red flags in your account history, ' \
+                      'you have the option to file a request to the bank to reverse the transaction. ' \
+                      'If you receive a red flag notification for a transaction, and believe it was done unintentionally, ' \
+                      'or by a malicious third party, please file a request to the bank and we will notify you shortly. ' \
+                      'Thank you, FinCloud Anomaly Detection Team'
+
+            output += '<form method="POST" enctype="multipart/form-data" action="/account/inbox/file_requests">'
+            output += 'Enter account password: ' + '<input name="code" type="text">' + '</br>'
+            output += 'Select message id for red flag: '
+            output += '<select id="message_id" name="message_id">'
+            for rf_id in red_flag_message_id_list:
+                rf_id = str(rf_id)
+                output += '<option value = "' + rf_id + '">' + rf_id + '</option>'
+            output += '</select></br></br>'
+            output += '<input type="submit" value="Submit Request">'
+            output += '</form>' + '</br>'
+
+            if data.redirect_flags[self.client_address[0]]:
+                data.alter_rf(self.client_address[0], False)
+                response_code = data.response_codes[self.client_address[0]]
+                if response_code == Responses.INVALID_MESSAGE_ID:
+                    output += '<h4>Message ID is not valid.</h4>'
+                elif response_code == Responses.REQUEST_ALREADY_FILED:
+                    output += '<h4>Request has already been filed for this message ID.</h4>'
+                elif response_code == Responses.AC_CODE_INVALID:
+                    output += '<h4>Account password is not valid.</h4>'
+                elif response_code == Responses.AC_CODE_INCORRECT:
+                    output += '<h4>Account password is incorrect.</h4>'
+                data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
+
+            output += '</br><h4><a href="/account/inbox">Cancel Request</a></h4>'
             self.wfile.write(output.encode())
 
         elif self.path.endswith('/account/confirm_spending'):
@@ -1387,7 +1444,8 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             pdict['CONTENT-LENGTH'] = content_len
             if ctype == 'multipart/form-data':
                 fields = cgi.parse_multipart(self.rfile, pdict)
-                security_fields = [fields.get('question1')[0], fields.get('answer1')[0], fields.get('question2')[0], fields.get('answer2')[0]]
+                security_fields = [fields.get('question1')[0], fields.get('answer1')[0], fields.get('question2')[0],
+                                   fields.get('answer2')[0]]
                 confirm = True
                 for field in security_fields:
                     if not validate_string(field):
@@ -1659,11 +1717,84 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], Responses.INVALID_MESSAGE_INPUT)
                     self.redirect('/admin_access/' + str(data.admin_token) + '/send_announcements')
-                mes_type = 'announcement'
+                mes_type = 'announcement'  # change to announcement
                 send_announcement(subject, message, sender, mes_type)
                 data.alter_rf(self.client_address[0], True)
                 data.alter_re(self.client_address[0], Responses.MESSAGE_SENT)
                 self.redirect('/admin_access/' + str(data.admin_token))
+            else:
+                self.system_error()
+
+        elif self.path.endswith('/account/inbox/file_requests'):
+            # extract user input from headers in POST packet
+            ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
+            pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
+            content_len = int(self.headers.get('Content-length'))
+            pdict['CONTENT-LENGTH'] = content_len
+            if ctype == 'multipart/form-data':
+                fields = cgi.parse_multipart(self.rfile, pdict)
+                message_id = ''
+                try:
+                    message_id = fields.get('message_id')[0]
+                except TypeError:
+                    data.alter_rf(self.client_address[0], True)
+                    data.alter_re(self.client_address[0], Responses.INVALID_MESSAGE_ID)
+                    self.redirect('/account/inbox/file_requests')
+                ac_code = fields.get('code')[0]
+                ac_index = data.current_account[self.client_address[0]]
+
+                # verify
+                verify, response_code, index = verification(name_table.get_key(ac_index), ac_code)
+                if index != ac_index:
+                    self.system_error()
+                if not verify:
+                    data.alter_rf(self.client_address[0], True)
+                    data.alter_re(self.client_address[0], response_code)
+                    self.redirect('/account/inbox/file_requests')
+
+                # find message
+                message = None
+                for index in range(len(Accounts.log[ac_index].inbox)):
+                    if Accounts.log[ac_index].inbox[index].message_id == int(message_id):
+                        message = Accounts.log[ac_index].inbox[index]
+                if message is None:
+                    self.system_error()
+                # when a message is a red flag, we know the structure of the message so we can parse it to find the entry id
+                entry_id = find_id_in_message(message)
+                # finding the entire entry with the entry id
+                ac_type = loc_type_table.in_table(ac_index)
+                entry = None
+                dep = -1
+                if ac_type != 'bus':
+                    entry = [entry for entry in Accounts.log[ac_index].ledger if entry.entry_id == entry_id][0]
+                else:
+                    for dep_name in Accounts.log[ac_index].departments.keys():
+                        for entry_runner in Accounts.log[ac_index].departments[dep_name][1]:
+                            if entry_runner.entry_id == entry_id and entry_runner.action != 'tfi' and entry_runner.action != 'tti':
+                                entry = entry_runner
+                                dep = dep_name
+                # if entry is not found, call system error function
+                if entry is None:
+                    self.system_error()
+                # check if request was already filed for this entry
+                already_filed = False
+                for request in active_requests[ac_index]:
+                    if request.entry_id == entry_id:
+                        already_filed = True
+                for request in previous_requests[ac_index]:
+                    if request.entry_id == entry_id:
+                        already_filed = True
+                if already_filed:
+                    data.alter_rf(self.client_address[0], True)
+                    data.alter_re(self.client_address[0], Responses.REQUEST_ALREADY_FILED)
+                    self.redirect('/account/inbox')
+
+                # create and file request
+                new_request = Request(entry, ac_index, dep)
+                active_requests[ac_index].append(new_request)
+                data.alter_rf(self.client_address[0], True)
+                data.alter_re(self.client_address[0], Responses.REQUEST_FILED)
+                self.redirect('/account/inbox/file_requests')
             else:
                 self.system_error()
 
