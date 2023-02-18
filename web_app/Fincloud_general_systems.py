@@ -37,7 +37,7 @@ class Entry:  # object properties: action, amount
         self.target_dep = target_dep  # if action involves other accounts this is set, otherwise set to -1
         self.entry_id = entry_id  # entry identification code (unique for every entry)
         if self.entry_id is None:
-            self.entry = generate_entry_id()
+            self.entry_id = generate_entry_id()
 
 
 class Request:
@@ -226,7 +226,7 @@ class Account:
         else:
             response_code = Responses.GENERAL_CONFIRM
             self.value['USD'] = self.value['USD'] + amount
-            self.ledger.append(Entry('d', amount, get_date(), -1, -1))
+            self.ledger.append(Entry('deposit', amount, get_date(), -1, -1))
 
         return confirm, response_code
 
@@ -245,7 +245,7 @@ class Account:
             if self.value['USD'] >= amount:
                 response_code = Responses.GENERAL_CONFIRM
                 self.value['USD'] = self.value['USD'] - amount
-                self.ledger.append(Entry('w', amount, get_date(), -1, -1))
+                self.ledger.append(Entry('withdrawal', amount, get_date(), -1, -1))
                 self.remaining_spending -= amount
             else:
                 response_code = Responses.INSUFFICIENT_AMOUNT  # account value too low
@@ -329,9 +329,9 @@ class Account:
                         self.value['USD'] = self.value['USD'] - amount
                         entry_id = generate_entry_id()
                         self.ledger.append(
-                            Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, -1, entry_id))
+                            Entry('transfer from', amount, get_date(), Accounts.log[target_index].account_number, -1, entry_id))
                         Accounts.log[target_index].ledger.append(
-                            Entry('tt', amount, get_date(), self.account_number, -1, entry_id))
+                            Entry('transfer to', amount, get_date(), self.account_number, -1, entry_id))
                 else:
                     if loc_type_table.in_table(target_index) == 'bus':
                         if target_dep in Accounts.log[target_index].departments.keys():
@@ -340,9 +340,9 @@ class Account:
                             self.value['USD'] = self.value['USD'] - amount
                             entry_id = generate_entry_id()
                             self.ledger.append(
-                                Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, target_dep, entry_id))
+                                Entry('transfer from', amount, get_date(), Accounts.log[target_index].account_number, target_dep, entry_id))
                             Accounts.log[target_index].departments[target_dep][1].append(
-                                Entry('tt', amount, get_date(), self.account_number, -1, entry_id))
+                                Entry('transfer to', amount, get_date(), self.account_number, -1, entry_id))
                         else:
                             response_code = Responses.TARGET_DEP_NOT_FOUND  # department name does not exist
                             confirm = False
@@ -404,7 +404,7 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
             confirm = True
             response_code = Responses.GENERAL_CONFIRM
             self.value = self.value + amount
-            self.ledger.append(Entry('d', amount, get_date(), -1, -1))
+            self.ledger.append(Entry('deposit', amount, get_date(), -1, -1))
 
         return confirm, response_code
 
@@ -424,7 +424,7 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
                 confirm = True
                 response_code = Responses.GENERAL_CONFIRM
                 self.value = self.value - amount
-                self.ledger.append(Entry('w', amount, get_date(), -1, -1))
+                self.ledger.append(Entry('withdrawal', amount, get_date(), -1, -1))
             else:
                 response_code = Responses.INSUFFICIENT_AMOUNT  # insufficient amount
                 confirm = False
@@ -469,9 +469,9 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
                     else:
                         self.value = self.value - amount
                         self.ledger.append(
-                            Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, -1, entry_id))
+                            Entry('transfer from', amount, get_date(), Accounts.log[target_index].account_number, -1, entry_id))
                         Accounts.log[target_index].ledger.append(
-                            Entry('tt', amount, get_date(), self.account_number, -1, entry_id))
+                            Entry('transfer to', amount, get_date(), self.account_number, -1, entry_id))
                 else:
                     if loc_type_table.in_table(target_index) == 'bus':
                         if target_dep in Accounts.log[target_index].departments.keys():
@@ -479,9 +479,9 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
                                 Accounts.log[target_index].departments[target_dep][0]['USD'] + amount
                             self.value = self.value - amount
                             self.ledger.append(
-                                Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, target_dep, entry_id))
+                                Entry('transfer from', amount, get_date(), Accounts.log[target_index].account_number, target_dep, entry_id))
                             Accounts.log[target_index].departments[target_dep][1].append(
-                                Entry('tt', amount, get_date(), self.account_number, -1, entry_id))
+                                Entry('transfer to', amount, get_date(), self.account_number, -1, entry_id))
                         else:
                             response_code = Responses.TARGET_DEP_NOT_FOUND  # target department name does not exist
                             confirm = False
@@ -591,9 +591,9 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
                     else:
                         self.departments[source_dep][0]['USD'] = self.departments[source_dep][0]['USD'] - amount
                         self.departments[source_dep][1].append(
-                            Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, -1, entry_id))
+                            Entry('transfer from', amount, get_date(), Accounts.log[target_index].account_number, -1, entry_id))
                         Accounts.log[target_index].ledger.append(
-                            Entry('tt', amount, get_date(), self.account_number, source_dep, entry_id))
+                            Entry('transfer to', amount, get_date(), self.account_number, source_dep, entry_id))
                 else:
                     if loc_type_table.in_table(target_index) == 'bus':
                         if target_dep in Accounts.log[target_index].departments.keys():
@@ -601,9 +601,9 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
                                 Accounts.log[target_index].departments[target_dep][0]['USD'] + amount
                             self.departments[source_dep][0]['USD'] = self.departments[source_dep][0]['USD'] - amount
                             self.departments[source_dep][1].append(
-                                Entry('tf', amount, get_date(), Accounts.log[target_index].account_number, target_dep, entry_id))
+                                Entry('transfer from', amount, get_date(), Accounts.log[target_index].account_number, target_dep, entry_id))
                             Accounts.log[target_index].departments[target_dep][1].append(
-                                Entry('tt', amount, get_date(), self.account_number, source_dep, entry_id))
+                                Entry('transfer to', amount, get_date(), self.account_number, source_dep, entry_id))
                         else:
                             response_code = Responses.TARGET_DEP_NOT_FOUND  # target department name does not exist
                             confirm = False
@@ -638,8 +638,8 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
                 self.departments[source_dep][0]['USD'] = self.departments[source_dep][0]['USD'] - amount
                 self.departments[target_dep][0]['USD'] = self.departments[target_dep][0]['USD'] + amount
                 entry_id = generate_entry_id()
-                self.departments[source_dep][1].append(Entry('tfi', amount, get_date(), -1, target_dep, entry_id))
-                self.departments[target_dep][1].append(Entry('tti', amount, get_date(), -1, source_dep, entry_id))
+                self.departments[source_dep][1].append(Entry('transfer from (inner)', amount, get_date(), -1, target_dep, entry_id))
+                self.departments[target_dep][1].append(Entry('transfer to (inner)', amount, get_date(), -1, source_dep, entry_id))
             else:
                 confirm = False
                 response_code = Responses.INSUFFICIENT_AMOUNT  # insufficient funds
@@ -663,7 +663,7 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
         else:
             response_code = 1
             self.departments[dep_name][0]['USD'] = self.departments[dep_name][0]['USD'] + amount
-            self.departments[dep_name][1].append(Entry('d', amount, get_date(), -1, -1))
+            self.departments[dep_name][1].append(Entry('deposit', amount, get_date(), -1, -1))
 
         return confirm, response_code
 
@@ -685,7 +685,7 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
             if self.departments[dep_name][0]['USD'] >= amount:
                 response_code = Responses.GENERAL_CONFIRM
                 self.departments[dep_name][0]['USD'] = self.departments[dep_name][0]['USD'] - amount
-                self.departments[dep_name][1].append(Entry('w', amount, get_date(), -1, -1))
+                self.departments[dep_name][1].append(Entry('withdrawal', amount, get_date(), -1, -1))
             else:
                 confirm = False
                 response_code = Responses.INSUFFICIENT_AMOUNT  # insufficient funds
@@ -847,18 +847,18 @@ def reverse_transaction(source_index: int, source_dep, target_index: int, target
     """
 
     save_action_type = ''
-    if action_type == 'tf':  # if the action is transfer away, change action to deposit and save withdraw for target account
-        save_action_type = 'w'
-        action_type = 'd'
-    elif action_type == 'tt':  # if the action is transfer to, change action to withdraw and save deposit for source account
-        save_action_type = 'd'
-        action_type = 'w'
+    if action_type == 'transfer from':  # if the action is transfer away, change action to deposit and save withdraw for target account
+        save_action_type = 'withdrawal'
+        action_type = 'deposit'
+    elif action_type == 'transfer to':  # if the action is transfer to, change action to withdraw and save deposit for source account
+        save_action_type = 'deposit'
+        action_type = 'withdrawal'
     else:
-        if action_type != 'd' and action_type != 'w':
+        if action_type != 'deposit' and action_type != 'withdrawal':
             return False
 
     ac_type = loc_type_table.in_table(source_index)
-    if action_type == 'd':  # deposit
+    if action_type == 'deposit':  # deposit
         if ac_type == 'reg':
             Accounts.log[source_index].value['USD'] = Accounts.log[source_index].value['USD'] - amount
         elif ac_type == 'sav':
@@ -866,7 +866,7 @@ def reverse_transaction(source_index: int, source_dep, target_index: int, target
         else:
             Accounts.log[source_index].departments[source_dep][0]['USD'] = Accounts.log[source_index].departments[source_dep][0]['USD'] - amount
 
-    elif action_type == 'w':  # withdraw
+    elif action_type == 'withdrawal':  # withdraw
         if ac_type == 'reg':
             Accounts.log[source_index].value['USD'] = Accounts.log[source_index].value['USD'] + amount
         elif ac_type == 'sav':
@@ -1367,7 +1367,7 @@ def find_anomalies(ac_ledger: Log, ac_index: int) -> (bool, []):
     largest_amount = 0
     largest_amount_index = 0
     for index in range(len(ac_ledger.log)):
-        if ac_ledger.log[index].amount > largest_amount and ac_ledger.log[index].action == 'tf':
+        if ac_ledger.log[index].amount > largest_amount and ac_ledger.log[index].action == 'transfer from':
             largest_amount = ac_ledger.log[index].amount
             largest_amount_index = index
 
@@ -1376,7 +1376,7 @@ def find_anomalies(ac_ledger: Log, ac_index: int) -> (bool, []):
         # create the following dictionary {ac number transferred to: list of amounts to this index}
         transfer_dict = {}
         for entry in ac_ledger.log:
-            if entry.target_num not in transfer_dict.keys() and entry.action == 'tf':
+            if entry.target_num not in transfer_dict.keys() and entry.action == 'transfer from':
                 transfer_dict[entry.target_num] = []
             transfer_dict[entry.target_num].append(entry.amount)
         # go over values and check if largest amount is alone in a list (if so, flag entry)
@@ -1387,7 +1387,7 @@ def find_anomalies(ac_ledger: Log, ac_index: int) -> (bool, []):
 
     # return red_flags_found (bool value) and list of flagged entries
     if not FLAG_INNER_TRANSFERS:
-        flagged_entries = [entry for entry in flagged_entries if (entry.action != 'tfi' and entry.action != 'tti')]
+        flagged_entries = [entry for entry in flagged_entries if (entry.action != 'transfer from (inner)' and entry.action != 'transfer to (inner)')]
     red_flags_found = (len(flagged_entries) != 0)
     return red_flags_found, flagged_entries
 

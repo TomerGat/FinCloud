@@ -212,7 +212,7 @@ class Responses(Enum):
 last_checked_entry = {}  # {ac index : index of last checked entry}
 
 # possible entry types list
-entry_types = ['d', 'w', 'tf', 'tt', 'tfi', 'tti']
+entry_types = ['deposit', 'withdrawal', 'transfer from', 'transfer to', 'transfer from (inner)', 'transfer to (inner)']
 
 # possible message types list
 mes_types = ['notif', 'red flag', 'announcement', 'update']

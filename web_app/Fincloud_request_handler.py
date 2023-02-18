@@ -603,9 +603,10 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '</br>'
             if loc_type_table.in_table(ac_index) == 'reg':
                 output += '<h3>Change your monthly spending limit ' + '<a href="/account/change_spending_limit">Here</a></h3>'
-                output += '</br></br>'
-            output += '<h3>To use Financial Cloud ' + '<a href="/account/cloud">Click here</a></h3>'
-            output += '</br>' + '</br>'
+                output += '</br>'
+            output += '<h3>To see transaction history: ' + '<a href="/account/transaction_history">Click here</a></h3>'
+            output += '</br></br><h3>To use Financial Cloud ' + '<a href="/account/cloud">Click here</a></h3>'
+            output += '</br></br>'
 
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
@@ -635,6 +636,128 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/account/info'):
             pass
+
+        elif self.path.endswith('/account/transaction_history'):
+            self.start()
+            self.clear()
+            ac_index = data.current_account[self.client_address[0]]
+            ac_type = loc_type_table.in_table(ac_index)
+            logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'vault', 'logo_transparent.png')
+            if ac_type != 'bus':
+                entries = [entry for entry in Accounts.log[ac_index].ledger.log]
+            else:
+                entries = []
+                for dep_name in Accounts.log[ac_index].departments.keys():
+                    for entry in Accounts.log[ac_index].departments[dep_name][1].log:
+                        entries.append(entry)
+
+            logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'vault', 'logo_transparent.png')
+
+            # Define HTML/CSS/JS for transaction history page
+
+            output = '''
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Transaction History</title>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <style>
+                    /* Define page styles */
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 0;
+                        padding: 0;
+                        background-color: #f5f5f5;
+                    }
+                    .page-container {
+                        margin: 0 auto;
+                        background-color: white;
+                        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+                    }
+                    .header {
+                        background-color: #001F54;
+                        color: #fff;
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        padding: 16px;
+                    }
+                    .title {
+                        font-size: 28px;
+                        margin: 0;
+                    }
+                    .entry {
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        padding: 16px;
+                        border-bottom: 1px solid #e0e0e0;
+                    }
+                    .entry-details {
+                        display: none;
+                        margin-top: 16px;
+                        padding: 16px;
+                        border-radius: 4px;
+                        background-color: #f5f5f5;
+                        font-size: 14px;
+                    }
+                    .entry:hover .entry-details {
+                        display: block;
+                    }
+                    .entry-id {
+                        font-size: 14px;
+                        color: #999;
+                    }
+                    .entry-action {
+                        font-size: 16px;
+                        font-weight: bold;
+                        margin: 0;
+                    }
+                    .entry-date {
+                        font-size: 14px;
+                        margin: 0;
+                    }
+                    .entry-amount {
+                        margin: 8px 0;
+                    }
+                    .entry-target {
+                        margin: 8px 0;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="page-container">
+                    <div class="header">
+                        <h1 class="title">Transaction History</h1>
+                    </div>
+            '''
+
+            # Generate HTML for each transaction in the entries list
+            transactions_html = ""
+            for entry in entries:
+                details_html = f'''
+                    <div class="entry-details">
+                        <p class="entry-amount">Amount: {entry.amount}</p>
+                        <p class="entry-target">Target/source account number: {entry.target_num}</p>
+                        <p class="entry-target">Target/source department name: {entry.target_dep}</p>
+                    </div>
+                '''
+                transaction_html = f'''
+                    <div class="entry">
+                        <div>
+                            <p class="entry-id">Entry ID: {entry.entry_id}</p>
+                            <p class="entry-action">{entry.action}</p>
+                            <p class="entry-date">{date_to_str(entry.date)}</p>
+                        </div>
+                        {details_html}
+                    </div>
+                '''
+                transactions_html += transaction_html
+
+            # Add transaction entries to the output HTML
+            output += transactions_html
+            self.wfile.write(output.encode())
 
         elif self.path.endswith('/account/inbox'):
             self.start()
@@ -1834,7 +1957,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             pdict['CONTENT-LENGTH'] = content_len
             if ctype == 'multipart/form-data':
                 fields = cgi.parse_multipart(self.rfile, pdict)
-                amount = fields.get('amount')[0]
+                amount = int(fields.get('amount')[0])
                 is_bus_account = False
                 ac_index = data.current_account[self.client_address[0]]
                 ac_type = loc_type_table.in_table(ac_index)
