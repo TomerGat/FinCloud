@@ -563,12 +563,12 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 self.redirect('/admin_access/' + str(data.admin_token))
             self.start()
             self.clear()
-            output = '<html><body>'
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
             account_name = str(name_table.get_key(ac_index))
             account_number = str(number_table.get_key(ac_index))
             ac_type = loc_type_table.in_table(ac_index)
+            output = '<html><body>'
             output += '<h1>Account name: ' + account_name + '</h1>'
             output += '<h2>Account number: ' + account_number + '</h2>'
             val = Accounts.log[ac_index].get_value_usd()
