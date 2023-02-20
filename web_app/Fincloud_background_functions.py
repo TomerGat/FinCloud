@@ -66,12 +66,13 @@ def refresh_admin_credentials():
 
 
 def manage_backups(run_once=False):
-    if run_once:
-        backup_data()
-        return
-    while data.run_server_flag:
-        wait_for_flag(BACKUP_DATA_CYCLE)
-        backup_data()
+    if BACKUP_DATA_FLAG:
+        if run_once:
+            backup_data()
+            return
+        while data.run_server_flag:
+            wait_for_flag(BACKUP_DATA_CYCLE)
+            backup_data()
 
 
 def anomaly_detection():
