@@ -13,8 +13,9 @@ class Log:  # object properties: log (contains a numpy array)
 
 
 class Table:  # object properties: body (contains a dictionary)
-    def __init__(self):
+    def __init__(self, name):
         self.body = {}
+        self.name = name
 
     def add_key_value(self, key, value):  # add {key: value}
         self.body[key] = value
@@ -57,6 +58,7 @@ class Global:  # object properties: redirect_flags, responses, current_account, 
         self.current_account = {}
         self.background_redirect_flags = {}
         self.admin_token = hash(random.randint(0, 1000))
+        self.run_server_flag = True  # (default=true, change to false by logging in with user='stop_server' and pass=<admin pass>)
 
     def alter_rf(self, key, value):  # add/change key:value for redirect_flags
         self.redirect_flags[key] = value
@@ -81,12 +83,11 @@ class Global:  # object properties: redirect_flags, responses, current_account, 
 
 
 # tables
-name_table = Table()  # account name table - {account name: serial number}
-number_table = Table()  # account number table - {account number: serial number}
-pass_table = Table()  # password table - {serial number : hash value of account password}
-phone_name_table = Table()  # account recovery recovery table - {hash value of phone number: account name}
-loc_type_table = Table()  # account type table - {serial number: type of account (reg/bus/sav)}
-value_summary_table = Table()  # value recovery table - {value summary: serial number}
+name_table = Table('name table')  # account name table - {account name: serial number}
+number_table = Table('number table')  # account number table - {account number: serial number}
+pass_table = Table('pass table')  # password table - {serial number : hash value of account password}
+phone_name_table = Table('phone name table')  # account recovery recovery table - {hash value of phone number: account name}
+loc_type_table = Table('loc type table')  # account type table - {serial number: type of account (reg/bus/sav)}
 
 # Accounts log
 Accounts = Log()  # Log containing all Accounts

@@ -5,12 +5,6 @@ from Fincloud_general_systems import *
 # HTTP request handler for HTTP server
 class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
-    def clear(self):
-        output = '<html><body>'
-        output += '<script type="text/javascript">document.body.innerHTML = ""</script>'
-        output += '</body></html>'
-        self.wfile.write(output.encode())
-
     def start(self):
         self.send_response(200)
         self.send_header('content-type', 'text/html')
@@ -70,10 +64,14 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
         if self.client_address[0] not in addresses:
             addresses.append(self.client_address[0])
 
+        # redirecting if new user or timed out user is trying to enter page that requires verification
+        if self.path.split('/')[1] == 'account' and self.client_address[0] not in data.current_account.keys():
+            self.timeout_session()
+
         # handle get requests according to path
         if self.path.endswith('/'):
             self.start()
-            self.clear()
+            
             output = '<html><body>'
             output += '<head><title>FinCloud.com</title></head>'
             output += '<h1>FinCloud - A modern solution for you</h1>'
@@ -94,7 +92,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/About'):
             self.start()
-            self.clear()
+            
             output = '<html><body>'
             output += '<h1>What is FinCloud?</h1>'
             output += 'Fincloud is a state of the art financial network...'
@@ -103,7 +101,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/login'):
             self.start()
-            self.clear()
+            
             output = '<html><body>'
             output += '<h1>Log in   |   Continue to FinCloud</h1>'
             output += '<form method="POST" enctype="multipart/form-data" action="/login">'
@@ -144,7 +142,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/account/logout'):
             self.start()
-            self.clear()
+            
             output = '<html><body>'
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
@@ -157,7 +155,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/confirm_identity'):
             self.start()
-            self.clear()
+            
             question_num = random.randint(1, 2) - 1
             recovery_data = data.response_codes[self.client_address[0]]
             ac_index = recovery_data['index']
@@ -177,7 +175,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/forgot_data'):
             self.start()
-            self.clear()
+            
             output = '<html><body>'
             output += '<h1>Recover your account</h1>'
             output += '<form method="POST" enctype="multipart/form-data" action="/forgot_data">'
@@ -206,7 +204,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/forgot'):
             self.start()
-            self.clear()
+            
             output = '<html><body>'
             output += '<h1>Recover your account</h1>'
             output += '<form method="POST" enctype="multipart/form-data" action="/forgot">'
@@ -238,7 +236,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/new'):
             self.start()
-            self.clear()
+            
             output = '<html><body>'
             output += '<h1>Open an account</h1>'
             output += '<h3>Select an account that fits your needs</h3>'
@@ -261,7 +259,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/new/set_security_details'):
             self.start()
-            self.clear()
+            
             output = '<html><body>'
             output += '<h1>Complete Your Account</h1>'
             output += '<h2>Set security question:</h2>'
@@ -295,7 +293,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/new/checking'):
             self.start()
-            self.clear()
+            
             output = '<html><body>'
             output += '<h1>Open a personal checking account</h1>'
             output += 'Personal checking accounts allow for dynamic management of personal funds.' \
@@ -349,7 +347,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/new/savings'):
             self.start()
-            self.clear()
+            
             output = '<html><body>'
             output += '<h1>Open a personal savings account</h1>'
             output += 'Personal savings accounts allow for safe and profitable storage for your savings.' \
@@ -409,7 +407,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/new/business'):
             self.start()
-            self.clear()
+            
             output = '<html><body>'
             output += '<h1>Open a business account</h1>'
             output += 'Business accounts allow for optimal and dynamic management of company resources.' \
@@ -464,7 +462,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/admin_access/' + str(data.admin_token)):
             self.start()
-            self.clear()
+            
             output = '<html><body>'
             output += '<a href="/admin_access/' + str(data.admin_token) + '/account_list">Accounts list</a></br></br>'
             output += '<a href="/admin_access/' + str(
@@ -485,7 +483,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/admin_access/' + str(data.admin_token) + '/send_announcements'):
             self.start()
-            self.clear()
+            
             output = '<html><body>'
             output += '<h1>Send an Announcement</h1>'
             path = '/admin_access/' + str(data.admin_token) + '/send_announcements'
@@ -507,7 +505,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/admin_access/' + str(data.admin_token) + '/account_list'):
             self.start()
-            self.clear()
+            
             output = '<table>' + '<tr>'
             output += '<th>Index</th>' + '<th> | Account name</th>' + '<th> | Account number</th>' + '<th> | Account type</th>' + '<th> | Total account value in USD</th>' + '<th> | Current active requests</th>' + '</tr>'
             for i in range(len(Accounts.log)):
@@ -526,7 +524,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/' + str(data.admin_token) + '/account_watch/details'):
             self.start()
-            self.clear()
+            
             url_parsed = self.path.split('/')
             ac_name = url_parsed[2]
             ac_index = name_table.in_table(ac_name)
@@ -546,7 +544,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/admin_access/' + str(data.admin_token) + '/cloud_watch'):
             self.start()
-            self.clear()
+            
             output = '<html><body>'
             allocations = Cloud().allocated
             output += '<h1>Cloud Allocations</h1></br>'
@@ -561,77 +559,213 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             if name_table.get_key(data.current_account[self.client_address[0]]) == 'Admin':
                 data.admin_token = hash_function(generate_code())
                 self.redirect('/admin_access/' + str(data.admin_token))
+
             self.start()
-            self.clear()
+            logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'vault', 'logo_transparent.png')
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
-            account_name = str(name_table.get_key(ac_index))
             account_number = str(number_table.get_key(ac_index))
-            ac_type = loc_type_table.in_table(ac_index)
-            output = '<html><body>'
-            output += '<h1>Account name: ' + account_name + '</h1>'
-            output += '<h2>Account number: ' + account_number + '</h2>'
             val = Accounts.log[ac_index].get_value_usd()
-            if loc_type_table.in_table(ac_index) == 'bus':
+            comp_name = ''
+            remaining_spending = 0
+            spending_limit = 0
+            ac_type = loc_type_table.in_table(ac_index)
+            if ac_type == 'bus':
                 comp_name = str(Accounts.log[ac_index].company_name)
-                output += '<h2>Company name: ' + comp_name + '</h2>'
-            output += '</br><h2>Current value in USD: ' + val + '</h2>'
             if ac_type == 'reg':
-                ac_spending_info = [Accounts.log[ac_index].monthly_spending_limit,
-                                    Accounts.log[ac_index].remaining_spending]
-                output += '<h2>Remaining spending for this month: ' + str(ac_spending_info[1]) \
-                          + ' of ' + str(ac_spending_info[0]) + '</h2>'
-            output += '<h2>General ' + '<a href="/account/info">info</a></h2>'
-            output += '<h3>Check your ' + '<a href="/account/inbox">inbox</a></h3>'
-            if loc_type_table.in_table(ac_index) == 'reg':
-                output += '<h3>See current holdings ' + '<a href="/account/holdings">Here</a></h3>'
-            elif loc_type_table.in_table(ac_index) == 'bus':
-                output += '<h3>See company departments ' + '<a href="/account/business/departments">Here</a></h3>'
-            if loc_type_table.in_table(ac_index) == 'bus':
-                output += '</br>'
-                output += '<h3>Open a new department for your business account ' + \
-                          '<a href="/account/business/open_dep">now</a></h3>'
-            output += '</br>' + '</br>'
+                spending_limit = Accounts.log[ac_index].monthly_spending_limit
+                remaining_spending = Accounts.log[ac_index].remaining_spending
 
-            output += '<h3>To deposit funds ' + '<a href="/account/deposit_funds">Click here</a></h3>'
-            output += '<h3>To withdraw funds ' + '<a href="/account/withdraw_funds">Click here</a></h3>'
-            output += '<h3>To transfer funds to other accounts ' + \
-                      '<a href="/account/transfer_funds">Click here</a></h3>'
-            if loc_type_table.in_table(ac_index) == 'bus':
-                output += '</br>'
-                output += '<h3><a href="/account/business/inner_transfer">Transfer between business departments</a></h3>'
-            output += '</br>'
-            if loc_type_table.in_table(ac_index) == 'reg':
-                output += '<h3>Change your monthly spending limit ' + '<a href="/account/change_spending_limit">Here</a></h3>'
-                output += '</br>'
-            output += '<h3>To see transaction history: ' + '<a href="/account/transaction_history">Click here</a></h3>'
-            output += '</br></br><h3>To use Financial Cloud ' + '<a href="/account/cloud">Click here</a></h3>'
-            output += '</br></br>'
-
+            response_output = ''
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
                 response_code = data.response_codes[self.client_address[0]]
                 if response_code == Responses.DEPOSIT_CONFIRM:
-                    output += '<h4>Deposit confirmed.</h4>'
+                    response_output += '<h4>Deposit confirmed.</h4>'
                 elif response_code == Responses.WITHDRAWAL_CONFIRM:
-                    output += '<h4>Withdrawal confirmed.</h4>'
+                    response_output += '<h4>Withdrawal confirmed.</h4>'
                 elif response_code == Responses.TRANSFER_CONFIRM:
-                    output += '<h4>Transfer confirmed.</h4>'
+                    response_output += '<h4>Transfer confirmed.</h4>'
                 elif response_code == Responses.INNER_TRANSFER_CONFIRM:
-                    output += '<h4>Departmental transfer processed.</h4>'
+                    response_output += '<h4>Departmental transfer processed.</h4>'
                 elif response_code == Responses.NEW_DEP_OPENED:
-                    output += '<h4>New department established.</h4>'
+                    response_output += '<h4>New department established.</h4>'
                 elif response_code == Responses.SPENDING_LIMIT_ALTERED:
-                    output += '<h4>Spending limit changed. Your monthly spending limit will be updated at the end of the month.'
+                    response_output += '<h4>Spending limit changed. Your monthly spending limit will be updated at the end of the month.'
                 elif response_code == Responses.REQUEST_FILED:
-                    output += '<h4>Your request will be filed to the bank. Your will receive an update to your personal inbox.'
+                    response_output += '<h4>Your request will be filed to the bank. Your will receive an update to your personal inbox.'
                 data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
             if type(data.response_codes) is not int:
                 data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
-            output += '</br></br>' + '<h4><a href="/account/logout">Log out</a></h4>'
-            output += '</body></html>'
+            html = '''
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Account Home Page</title>
+                <style type="text/css">
+                    /* general styling */
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 0;
+                        padding: 0;
+                    }
+                    a {
+                        text-decoration: none;
+                    }
+                /* header styling */
+                header {
+                    background-color: #001F54;
+                    color: #fff;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 16px;
+                }
+                .logo {
+                    height: 50px;
+                }
+                .title {
+                    font-size: 28px;
+                    font-weight: bold;
+                    margin: 0;
+                }
+
+                /* main content styling */
+                main {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 20px;
+                }
+                .transactions {
+                    width: 25%;
+                    border-left: 3px solid #fff;
+                    border-left-color: #001F54;
+                    padding-left: 20px;
+                    padding-right: 10px;
+                    text-align: left;
+                    margin-right: 20px
+                }
+                .transactions h2 {
+                    font-size: 26px;
+                    margin-bottom: 10px;
+                }
+                .transactions ul {
+                    list-style-type: none;
+                    margin-left: 10px;
+                    padding: 0;
+                }
+                .transactions li {
+                    margin-bottom: 10px;
+                }
+                .transactions li a {
+                    font-size: 20px;
+                }
+                .cloud {
+                    margin-top: 20px;
+                }
+                .account-info {
+                    width: 70%;
+                    padding-left: 10px;
+                }
+                .account-info h1 {
+                    font-size: 40px;
+                }
+                .account-info p {
+                    font-size: 22px;
+                    margin: 0;
+                }
+                .account-manage {
+                    width: 100%;
+                    padding-left: 10px;
+                }
+                .account-manage h2 {
+                    font-size: 26px;
+                    margin-bottom: 10px;
+                }
+                .account-manage p {
+                    font-size: 20px;
+                    margin: 0;
+                }
+                .account-manage a {
+                    font-size: 18px;
+                }
+                .account-manage ul {
+                    list-style-type: none;
+                }
+                a {
+                    color: navy;
+                }
+                a:hover {
+                    text-decoration: underline;
+                }
+                .horizontal-line {
+                    border-bottom: 1px solid #D9D9D9;
+                    margin: 10px 0;
+                }
+                .logout {
+                    padding-left: 10px;
+                }
+            </style>
+            </head>
+            <body>
+                <header>
+                    <h1 class="title">Account Home Page</h1>
+                    <img class="logo" src="''' + logo_path + '''" alt="FinCloud Logo">
+                </header>
+                <main>
+                    <div class="account-info">
+                        <h1>Your Account</h1>
+                        <p>Account Name {}</p>
+                        <p>Account Number: {}</p>
+                        {}
+                        </br>
+                        </br>
+                    </div>
+                    <div class="transactions">
+                        <h2>Transactions</h2>
+                        <ul>
+                            <li><a href="/account/deposit_funds">Deposit Funds</a></li>
+                            <li><a href="/account/withdraw_funds">Withdraw Funds</a></li>
+                            <li><a href="/account/transfer_funds">Transfer Funds</a></li>
+                            {}
+                            </br></br></br>
+                            <li class="cloud"><a href="/account/cloud">Cloud Storage</a></li>
+                            <li><a href="/account/transaction_history">Transaction History</a></li>
+                        </ul>
+                    </div>
+                </main>
+                <hr class="horizontal-line">
+                <main>
+                    <div class="account-manage">
+                        <p>
+                            Current account value in USD: ${}
+                        </p>
+                        <p>
+                            {}
+                        </p>
+                        <h2>Manage Account:</h2>
+                        <h3><a href="/account/info">Account Info</a><h3>
+                        <h3><a href="/account/inbox">Account Inbox</a></h3>
+                        {}
+                        {}
+                        </br></br>
+                        <h3>{}</h3>
+                        </br></br>
+                    </div>
+                </main>
+                <main>
+                    <div class="logout">
+                        <a href="/account/logout">Logout of your account</a>
+                    </div>
+                </main>
+            </body>
+            </html>
+            '''.format(account_name, account_number, '<p>Company: {}</p>'.format(comp_name) if ac_type == 'bus' else '', '<li><a href="/account/business/inner_transfer">Inner Transfer</a></li>' if ac_type == 'bus' else '', val, 'Remaining spending for the month: ${} out of ${}'.format(remaining_spending, spending_limit) if ac_type == 'reg' else '',
+                       '<h3><a href="/account/business/open_dep">Open new department</a></h3>' if ac_type == 'bus' else '', '<h3><a href="/account/change_spending_limit">Change spending limit</a></h3>' if ac_type == 'reg' else '', response_output)
+
+            output = html
             self.wfile.write(output.encode())
 
         elif self.path.endswith('/account/info'):
@@ -639,7 +773,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/account/transaction_history'):
             self.start()
-            self.clear()
+            
             ac_index = data.current_account[self.client_address[0]]
             ac_type = loc_type_table.in_table(ac_index)
             logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'vault', 'logo_transparent.png')
@@ -685,6 +819,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     }
                     .title {
                         font-size: 28px;
+                        font-weight: bold;
                         margin: 0;
                     }
                     .entry {
@@ -761,7 +896,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/account/inbox'):
             self.start()
-            self.clear()
+            
             ac_index = data.current_account[self.client_address[0]]
             messages = Accounts.log[ac_index].inbox
             logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'vault', 'logo_transparent.png')
@@ -781,7 +916,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    padding: 10px 20px;
+                    padding: 16px;
                 }
                 
                 .file-request-link {
@@ -959,7 +1094,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/account/inbox/file_requests'):
             self.start()
-            self.clear()
+            
             ac_index = data.current_account[self.client_address[0]]
             messages = Accounts.log[ac_index].inbox
             red_flag_messages = [message for message in messages if message.message_type == 'red flag']
@@ -1001,7 +1136,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/account/confirm_spending'):
             self.start()
-            self.clear()
+            
             output = '<html><body>'
             output += '<h1>Transaction Confirmation</h1>'
             output += '<h3>Completing this transaction will place you in a monthly sending deficit and likely result in fees.</h3>'
@@ -1014,12 +1149,12 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/account/change_spending_limit'):
             self.start()
-            self.clear()
+            
             output = '<html><body>'
             ac_index = data.current_account[self.client_address[0]]
             output += '<h1>Change Monthly Spending limit</h1>' + '</br>'
-            output += '<h3>Current spending limit per month: ' + Accounts.log[
-                ac_index].monthly_spending_limit + '</h3></br>'
+            output += '<h3>Current spending limit per month: ' + str(Accounts.log[
+                ac_index].monthly_spending_limit) + '</h3></br>'
             output += 'Your monthly spending limit allows you to maintain expenses on your account. ' \
                       'If you overspend you will encounter a fee,' \
                       ' but spending less than you monthly spending limit could add value to your account,' \
@@ -1045,7 +1180,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/account/deposit_funds'):
             self.start()
-            self.clear()
+            
             output = '<html><body>'
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
@@ -1079,7 +1214,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/account/withdraw_funds'):
             self.start()
-            self.clear()
+            
             output = '<html><body>'
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
@@ -1115,7 +1250,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/account/transfer_funds'):
             self.start()
-            self.clear()
+            
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
             val = Accounts.log[ac_index].get_value_usd()
@@ -1163,7 +1298,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/account/holdings'):
             self.start()
-            self.clear()
+            
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
             output = '<html><body>'
@@ -1190,7 +1325,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/account/business/departments'):
             self.start()
-            self.clear()
+            
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
             comp_name = Accounts.log[ac_index].company_name
@@ -1221,7 +1356,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/account/holdings/trade_currency'):
             self.start()
-            self.clear()
+            
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
             value_table = Accounts.log[ac_index].value
@@ -1275,7 +1410,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/invest_capital/trade_currencies'):
             self.start()
-            self.clear()
+            
             url_parsed = self.path.split('/')
             dep_name = url_parsed[4]
             ac_index = data.current_account[self.client_address[0]]
@@ -1334,7 +1469,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/account/business/inner_transfer'):
             self.start()
-            self.clear()
+            
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
             account_number = str(number_table.get_key(ac_index))
@@ -1373,7 +1508,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/account/cloud'):
             self.start()
-            self.clear()
+            
             output = '<html><body>'
             output += '<h1>Our Financial Cloud</h1>'
             output += '<h2>Why use Financial cloud?</h2>'
@@ -1400,7 +1535,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/account/cloud/allocate'):
             self.start()
-            self.clear()
+            
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
             val = Accounts.log[ac_index].get_value_usd()
@@ -1439,7 +1574,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/account/cloud/withdraw'):
             self.start()
-            self.clear()
+            
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
             val = Accounts.log[ac_index].get_value_usd()
@@ -1480,7 +1615,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/account/business/open_dep'):
             self.start()
-            self.clear()
+            
             output = '<html><body>'
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
@@ -1541,9 +1676,15 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 fields = cgi.parse_multipart(self.rfile, pdict)
                 user_attempt = fields.get('username')[0]
                 code_attempt = fields.get('code')[0]
-
+                save_attempt = ''
+                if user_attempt == 'stop_server':
+                    save_attempt = 'stop_server'
+                    user_attempt = 'Admin'
                 # verification process with input from user
                 verify, response_code, index = verification(user_attempt, code_attempt)
+                if verify and save_attempt == 'stop_server':
+                    data.run_server_flag = False
+                    self.system_error()
                 if verify:
                     data.alter_ca(self.client_address[0], index)
                     self.redirect('/account/home')
@@ -1695,6 +1836,11 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 spending_limit = fields.get('spending_limit')[0]
                 # create account with user input
                 if code == code_confirm:
+                    print(spending_limit)
+                    if not validate_number(spending_limit):
+                        data.alter_rf(self.client_address[0], True)
+                        data.alter_re(self.client_address[0], Responses.INVALID_SPENDING_LIMIT)
+                        self.redirect('/new/checking')
                     param_list = {'type': 'reg', 'account name': account_name, 'code': code, 'phone num': phone_number,
                                   'spending limit': int(spending_limit)}
                     data.alter_re(self.client_address[0], param_list)

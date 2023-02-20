@@ -187,9 +187,14 @@ def date_to_num(date: np.array) -> int:
     return num
 
 
-def date_to_str(date: []) -> str:
+def date_to_str(date) -> str:
     date_str = str(date[2]) + '/' + str(date[1]) + '/' + str(date[0])
     return date_str
+
+
+def date_to_dict(date) -> {str, int}:
+    date_dict = {'year': date[0], 'month': date[1], 'day': date[2]}
+    return date_dict
 
 
 def create_clusters(counter: int) -> [[]]:
@@ -197,3 +202,44 @@ def create_clusters(counter: int) -> [[]]:
     for i in range(counter):
         clusters.append([])
     return clusters
+
+
+def dict_keys_tostring(data_dict, reverse=False):
+    new_dict = {}
+    keys = list(data_dict.keys())
+    values = list(data_dict.values())
+    if reverse:
+        for index in range(len(keys)):
+            key = int(keys[index])
+            new_dict[key] = values[index]
+    else:
+        for index in range(len(keys)):
+            key = str(keys[index])
+            new_dict[key] = values[index]
+    return new_dict
+
+
+def dict_values_tostring(data_dict, reverse=False):
+    new_dict = {}
+    keys = list(data_dict.keys())
+    values = list(data_dict.values())
+    if reverse:
+        for index in range(len(keys)):
+            value = int(values[index])
+            new_dict[keys[index]] = value
+    else:
+        for index in range(len(keys)):
+            value = str(values[index])
+            new_dict[keys[index]] = value
+    return new_dict
+
+
+def set_tostring(data_set, reverse=False):
+    new_set = set()
+    if reverse:
+        for num in data_set:
+            new_set.add(int(num))
+    else:
+        for num in data_set:
+            new_set.add(str(num))
+    return new_set

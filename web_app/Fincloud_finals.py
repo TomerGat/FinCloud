@@ -17,6 +17,7 @@ ACCOUNTS_UPDATE_CYCLE = 600
 RATES_UPDATE_CYCLE = 7200
 CREDENTIALS_UPDATE_CYCLE = 28800
 ANOMALY_DETECTION_CYCLE = 64800
+BACKUP_DATA_CYCLE = 300
 
 # minimum length to check for anomalies in ledger (under certain limit , algorithm is not effective)
 MIN_LENGTH_FOR_ANOMALY_DETECTION = 10
@@ -43,3 +44,15 @@ MIN_DEVIATION_RATIO_TO_FLAG = 2.75  # change
 
 # whether or not to flag inner transfers (config - can be changed)
 FLAG_INNER_TRANSFERS = False
+
+# mongodb credentials dir
+mongo_dir = '\\mongo_credentials\\mongo_connection_string.txt'
+
+# admin credentials dir
+admin_dir = '\\credentials'
+
+# admin credentials file path
+admin_file_path = '\\Admin_credentials.txt'
+
+# database name
+DB_NAME = 'FinCloud_Database'

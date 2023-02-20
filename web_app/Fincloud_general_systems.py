@@ -894,7 +894,7 @@ def send_announcement(subject, message, sender, mes_type: str, type_modification
             Accounts.log[ac_index].inbox.append(mes)
 
 
-def set_fee(returns):
+def set_fee(returns) -> int:
     if returns == RETURNS_PREMIUM:
         return PREMIUM_RETURNS_FEE
     elif returns == RETURNS_MEDIUM:
@@ -923,7 +923,7 @@ def set_underspending_bonus(spending_limit, remaining_spending, total_account_va
 
 def get_daily_rates(cur1, cur2, amount):
     amount_new = amount / last_rates[cur1] * last_rates[cur2]
-    return round(amount_new, 3)
+    return int(round(amount_new, 3))
 
 
 def currency_rates(cur1, cur2, amount):
@@ -931,7 +931,7 @@ def currency_rates(cur1, cur2, amount):
         return round(converter.CurrencyRates().convert(cur1, cur2, amount), 3)
     except converter.RatesNotAvailableError:
         amount_new = amount / last_rates[cur1] * last_rates[cur2]
-        return round(amount_new, 3)
+        return int(round(amount_new, 3))
 
 
 def hash_function(param) -> int:
@@ -1421,3 +1421,11 @@ def find_id_in_message(mes: Message) -> int:
     subject_parsed = subject.split(': ')  # dividing the subject into two parts, leaving the second part as '<id>)'
     entry_id = subject_parsed[1].split(')')[0]
     return entry_id
+
+
+def wait_for_flag(seconds):
+    counter = 0
+    while counter < seconds and data.run_server_flag:
+        time.sleep(0.99999999)
+        counter += 1
+    return

@@ -1,10 +1,11 @@
 # import general systems
 from Fincloud_general_systems import *
+from Fincloud_mongoDB_functions import backup_data
 
 
 # background functions
 def session_timing():  # check for session timeout
-    while True:
+    while data.run_server_flag:
         for ip in addresses:
             if len(history[ip].log) >= 2:
                 log_length = len(history[ip].log)
@@ -24,8 +25,10 @@ def session_timing():  # check for session timeout
 
 
 def accounts_update():  # run update functions in savings and checking accounts
-    while True:
-        time.sleep(ACCOUNTS_UPDATE_CYCLE)  # update every 10 min
+    while data.run_server_flag:
+        wait_for_flag(ACCOUNTS_UPDATE_CYCLE)
+        if not data.run_server_flag:
+            continue
         if len(Accounts.log) != 0:
             for index in loc_type_table.body.keys():
                 if loc_type_table.body[index] != 'bus':
@@ -33,8 +36,10 @@ def accounts_update():  # run update functions in savings and checking accounts
 
 
 def rates_update():  # update last currency rates to use if live rates are not available
-    while True:
-        time.sleep(RATES_UPDATE_CYCLE)
+    while data.run_server_flag:
+        wait_for_flag(RATES_UPDATE_CYCLE)
+        if not data.run_server_flag:
+            continue
         for curr in last_rates.keys():
             try:
                 last_rates[curr] = converter.CurrencyRates().get_rate('USD', curr)
@@ -43,8 +48,10 @@ def rates_update():  # update last currency rates to use if live rates are not a
 
 
 def refresh_admin_credentials():
-    while True:
-        time.sleep(CREDENTIALS_UPDATE_CYCLE)
+    while data.run_server_flag:
+        wait_for_flag(CREDENTIALS_UPDATE_CYCLE)
+        if not data.run_server_flag:
+            continue
         print('Updating credentials')
         new_credentials = str(hash_function(generate_code()))
         pass_table.body[0] = new_credentials
@@ -58,10 +65,20 @@ def refresh_admin_credentials():
             file.write(new_credentials)
 
 
-def anomaly_detection():
-    while True:
-        time.sleep(ANOMALY_DETECTION_CYCLE)  # wait
+def manage_backups(run_once=False):
+    if run_once:
+        backup_data()
+        return
+    while data.run_server_flag:
+        wait_for_flag(BACKUP_DATA_CYCLE)
+        backup_data()
 
+
+def anomaly_detection():
+    while data.run_server_flag:
+        wait_for_flag(ANOMALY_DETECTION_CYCLE)
+        if not data.run_server_flag:
+            continue
         # update last_checked_entry to match number of existing accounts
         if len(last_checked_entry.keys()) != len(Accounts.log):
             counter = len(last_checked_entry.keys())
@@ -76,6 +93,8 @@ def anomaly_detection():
         # go over Accounts log
         for index in range(len(Accounts.log)):
             ac_type = loc_type_table.in_table(index)
+            if ac_type == 'Admin':
+                continue
             anomalies_found = False
             anomaly_entries = []
             ledger_to_check = Log()
@@ -92,7 +111,7 @@ def anomaly_detection():
                         for entry in anomaly_entries:
                             send_anomaly_message(entry, index)
             # handle if account is business
-            else:
+            elif ac_type == 'bus':
                 # go over each dep in business account
                 for dep_name in Accounts.log[index].departments.keys():
                     ledger_to_check = Accounts.log[index].departments[dep_name][1]
