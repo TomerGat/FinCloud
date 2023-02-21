@@ -95,7 +95,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             
             output = '<html><body>'
             output += '<h1>What is FinCloud?</h1>'
-            output += 'Fincloud is a state of the art financial network...'
+            output += 'FinCloud is a state of the art financial network...'
             output += '</body></html>'
             self.wfile.write(output.encode())
 
@@ -1541,7 +1541,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             val = Accounts.log[ac_index].get_value_usd()
             ac_type = loc_type_table.in_table(ac_index)
             output = '<html><body>'
-            output += '<h1>Allocate Funds With Fincloud</h1>' + '</br>'
+            output += '<h1>Allocate Funds With FinCloud</h1>' + '</br>'
             output += '<h2>Your Account: ' + account_name + '</h2>'
             output += '<h3>Current value in USD: ' + val + '</h3>' + '</br>' + '</br>'
             output += '<form method="POST" enctype="multipart/form-data" action="/account/cloud/allocate">'
@@ -1568,7 +1568,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     output += '<h4>Processing error: account not found. Please try again later</h4>'
                 data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
-            output += '</br>' + '</br>' + 'To return to Fincloud page ' + '<a href="/account/cloud">Click here</a>'
+            output += '</br>' + '</br>' + 'To return to FinCloud page ' + '<a href="/account/cloud">Click here</a>'
             output += '</body></html>'
             self.wfile.write(output.encode())
 
@@ -1580,7 +1580,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             val = Accounts.log[ac_index].get_value_usd()
             ac_type = loc_type_table.in_table(ac_index)
             output = '<html><body>'
-            output += '<h1>Withdraw Funds From Fincloud</h1>' + '</br>'
+            output += '<h1>Withdraw Funds From FinCloud</h1>' + '</br>'
             output += '<h2>Your Account: ' + account_name + '</h2>'
             output += '<h3>Current value in USD: ' + val + '</h3>' + '</br>' + '</br>'
             output += '<form method="POST" enctype="multipart/form-data" action="/account/cloud/withdraw">'
@@ -1609,7 +1609,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     output += '<h4>Allocation not found</h4>'
                 data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
-            output += '</br>' + '</br>' + 'To return to Fincloud page ' + '<a href="/account/cloud">Click here</a>'
+            output += '</br>' + '</br>' + 'To return to FinCloud page ' + '<a href="/account/cloud">Click here</a>'
             output += '</body></html>'
             self.wfile.write(output.encode())
 

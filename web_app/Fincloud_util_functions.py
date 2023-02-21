@@ -197,6 +197,11 @@ def date_to_dict(date) -> {str, int}:
     return date_dict
 
 
+def dict_to_date(date_dict) -> np.array([]):
+    date = np.array([date_dict['year'], date_dict['month'], date_dict['day']])
+    return date
+
+
 def create_clusters(counter: int) -> [[]]:
     clusters = []
     for i in range(counter):

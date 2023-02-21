@@ -2,13 +2,14 @@
 from Fincloud_general_systems import *
 from Fincloud_request_handler import FinCloudHTTPRequestHandler
 from Fincloud_background_functions import session_timing, accounts_update, rates_update, refresh_admin_credentials, anomaly_detection, manage_backups
+from MongoDB.MongoDB_retrieve import retrieve_data
 
 
 # main - driver function
 def main():
     # data management
     print('Retrieving data from MongoDB database')
-    # insert code to get data
+    retrieve_data()  # incomplete function
 
     # admin account and credentials setup
     print('Setting up credentials')
