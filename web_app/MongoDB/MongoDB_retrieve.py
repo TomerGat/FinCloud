@@ -51,6 +51,8 @@ def get_accounts_data(db):
 
 
 def retrieve_data():
+    if not BACKUP_DATA_FLAG:
+        return
     # get connection string from file
     file_path = str(os.path.dirname(os.path.abspath(__file__))) + mongo_dir
     with open(file_path, 'r') as file:
@@ -59,6 +61,3 @@ def retrieve_data():
 
     # retrieve data from database into server data structures
     get_accounts_data(db)
-
-
-retrieve_data()
