@@ -1,6 +1,7 @@
 # import general systems
 from Fincloud_general_systems import *
 from MongoDB.MongoDB_backup import backup_data
+from MongoDB.MongoDB_general import get_database
 
 
 # background functions
@@ -67,12 +68,22 @@ def refresh_admin_credentials():
 
 def manage_backups(run_once=False):
     if BACKUP_DATA_FLAG:
+        # get connection string from file
+        file_path = str(os.path.dirname(os.path.abspath(__file__))) + general_mongo_dir + mongo_dir
+        try:
+            with open(file_path, 'r') as file:
+                connection_string = file.read()
+            db = get_database(DB_NAME, connection_string)
+        except FileNotFoundError:
+            print('\nMongoDB access failed\n')
+            return
+
         if run_once:
-            backup_data()
+            backup_data(db)
             return
         while data.run_server_flag:
             wait_for_flag(BACKUP_DATA_CYCLE)
-            backup_data()
+            backup_data(db)
 
 
 def anomaly_detection():

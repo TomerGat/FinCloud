@@ -48,6 +48,9 @@ FLAG_INNER_TRANSFERS = False
 # mongodb credentials dir
 mongo_dir = '\\mongo_credentials\\mongo_connection_string.txt'
 
+# general mongodb files dir
+general_mongo_dir = '\\MongoDB'
+
 # admin credentials dir
 admin_dir = '\\credentials'
 

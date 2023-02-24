@@ -230,7 +230,7 @@ def dict_values_tostring(data_dict, reverse=False):
     values = list(data_dict.values())
     if reverse:
         for index in range(len(keys)):
-            value = int(values[index])
+            value = float(values[index])
             new_dict[keys[index]] = value
     else:
         for index in range(len(keys)):

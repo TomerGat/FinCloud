@@ -202,13 +202,7 @@ def backup_last_checked(db):
     collection.insert_one(last_checked_item)
 
 
-def backup_data():
-    # get connection string from file
-    file_path = str(os.path.dirname(os.path.abspath(__file__))) + mongo_dir
-    with open(file_path, 'r') as file:
-        connection_string = file.read()
-    db = get_database(DB_NAME, connection_string)
-
+def backup_data(db):
     # delete current data in db and backup updated data
     try:
         backup_accounts(db)

@@ -40,7 +40,7 @@ def get_accounts_data(db):
         for entry_index in item.keys():
             entry_data = item[entry_index]
             action = entry_data['action type']
-            amount = int(entry_data['amount'])
+            amount = float(entry_data['amount'])
             date = dict_to_date(entry_data['date'])
             target_num = entry_data['other num']
             target_dep = entry_data['other dep name']
@@ -56,7 +56,7 @@ def get_accounts_data(db):
             trade_entry_data = item[entry_index]
             cur_from = trade_entry_data['currency from']
             cur_to = trade_entry_data['currency to']
-            amount = int(trade_entry_data['amount'])
+            amount = float(trade_entry_data['amount'])
             conversion = trade_entry_data['conversion rate']
             date = dict_to_date(trade_entry_data['date'])
             new_t_entry = TradeEntry(cur_from, cur_to, amount, date, conversion)
@@ -157,7 +157,7 @@ def get_requests_data(db):
         target_index = request_item['target index']
         target_dep = request_item['target dep']
         action = request_item['action type']
-        amount = request_item['amount']
+        amount = float(request_item['amount'])
         request_id = request_item['request id']
         date = dict_to_date(request_item['date'])
         entry_id = request_item['entry id']
@@ -227,9 +227,13 @@ def retrieve_data():
         return
     # get connection string from file
     file_path = str(os.path.dirname(os.path.abspath(__file__))) + mongo_dir
-    with open(file_path, 'r') as file:
-        connection_string = file.read()
-    db = get_database(DB_NAME, connection_string)
+    try:
+        with open(file_path, 'r') as file:
+            connection_string = file.read()
+        db = get_database(DB_NAME, connection_string)
+    except FileNotFoundError:
+        print('\nMongoDB access failed\n')
+        return
 
     # retrieve data from database into server data structures
     try:
