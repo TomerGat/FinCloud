@@ -56,8 +56,8 @@ def backup_accounts(db):
             for dep_name in departments.keys():
                 departments_item[dep_name] = {
                     'department value': dict_values_tostring(departments[dep_name][0]),
-                    'ledger': create_ledger_item(departments[dep_name][1]),
-                    'trade ledger': create_trade_ledger_item(departments[dep_name][2])
+                    'ledger': create_ledger_item(departments[dep_name][1].log),
+                    'trade ledger': create_trade_ledger_item(departments[dep_name][2].log)
                 }
             return departments_item
 
@@ -94,7 +94,8 @@ def backup_accounts(db):
                 'account type': ac_type,
                 'account number': ac.account_number,
                 'inbox': create_inbox_item(ac.inbox),
-                'departments': create_departments_item(ac.departments)
+                'departments': create_departments_item(ac.departments),
+                'company name': ac.company_name
             }
         else:
             item = {}
@@ -175,13 +176,13 @@ def backup_requests(db):  # use create_request_item() inner function
     for key in previous_requests.keys():
         item['previous requests'][key] = create_requests_item(previous_requests[key])
 
-    collection = db['Security_Questions']
+    collection = db['Requests']
     collection.delete_many({})
     collection.insert_one(item)
 
 
 def backup_security_questions(db):
-    security_questions_item = security_questions
+    security_questions_item = dict_keys_tostring(security_questions)
     collection = db['Security_Questions']
     collection.delete_many({})
     collection.insert_one(security_questions_item)
@@ -209,10 +210,13 @@ def backup_data():
     db = get_database(DB_NAME, connection_string)
 
     # delete current data in db and backup updated data
-    backup_accounts(db)
-    backup_tables(db)
-    backup_existing_numbers(db)
-    backup_requests(db)
-    backup_security_questions(db)
-    backup_last_rates(db)
-    backup_last_checked(db)
+    try:
+        backup_accounts(db)
+        backup_tables(db)
+        backup_existing_numbers(db)
+        backup_requests(db)
+        backup_security_questions(db)
+        backup_last_rates(db)
+        backup_last_checked(db)
+    finally:
+        pass

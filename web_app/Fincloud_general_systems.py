@@ -923,7 +923,7 @@ def set_underspending_bonus(spending_limit, remaining_spending, total_account_va
 
 def get_daily_rates(cur1, cur2, amount):
     amount_new = amount / last_rates[cur1] * last_rates[cur2]
-    return int(round(amount_new, 3))
+    return round(amount_new, 3)
 
 
 def currency_rates(cur1, cur2, amount):
@@ -931,7 +931,7 @@ def currency_rates(cur1, cur2, amount):
         return round(converter.CurrencyRates().convert(cur1, cur2, amount), 3)
     except converter.RatesNotAvailableError:
         amount_new = amount / last_rates[cur1] * last_rates[cur2]
-        return int(round(amount_new, 3))
+        return round(amount_new, 3)
 
 
 def hash_function(param) -> int:

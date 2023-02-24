@@ -9,7 +9,7 @@ from MongoDB.MongoDB_retrieve import retrieve_data
 def main():
     # data management
     print('Retrieving data from MongoDB database')
-    retrieve_data()  # incomplete function
+    retrieve_data()
 
     # admin account and credentials setup
     print('Setting up credentials')
@@ -29,7 +29,7 @@ def main():
         create_checking_account('Admin', Admin_code, 1234567890, 1)
         loc_type_table.body[0] = 'admin'
     else:  # if accounts already exists (admin account already exists), only change code for account
-        pass_table.alter_key_index(0, hash_function(Admin_code))
+        pass_table.body[0] = hash_function(Admin_code)
 
     # thread management
     print('Starting background threads:')
@@ -96,6 +96,7 @@ def main():
 
     print('Backing up data')
     manage_backups(run_once=True)
+    print('Backup complete')
 
 
 # run main driver function

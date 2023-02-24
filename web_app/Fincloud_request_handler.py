@@ -717,7 +717,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 <main>
                     <div class="account-info">
                         <h1>Your Account</h1>
-                        <p>Account Name {}</p>
+                        <p>Account Name: {}</p>
                         <p>Account Number: {}</p>
                         {}
                         </br>
@@ -1836,16 +1836,16 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 spending_limit = fields.get('spending_limit')[0]
                 # create account with user input
                 if code == code_confirm:
-                    print(spending_limit)
                     if not validate_number(spending_limit):
                         data.alter_rf(self.client_address[0], True)
                         data.alter_re(self.client_address[0], Responses.INVALID_SPENDING_LIMIT)
                         self.redirect('/new/checking')
-                    param_list = {'type': 'reg', 'account name': account_name, 'code': code, 'phone num': phone_number,
-                                  'spending limit': int(spending_limit)}
-                    data.alter_re(self.client_address[0], param_list)
-                    data.alter_rf(self.client_address[0], False)
-                    self.redirect('/new/set_security_details')
+                    else:
+                        param_list = {'type': 'reg', 'account name': account_name, 'code': code, 'phone num': phone_number,
+                                      'spending limit': int(spending_limit)}
+                        data.alter_re(self.client_address[0], param_list)
+                        data.alter_rf(self.client_address[0], False)
+                        self.redirect('/new/set_security_details')
                 else:
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], Responses.CODES_NOT_MATCH)
@@ -1986,11 +1986,12 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], Responses.INVALID_MESSAGE_INPUT)
                     self.redirect('/admin_access/' + str(data.admin_token) + '/send_announcements')
-                mes_type = 'announcement'  # change to announcement
-                send_announcement(subject, message, sender, mes_type)
-                data.alter_rf(self.client_address[0], True)
-                data.alter_re(self.client_address[0], Responses.MESSAGE_SENT)
-                self.redirect('/admin_access/' + str(data.admin_token))
+                else:
+                    mes_type = 'announcement'  # change to announcement
+                    send_announcement(subject, message, sender, mes_type)
+                    data.alter_rf(self.client_address[0], True)
+                    data.alter_re(self.client_address[0], Responses.MESSAGE_SENT)
+                    self.redirect('/admin_access/' + str(data.admin_token))
             else:
                 self.system_error()
 
@@ -2009,9 +2010,9 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], Responses.INVALID_MESSAGE_ID)
                     self.redirect('/account/inbox/file_requests')
+                    return
                 ac_code = fields.get('code')[0]
                 ac_index = data.current_account[self.client_address[0]]
-
                 # verify
                 verify, response_code, index = verification(name_table.get_key(ac_index), ac_code)
                 if index != ac_index:
@@ -2020,7 +2021,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], response_code)
                     self.redirect('/account/inbox/file_requests')
-
+                    return
                 # find message
                 message = None
                 for index in range(len(Accounts.log[ac_index].inbox)):
@@ -2057,6 +2058,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], Responses.REQUEST_ALREADY_FILED)
                     self.redirect('/account/inbox')
+                    return
 
                 # create and file request
                 new_request = Request(entry, ac_index, dep)
@@ -2111,6 +2113,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     if Accounts.log[ac_index].remaining_spending < amount:
                         data.alter_re(self.client_address[0], [Responses.OVERSPEND_BY_WITHDRAWAL, amount])
                         self.redirect('/account/confirm_spending')
+                        return
                 elif ac_type == 'bus':
                     is_bus_account = True
                 if not is_bus_account:
@@ -2149,6 +2152,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                         data.alter_re(self.client_address[0],
                                       [Responses.OVERSPEND_BY_TRANSFER, amount, target_account, target_dep])
                         self.redirect('/account/confirm_spending')
+                        return
                 elif ac_type == 'bus':
                     is_bus_account = True
                 if not is_bus_account:
@@ -2339,6 +2343,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                         data.alter_re(self.client_address[0], [Responses.OVERSPEND_BY_ALLOCATION, amount, allocation_id,
                                                                name_table.get_key(ac_index), dep_name])
                         self.redirect('/account/confirm_spending')
+                        return
                 confirm, response_code = Cloud().allocate(amount, allocation_id, name_table.get_key(ac_index), dep_name)
                 if confirm:
                     data.alter_rf(self.client_address[0], True)
