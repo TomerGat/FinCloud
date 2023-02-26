@@ -60,5 +60,5 @@ admin_file_path = '\\Admin_credentials.txt'
 # database name
 DB_NAME = 'FinCloud_Database'
 
-# whether or not to backup data (set to False to run without db connection)
+# whether or not to backup data (config - set to False to run without db connection)
 BACKUP_DATA_FLAG = True

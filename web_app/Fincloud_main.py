@@ -8,7 +8,8 @@ from MongoDB.MongoDB_retrieve import retrieve_data
 # main - driver function
 def main():
     # data management
-    print('Retrieving data from MongoDB database')
+    if BACKUP_DATA_FLAG:
+        print('Retrieving data from MongoDB database')
     retrieve_data()
 
     # admin account and credentials setup
@@ -94,9 +95,11 @@ def main():
     with open(file_path, 'w') as file:
         file.write('')
 
-    print('Backing up data')
+    if BACKUP_DATA_FLAG:
+        print('Backing up data')
     manage_backups(run_once=True)
-    print('Backup complete')
+    if BACKUP_DATA_FLAG:
+        print('Backup complete')
 
 
 # run main driver function

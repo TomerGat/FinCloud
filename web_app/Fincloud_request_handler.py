@@ -101,48 +101,180 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/login'):
             self.start()
-            
-            output = '<html><body>'
-            output += '<h1>Log in   |   Continue to FinCloud</h1>'
-            output += '<form method="POST" enctype="multipart/form-data" action="/login">'
-            output += 'Account name/number: ' + '<input name="username" type="text">' + '</br>'
-            output += 'Account access Code: ' + '<input name="code" type="text">' + '</br>' + '</br>'
-            output += '<input type="submit" value="Login">'
-            output += '</form>'
-            temp = '<p style = "color: black" style = "text-decoration: none">Forgot your password?</p>'
-            output += '<h5><a href="/forgot">' + temp + '</a></h5>'
-            temp = '<p style = "color: black" style = "text-decoration: none">Forgot your username and password?</p>'
-            output += '<h5><a href="/forgot_data">' + temp + '</a></h5>' + '</br>'
 
+            response_output = ''
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
                 response_code = data.response_codes[self.client_address[0]]
                 if response_code == Responses.AC_IDENTITY_INCORRECT:
-                    output += '<h4>Account name/number is incorrect. Please try again.</h4>'
+                    response_output += '<h4>Account name/number is incorrect. Please try again.</h4>'
                 elif response_code == Responses.AC_CODE_INCORRECT:
-                    output += '<h4>Password is incorrect. Please try again.</h4>'
+                    response_output += '<h4>Password is incorrect. Please try again.</h4>'
                 elif response_code == Responses.PROCESSING_ERROR:
-                    output += '<h4>Processing error. Please try again at a later time.</h4>'
+                    response_output += '<h4>Processing error. Please try again at a later time.</h4>'
                 elif response_code == Responses.ACCOUNT_RECOVERY_CONFIRM:
-                    output += '<h4>Account recovered. Username/password reset.</h4>'
+                    response_output += '<h4>Account recovered. Username/password reset.</h4>'
                 elif response_code == Responses.NEW_ACCOUNT_CREATED:
-                    output += '<h4>New account created.</h4>'
+                    response_output += '<h4>New account created.</h4>'
                 elif response_code == Responses.SECURITY_ANSWER_INCORRECT:
-                    output += '<h4>Security verification failed: Incorrect answer. Please try again later.</h4>'
+                    response_output += '<h4>Security verification failed: Incorrect answer. Please try again later.</h4>'
                 elif response_code == Responses.INVALID_SECURITY_ANSWER:
-                    output += '<h4>Security verification failed: Invalid answer. Please try again later.</h4>'
+                    response_output += '<h4>Security verification failed: Invalid answer. Please try again later.</h4>'
                 data.alter_re(self.client_address[0], 0)
 
-            output += '</br>' + '________      or      ________' + '</br></br></br>'
-            output += 'New to FinCloud? ' + '<a href="/new">Get started</a></br></br></br>'
-            output += 'Return to home page ' + '<a href="/">Here</a>'
-            output += '</body></html>'
+            logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'vault', 'logo_transparent.png')
+
+            # define the html, css, and js variables
+            html = '''
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Login Page</title>
+                <style>
+                    /* CSS styles */
+                    header {
+                        font-family: Arial, sans-serif;
+                        background-color: #001F54;
+                        color: white;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 16px;
+                    }
+                    .title {
+                        font-weight: bold;
+                        margin: 0;
+                        font-size: 28px;
+                    }
+                    .logo {
+                        height: 2rem;
+                    }
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 0;
+                        padding: 0;
+                    }
+                    .content {
+                        margin: 2rem;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                    }
+                    form {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        margin-bottom: 2rem;
+                    }
+                    form input {
+                        margin-bottom: 1rem;
+                        padding: 0.5rem;
+                        border-radius: 0.25rem;
+                        border: 1px solid lightgray;
+                        width: 100%;
+                        box-sizing: border-box;
+                    }
+                    form button {
+                        padding: 0.5rem;
+                        border-radius: 0.25rem;
+                        border: none;
+                        background-color: #001F54;
+                        color: white;
+                        cursor: pointer;
+                    }
+                    .links {
+                        display: flex;
+                        justify-content: space-between;
+                        width: 100%;
+                        margin-bottom: 1rem;
+                    }
+                    .links a {
+                        color: navy;
+                        text-decoration: none;
+                    }
+                    .response {
+                        width: 100%;
+                        margin-bottom: 1rem;
+                    }
+                    .response p {
+                        color: black;
+                    }
+                    .divide {
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        margin-bottom: 1rem;
+                    }
+                    .divide:before, .divide:after {
+                        content: "";
+                        border-top: 1px solid lightgray;
+                        width: 100%;
+                        margin: 0 0.5rem;
+                    }
+                    .cta {
+                        width: 100%;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: left;
+                    }
+                    .cta a {
+                        padding: 0.5rem;
+                        border-radius: 0.25rem;
+                        border: 1px white;
+                        color: navy;
+                        text-decoration: none;
+                        cursor: pointer;
+                    }
+                    .cta a:hover {
+                        background-color: navy;
+                        color: white;
+                        text-decoration: none;
+                    }
+                    a:hover {
+                        text-decoration: underline;
+                    }
+                </style>
+            </head>
+            <header>
+                <h1 class="title">Login to Your Account</h1>
+                <div class="logo">
+                    <img src="''' + logo_path + '''" alt="FinCloud logo">
+                </div>
+            </header>
+            <body>
+                <div class="content">
+                    <h3>Enter Login Details</h3>
+                    <form method="POST" enctype="multipart/form-data" action="/login">
+                        <input type="text" name="username" placeholder="Account Name/Number" required>
+                        <input type="password" name="code" placeholder="Access Code" required>
+                        <button type="submit">Login</button>
+                    </form>
+                    </br></br>
+                    <div class="links">
+                        <a href="/forgot_data">Forgot your username & password?</a>
+                    </div>
+                    </br></br>
+                    <div class="response">''' + response_output + '''</div>
+                </div>
+                <div class="content">
+                    </br></br></br></br>
+                    <div class="cta">
+                        <a href="/new">New to FinCloud? Get started</a>
+                    </div>
+                    </br>
+                    <div class="cta">
+                        <a href="/">Return to main page</a>
+                    </div>
+                </div>
+            </body>
+            </html>
+            '''
+            output = html
             self.wfile.write(output.encode())
 
         elif self.path.endswith('/account/logout'):
             self.start()
-            
             output = '<html><body>'
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
@@ -198,6 +330,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
             output += '</br>'
+            output += '<h4><a href="/forgot">Only recover password</a></h4>'
             output += '<h4><a href="/login">Cancel and return to log in page</a></h4>'
             output += '</body></html>'
             self.wfile.write(output.encode())
@@ -236,7 +369,155 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/new'):
             self.start()
-            
+            logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'vault', 'logo_transparent.png')
+
+            output = '''
+                <!DOCTYPE html>
+                <html>
+                    <head>
+                    <title>Open An Account</title>
+                        <style>
+                            /* CSS styles */
+                            header {
+                                font-family: Arial, sans-serif;
+                                background-color: #001F54;
+                                color: white;
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: center;
+                                padding: 16px;
+                            }
+                            .title {
+                                font-weight: bold;
+                                margin: 0;
+                                font-size: 28px;
+                            }
+                            .logo {
+                                height: 2rem;
+                            }
+                            body {
+                                margin: 0px;
+                                padding: 0px;
+                            }
+                            .content {
+                                width: 100%;
+                                margin: 0.25%;
+                            }
+                            .content h1 {
+                                font-size: 35px;
+                            }
+                            .content p {
+                                font-size: 18px;
+                            }
+                            .content a {
+                                color: navy;
+                                text-decoration: none;
+                            }
+                            .content a:hover {
+                                text-decoration: underline;
+                            }
+                            accounttypes {
+                                position: relative;
+                                left: 15%;
+                                width: 70%;
+                                margin: 0;
+                                padding: 0;
+                                display: flex;
+                                flex-wrap: wrap;
+                                justify-content: space-evenly;
+                                align-items: stretch;
+                            }
+                            .container {
+                                width: 17%;
+                                height: 450px;
+                                border: 1px solid;
+                                border-color: darkgray;
+                                border-radius: 25px;
+                                padding: 0.35%;
+                            }
+                            .container h4 {
+                               text-align: center;
+                               font-size: 28px;
+                            }
+                            .container p {
+                                font-size: 20px;
+                                padding-left: 2px;
+                            }
+                            .container a {
+                                color: navy;
+                                text-decoration: none;
+                            }
+                            .container a:hover {
+                                text-decoration: underline;
+                            }
+                            return {
+                                margin: 0;
+                                padding: 0;
+                            }
+                            return a {
+                                color: navy;
+                                text-decoration: none;
+                            }
+                            return a:hover {
+                                text-decoration: underline;
+                            }
+                            return h3 {
+                                padding: 0.35%;
+                            }
+                            center-text {
+                                display: flex;
+                                flex-wrap: wrap;
+                                justify-content: space-evenly;
+                                align-items: stretch;
+                                margin: 0;
+                                padding: 0;
+                                text-align: center;
+                
+                            }
+                        </style>
+                    </head>
+                    <header>
+                        <h1 class="title">Open An Account</h1>
+                        <div class="logo">
+                            <img src="''' + logo_path + '''" alt="FinCloud logo">
+                        </div>
+                    </header>
+                    <body>
+                        <div class="content">
+                            <h1>Select an account that fits your needs</h1> 
+                            <p>From personal accounts to specialized accounts for business, FinCloud offers the best service you can find.</p> </br>
+                        </div>
+                    </body>
+                    <center-text>
+                        <h1>Select the best account for you</h1>
+                    </center-text>
+                    <accounttypes>
+                        <div class="container">
+                            <h4><a href="/new/business">Specialized Business Account</a></h4>
+                            <p>Specialized accounts that allow simple and effective management of funds throughout multiple departments.</p>
+                        </div>
+                        <div class="container">
+                            <h4><a href="/new/checking">Personal Checking Account</a></h4>
+                            <p>Personal accounts that allow for dynamic management of personal funds. Our personal accounts also offer users the option to distribute their capital and purchase multiple currencies.</p>
+                        </div>
+                        <div class="container">
+                            <h4><a href="/new/savings">Personal Savings Account</a></h4>
+                            <p>Personal accounts that support savings at an interest determined by you.</p>
+                        </div>
+                    </accounttypes>
+                      
+                    </br></br></br></br>
+                    <return>
+                        <h3>Already have an account? <a href="/login">Sign in here</a></h3>
+                    </return>
+                </html>
+            '''
+
+            self.wfile.write(output.encode())
+
+        elif self.path.endswith('/new123'):
+            self.start()
+
             output = '<html><body>'
             output += '<h1>Open an account</h1>'
             output += '<h3>Select an account that fits your needs</h3>'
