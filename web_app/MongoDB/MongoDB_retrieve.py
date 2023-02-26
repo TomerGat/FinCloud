@@ -232,7 +232,7 @@ def retrieve_data():
             connection_string = file.read()
         db = get_database(DB_NAME, connection_string)
     except FileNotFoundError:
-        print('\nMongoDB access failed\n')
+        print('\nMongoDB credentials not found. Set BACKUP_DATA_FLAG to False to run without MongoDB access.\n')
         return
 
     # retrieve data from database into server data structures
@@ -245,6 +245,9 @@ def retrieve_data():
         get_rates_data(db)
         get_checked_data(db)
     except KeyError:
-        pass
+        print('\nError while processing MongoDB data: KeyError.\n')
     except IndexError:
-        pass
+        print('\nError while processing MongoDB data: IndexError.\n')
+    except errors.OperationFailure:
+        print('\nMongoDB access failed.\n')
+        return

@@ -78,12 +78,16 @@ def manage_backups(run_once=False):
             print('\nMongoDB access failed\n')
             return
 
-        if run_once:
-            backup_data(db)
+        try:
+            if run_once:
+                backup_data(db)
+                return
+            while data.run_server_flag:
+                wait_for_flag(BACKUP_DATA_CYCLE)
+                backup_data(db)
+        except errors.OperationFailure:
+            print('\nMongoDB access failed.\n')
             return
-        while data.run_server_flag:
-            wait_for_flag(BACKUP_DATA_CYCLE)
-            backup_data(db)
 
 
 def anomaly_detection():

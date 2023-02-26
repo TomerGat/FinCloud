@@ -515,29 +515,6 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
             self.wfile.write(output.encode())
 
-        elif self.path.endswith('/new123'):
-            self.start()
-
-            output = '<html><body>'
-            output += '<h1>Open an account</h1>'
-            output += '<h3>Select an account that fits your needs</h3>'
-            output += 'From personal accounts to specialized accounts for business, ' \
-                      'FinCloud offers the best service you can find.' + '</br>' + '</br>'
-            output += '<h2>Select the best account for you</h2>'
-            output += '<h4><a href="/new/business">Specialized Business Account</a></h4>'
-            output += 'Specialized accounts that allow simple and effective' \
-                      ' management of funds throughout multiple departments'
-            output += '<h4><a href="/new/checking">Personal Checking Account</a></h4>'
-            output += 'Personal accounts that allow for dynamic management of personal funds.' \
-                      ' Our personal accounts also offer users the option to distribute' \
-                      ' their capital and purchase multiple currencies.'
-            output += '<h4><a href="/new/savings">Personal Savings Account</a></h4>'
-            output += 'Personal accounts that support savings at an interest determined by you.'
-            output += '</br>' + '</br>' + '</br>' + '</br>'
-            output += 'Already have an account? ' + '<a href="/login">Sign in here</a>'
-            output += '</body></html>'
-            self.wfile.write(output.encode())
-
         elif self.path.endswith('/new/set_security_details'):
             self.start()
             

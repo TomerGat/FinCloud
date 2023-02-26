@@ -11,10 +11,13 @@ import datetime
 import random
 import time
 
-# data management
+# data structures
 import numpy as np
 from enum import Enum
-from pymongo import MongoClient
+
+# database related
+import pymongo
+from pymongo import errors
 import json
 
 # forex

@@ -3,7 +3,7 @@ from Fincloud_imports import *
 
 def get_database(db_name, connection_string):
     # connect using MongoClient
-    client = MongoClient(connection_string)
+    client = pymongo.MongoClient(connection_string)
 
     # return the database
     return client[db_name]
