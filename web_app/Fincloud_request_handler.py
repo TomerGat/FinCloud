@@ -1,4 +1,6 @@
 # import general systems
+import requests
+
 from Fincloud_general_systems import *
 
 
@@ -953,18 +955,34 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             ac_name = url_parsed[2]
             ac_index = name_table.in_table(ac_name)
             output = '<html><body>'
-            ac_values = create_table_output(Accounts.log[ac_index].value)
             ac_type = loc_type_table.in_table(ac_index)
-            ac_spending_info = [Accounts.log[ac_index].monthly_spending_limit,
-                                Accounts.log[ac_index].remaining_spending]
+            if ac_type != 'bus':
+                ac_values = create_table_output(Accounts.log[ac_index].value)
+            else:
+                ac_values = ''
+                for dep in Accounts.log[ac_index].departments.keys():
+                    ac_values += dep + '</br>' + create_table_output(Accounts.log[ac_index][dep][0]) + '</br>'
             ac_number = number_table.get_key(ac_index)
             output += '<h1>Account Watch - ' + ac_name + '</h1>'
             output += '<h2>Account number - ' + ac_number + '</h2>'
             output += '<h2>Account Type - ' + ac_type + '</h2>'
-            output += '<h3>Spending for this month: ' + ac_spending_info[1] + '/' + ac_spending_info[0] + '</h3>'
+            if ac_type == 'reg':
+                ac_spending_info = [Accounts.log[ac_index].monthly_spending_limit,
+                                    Accounts.log[ac_index].remaining_spending]
+                output += '<h3>Spending for this month: ' + ac_spending_info[1] + '/' + ac_spending_info[0] + '</h3>'
             output += '<h3>Account holdings:</h3>'
             output += ac_values
+            output += '</br></br>'
+            if ac_index in active_requests.keys():
+                output += '<h4><a href="' + self.path + \
+                          '/see_requests">See {} active requests for this account</a>'.format(len(active_requests[ac_index]))
             self.wfile.write(output.encode())
+
+        elif self.path.endswith('see_requests'):
+            self.start()
+
+            output = '<html><body>'
+
 
         elif self.path.endswith('/admin_access/' + str(data.admin_token) + '/cloud_watch'):
             self.start()

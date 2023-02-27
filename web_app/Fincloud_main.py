@@ -79,7 +79,7 @@ def main():
 
     # create HTTP server with custom request handler
     print('Running main thread at thread ID = "' + str(threading.get_ident()) + '"')
-    PORT = 8080
+    PORT = 80
     IP = socket.gethostbyname(socket.gethostname())
     server_address = (IP, PORT)
     server = http.server.HTTPServer(server_address, FinCloudHTTPRequestHandler)

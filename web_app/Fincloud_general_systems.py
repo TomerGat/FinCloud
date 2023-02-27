@@ -768,7 +768,7 @@ def handle_client_request(request_to_handle: Request, response: str) -> bool:
     """
     :param response: should request be approved/denied
     :param request_to_handle: request to handle
-    :return: handling confirmation
+    :return: handling confirmation (True whether request is approved or not)
     """
 
     # make sure response is valid
@@ -801,7 +801,8 @@ def handle_client_request(request_to_handle: Request, response: str) -> bool:
     mes_str += """
     Amount: {} (status resolved)
     If request was approved, the correct amount will be returned/removed from your account shortly.
-    Thank you for filing a request, and we appologize for authorizing the transaction.
+    Thank you for filing a request, and we apologize for authorizing the transaction. 
+    Please make sure your personal data is secure, and we recommend you reset your account data.
     Thank you
     """.format(str(request_to_handle.amount))
     send_message(request_to_handle.source_index,
@@ -819,7 +820,7 @@ def handle_client_request(request_to_handle: Request, response: str) -> bool:
     return confirm
 
 
-def remove_entry(ac_index: int, id_to_remove: int, dep_name, remove_entry_id=False):
+def remove_entry(ac_index: int, id_to_remove: int, dep_name, remove_entry_id=False) -> None:
     ac_type = loc_type_table.in_table(ac_index)
 
     # remove entry id from existing_entry_id if flag is set to True
@@ -881,12 +882,12 @@ def reverse_transaction(source_index: int, source_dep, target_index: int, target
     return reverse_transaction(target_index, target_dep, -1, -1, save_action_type, amount)
 
 
-def send_message(ac_index: int, subject: str, message: str, sender: str, mes_type: str):
+def send_message(ac_index: int, subject: str, message: str, sender: str, mes_type: str) -> None:
     mes = Message(subject, message, sender, mes_type)
     Accounts.log[ac_index].inbox.append(mes)
 
 
-def send_announcement(subject, message, sender, mes_type: str, type_modification=None):
+def send_announcement(subject, message, sender, mes_type: str, type_modification=None) -> None:
     mes = Message(subject, message, sender, mes_type)
     for ac_index in range(len(Accounts.log)):
         if (type_modification is None) or \
@@ -904,13 +905,13 @@ def set_fee(returns) -> int:
     return -1
 
 
-def set_overspending_fee(spending_limit, total_spending_breach, last_spending_amount):
+def set_overspending_fee(spending_limit, total_spending_breach, last_spending_amount) -> float:
     deviation_percentage = total_spending_breach / spending_limit
     fee = deviation_percentage * last_spending_amount * OVERSPENDING_FEE_RATIO
     return fee
 
 
-def set_underspending_bonus(spending_limit, remaining_spending, total_account_value):
+def set_underspending_bonus(spending_limit, remaining_spending, total_account_value) -> float:
     # check that spending was at least 15%, otherwise do not give bonus
     if spending_limit / remaining_spending > (1 - MINIMUM_SPENDING_RATIO_FOR_BONUS):
         return 0
@@ -921,12 +922,12 @@ def set_underspending_bonus(spending_limit, remaining_spending, total_account_va
     return bonus
 
 
-def get_daily_rates(cur1, cur2, amount):
+def get_daily_rates(cur1, cur2, amount) -> float:
     amount_new = amount / last_rates[cur1] * last_rates[cur2]
     return round(amount_new, 3)
 
 
-def currency_rates(cur1, cur2, amount):
+def currency_rates(cur1, cur2, amount) -> float:
     try:
         return round(converter.CurrencyRates().convert(cur1, cur2, amount), 3)
     except converter.RatesNotAvailableError:
@@ -951,7 +952,7 @@ def hash_function(param) -> int:
     return limit_length(abs(new_val))
 
 
-def create_table_output(value_table):
+def create_table_output(value_table) -> str:
     output = '<table>' + '<tr>'
     output += '<th>Currency</th>' + '<th> | Current Value</th>' + '<th> | Exchange Rate to USD</th>' + '</tr>'
     output += '<tr><td> | USD</td><td> | ' + str(value_table['USD']) + '</td>' + '<td> | ' + str(currency_rates('USD', 'USD', 1)) + '</td></tr>'
@@ -991,7 +992,7 @@ def security_verification(ac_index, question, answer_attempt) -> (bool, Response
     return verify, response_code
 
 
-def verification(attempt, code_attempt):  # returns: verification answer, response code, account index
+def verification(attempt, code_attempt) -> (bool, Responses, int):  # returns: verification answer, response code, account index
     """
     :param attempt: user attempt for account name/number
     :param code_attempt: user attempt for account code
