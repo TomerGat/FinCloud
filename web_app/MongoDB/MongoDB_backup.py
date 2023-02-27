@@ -204,13 +204,10 @@ def backup_last_checked(db):
 
 def backup_data(db):
     # delete current data in db and backup updated data
-    try:
-        backup_accounts(db)
-        backup_tables(db)
-        backup_existing_numbers(db)
-        backup_requests(db)
-        backup_security_questions(db)
-        backup_last_rates(db)
-        backup_last_checked(db)
-    finally:
-        pass
+    backup_accounts(db)
+    backup_tables(db)
+    backup_existing_numbers(db)
+    backup_requests(db)
+    backup_security_questions(db)
+    backup_last_rates(db)
+    backup_last_checked(db)

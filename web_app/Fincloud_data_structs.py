@@ -86,7 +86,7 @@ class Global:  # object properties: redirect_flags, responses, current_account, 
 name_table = Table('name table')  # account name table - {account name: serial number}
 number_table = Table('number table')  # account number table - {account number: serial number}
 pass_table = Table('pass table')  # password table - {serial number : hash value of account password}
-phone_name_table = Table('phone name table')  # account recovery recovery table - {hash value of phone number: account name}
+phone_name_table = Table('phone name table')  # account recovery table - {hash value of phone number: account name}
 loc_type_table = Table('loc type table')  # account type table - {serial number: type of account (reg/bus/sav)}
 
 # Accounts log

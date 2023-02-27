@@ -764,7 +764,7 @@ def generate_request_id() -> int:
     return number
 
 
-def handle_request(request_to_handle: Request, response: str) -> bool:
+def handle_client_request(request_to_handle: Request, response: str) -> bool:
     """
     :param response: should request be approved/denied
     :param request_to_handle: request to handle
@@ -940,13 +940,14 @@ def hash_function(param) -> int:
     values = []
     for i in range(len(ascii_values)):
         values.append((i * 123854 ^ ascii_values[i] * 984) | (multiple(ascii_values)))
-    val = ((sum_vec(values) - 2587465) & (951456 * (multiple(values)) + 456 * sum_vec(values)))
+    val = ((sum_vec(values) + 2587465) & (123 + 951456 * (multiple(values)) + 456 * sum_vec(values)))
     if val < 0:
         val = val ^ (sum_vec(ascii_values) + 95813)
     factor = (((sum_vec(values) + 15984354) | (multiple(values) + 10000009814008)) & ((sum_vec(ascii_values) + 87515557) ^ (multiple(ascii_values) * 8558224)))
     new_val = abs(val ^ factor)
     shifts = 64 - math.floor(math.log10(new_val)) + 1
     new_val = new_val << shifts if shifts >= 0 else new_val >> abs(shifts)
+    new_val += shifts  # minimize collisions from previous line
     return limit_length(abs(new_val))
 
 
@@ -964,7 +965,7 @@ def create_table_output(value_table):
     return output
 
 
-def security_verification(ac_index, question, answer_attempt) -> (bool, int):
+def security_verification(ac_index, question, answer_attempt) -> (bool, Responses):
     """
     :param ac_index: index of account being recovered
     :param question: number of question (1/2)
@@ -981,7 +982,7 @@ def security_verification(ac_index, question, answer_attempt) -> (bool, int):
     else:
         correct_answer = security_questions[ac_index][question]
         # compare attempt with correct answer
-        if answer_attempt != correct_answer:
+        if hash_function(answer_attempt) != correct_answer:
             response_code = Responses.SECURITY_ANSWER_INCORRECT
         else:
             verify = True

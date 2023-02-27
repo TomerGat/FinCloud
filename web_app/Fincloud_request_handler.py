@@ -71,23 +71,188 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
         # handle get requests according to path
         if self.path.endswith('/'):
             self.start()
-            
-            output = '<html><body>'
-            output += '<head><title>FinCloud.com</title></head>'
-            output += '<h1>FinCloud - A modern solution for you</h1>'
-            output += '<h3><a href="/About">Learn about us</a></h3>'
-            output += '<h3><a href="/login">Sign in</a></h3>'
-
+            logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'vault', 'logo_transparent.png')
+            response_output = ''
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.redirect_flags[self.client_address[0]] = False
                 response_code = data.response_codes[self.client_address[0]]
                 if response_code == Responses.SYSTEM_ERROR:
-                    output += '<h4>System error. Please try again later.</h4>'
+                    response_output += '<h4>System error. Please try again later.</h4>'
                 if response_code == Responses.SESSION_TIMEOUT:
-                    output += '<h4>Session timed out.</h4>'
+                    response_output += '<h4>Session timed out.</h4>'
                 data.alter_re(self.client_address[0], 0)
-            output += '</body></html>'
+
+            output = '''
+                <!DOCTYPE html>
+            <html>
+            <head>
+                <title>FinCloud</title>
+                <style type="text/css">
+                    /* general styling */
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 0;
+                        padding: 0;
+                    }
+                    a {
+                        text-decoration: none;
+                    }
+                    /* header styling */
+                    header {
+                        background-color: #001F54;
+                        color: #fff;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 16px;
+                    }
+                    .logo {
+                        height: 2rem;
+                    }
+                    .title {
+                        font-size: 28px;
+                        font-weight: bold;
+                        margin: 0;
+                    }
+    
+                    /* main content styling */
+                    main {
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 20px;
+                    }
+                    .accounts {
+                        width: 15%;
+                        border-left: 3px solid #fff;
+                        border-left-color: #001F54;
+                        padding-left: 20px;
+                        padding-right: 10px;
+                        text-align: left;
+                        margin-right: 20px
+                    }
+                    .accounts a {
+                        color: navy;
+                    }
+                    .accounts a:hover {
+                        font-weight: bold;
+                    }
+                    .accounts h2 {
+                        font-size: 26px;
+                        margin-bottom: 10px;
+                    }
+                    .accounts ul {
+                        list-style-type: none;
+                        margin-left: 0;
+                        padding: 0;
+                    }
+                    .accounts li {
+                        margin-bottom: 10px;
+                    }
+                    .accounts li a {
+                        font-size: 20px;
+                    }
+                    .welcome {
+                        width: 70%;
+                        padding-left: 10px;
+                    }
+                    .welcome h1 {
+                        font-size: 40px;
+                    }
+                    .welcome p {
+                        font-size: 22px;
+                        margin: 0;
+                    }
+                    .welcome a {
+                        color: navy
+                    }
+                    .welcome a:hover {
+                        font-weight: bold;
+                    }
+                    .core {
+                        width: 100%;
+                        padding-left: 10px;
+                    }
+                    .core h2 {
+                        font-size: 26px;
+                        margin-bottom: 10px;
+                    }
+                    .core pbold {
+                        font-size: 20px;
+                        margin: 0;
+                        font-weight: bold;
+                    }
+                    .core p {
+                        font-size: 20px;
+                        margin: 0;
+                    }
+                    .core a {
+                        font-size: 18px;
+                    }
+                    .core ul {
+                        list-style-type: none;
+                    }
+                    .horizontal-line {
+                        border-bottom: 1px solid #D9D9D9;
+                        margin: 10px 0;
+                    }
+                </style>
+                </head>
+                <body>
+                <header>
+                    <h1 class="title">FinCloud</h1>
+                    <img class="logo" src="''' + logo_path + '''" alt="FinCloud Logo">
+                </header>
+                <main>
+                    <div class="welcome">
+                        <h1>Welcome to FinCloud</h1>
+                        <p> FinCloud is a digital banking system dedicated to giving the best possible service.</br>We offer a web-focused platform that offers a variety of features to a wide array of customers.</p>
+                        </br>
+                        <p><a href="/About">Learn About Us</a></p>
+                        </br></br>
+                        <h4>''' + response_output + '''</h4>
+                    </div>
+                    <div class="accounts">
+                        <h2>Accounts</h2>
+                        <ul>
+                            <li><a href="/login">Sign In</a></li>
+                            <li><a href="/new">Open Account</a></li>
+                            </br></br></br>
+                        </ul>
+                    </div>
+                </main>
+                <hr class="horizontal-line">
+                <main>
+                    <div class="core">
+                        <h2>Core Principles:</h2>
+                        </br>
+                        <h3>Variety of Services</h3>
+                        <p>
+                            FinCloud offers a wide array of services for different types of clients.</br>
+                            Check out your account options in the Accounts segment.
+                        </p>
+                        </br>
+                        <h3>Security </h3>
+                        <p>
+                            We offer a secure network, a complex client verification system, and red flag detection algorithms.</br>
+                        Our bank protects the safety of your identity, your data, and your funds.
+                        </p>
+                        </br>
+                        <h3>Special Features</h3>
+                        <p>
+                            We offer unique services, such as foreign currency trading, and out Financial Cloud.</br>
+                            To read more, click 'Learn About Us' at the top of the page.
+                        </p>
+                        </br></br></br>
+                        <p>
+                            Disclaimer: This is a simulation of a digital bank and does not use real funds!
+                        </p>
+                    </div>
+                </main>
+            </body>
+            </html>
+            '''
+
             self.wfile.write(output.encode())
 
         elif self.path.endswith('/About'):
@@ -232,7 +397,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                         text-decoration: none;
                     }
                     a:hover {
-                        text-decoration: underline;
+                        font-weight: bold;
                     }
                 </style>
             </head>
@@ -418,8 +583,8 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             }
                             accounttypes {
                                 position: relative;
-                                left: 15%;
-                                width: 70%;
+                                left: 7.5%;
+                                width: 85%;
                                 margin: 0;
                                 padding: 0;
                                 display: flex;
@@ -429,15 +594,16 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             }
                             .container {
                                 width: 17%;
-                                height: 450px;
-                                border: 1px solid;
-                                border-color: darkgray;
-                                border-radius: 25px;
+                                height: 20%;
+                                /*border: 1px solid;
+                                border-color: darkgray;*/
+                                border-radius: 1.5rem;
                                 padding: 0.35%;
+                                margin: 0;
                             }
                             .container h4 {
                                text-align: center;
-                               font-size: 28px;
+                               font-size: 1.75rem;
                             }
                             .container p {
                                 font-size: 20px;
@@ -472,7 +638,6 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                                 margin: 0;
                                 padding: 0;
                                 text-align: center;
-                
                             }
                         </style>
                     </head>
@@ -495,6 +660,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                         <div class="container">
                             <h4><a href="/new/business">Specialized Business Account</a></h4>
                             <p>Specialized accounts that allow simple and effective management of funds throughout multiple departments.</p>
+                            </br></br></br></br>
                         </div>
                         <div class="container">
                             <h4><a href="/new/checking">Personal Checking Account</a></h4>
@@ -502,10 +668,10 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                         </div>
                         <div class="container">
                             <h4><a href="/new/savings">Personal Savings Account</a></h4>
-                            <p>Personal accounts that support savings at an interest determined by you.</p>
+                            <p>Personal accounts that support savings at an interest determined by you. Banking with your future in mind.</p>
+                            </br></br></br></br>
                         </div>
                     </accounttypes>
-                      
                     </br></br></br></br>
                     <return>
                         <h3>Already have an account? <a href="/login">Sign in here</a></h3>
@@ -882,7 +1048,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     padding: 16px;
                 }
                 .logo {
-                    height: 50px;
+                    height: 2rem;
                 }
                 .title {
                     font-size: 28px;
@@ -956,7 +1122,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     color: navy;
                 }
                 a:hover {
-                    text-decoration: underline;
+                    font-weight: bold;
                 }
                 .horizontal-line {
                     border-bottom: 1px solid #D9D9D9;
@@ -1186,7 +1352,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 }
             
                 .file-request-link:hover {
-                    text-decoration: underline;
+                    font-weight: bold;
                 }
                 
                 .logo img {
@@ -1977,8 +2143,8 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                         self.redirect('/new/set_security_details')
 
                 if confirm:
-                    questions_data = {fields.get('question1')[0]: fields.get('answer1')[0],
-                                      fields.get('question2')[0]: fields.get('answer2')[0]}
+                    questions_data = {fields.get('question1')[0]: hash_function(fields.get('answer1')[0]),
+                                      fields.get('question2')[0]: hash_function(fields.get('answer2')[0])}
                     param_list = data.response_codes[self.client_address[0]]
                     ac_type = param_list['type']
                     confirm = False

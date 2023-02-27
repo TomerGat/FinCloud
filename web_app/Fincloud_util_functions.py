@@ -38,13 +38,13 @@ def create_value_table():
     return value_table
 
 
-def validate_phone_number(phone):
-    return validate_number(phone) and (len(str(phone)) == 10)
-
-
 def unpack_list(unpack: []) -> ():
     new_tuple = (item for item in unpack)
     return new_tuple
+
+
+def validate_phone_number(phone):
+    return validate_number(phone) and (len(str(phone)) == 10)
 
 
 def validate_number(num):
@@ -83,6 +83,18 @@ def validate_string(word):
     return valid
 
 
+def validate_comp_name(comp_name):
+    if check_for_spaces(comp_name):
+        valid = True
+        for word in divide_to_words(comp_name):
+            valid = validate_string(word)
+            if not valid:
+                return False
+        return True
+    else:
+        return validate_string(comp_name)
+
+
 def check_for_spaces(word):
     confirm = False
     for ch in word:
@@ -105,18 +117,6 @@ def divide_to_words(words):
     if temp_str != '':
         wordList.append(temp_str)
     return wordList
-
-
-def validate_comp_name(comp_name):
-    if check_for_spaces(comp_name):
-        valid = True
-        for word in divide_to_words(comp_name):
-            valid = validate_string(word)
-            if not valid:
-                return False
-        return True
-    else:
-        return validate_string(comp_name)
 
 
 def organize_comp_name(comp_name):

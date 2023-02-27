@@ -1,5 +1,5 @@
 # session timeout limit (in sec)
-SESSION_LIMIT = 7200
+SESSION_LIMIT = 600
 
 # time to wait after updating history logs before checking background redirect flags
 REQUEST_WAIT = 0.75
@@ -60,5 +60,5 @@ admin_file_path = '\\Admin_credentials.txt'
 # database name
 DB_NAME = 'FinCloud_Database'
 
-# whether or not to backup data (config - set to False to run without db connection)
-BACKUP_DATA_FLAG = True
+# whether or not to access data on MongoDB (config - set to False to run without db connection)
+BACKUP_DATA_FLAG = False
