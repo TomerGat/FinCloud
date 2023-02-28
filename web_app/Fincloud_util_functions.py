@@ -215,7 +215,10 @@ def dict_keys_tostring(data_dict, reverse=False):
     values = list(data_dict.values())
     if reverse:
         for index in range(len(keys)):
-            key = int(keys[index])
+            if '.' in values[index]:
+                key = float(keys[index])
+            else:
+                key = int(keys[index])
             new_dict[key] = values[index]
     else:
         for index in range(len(keys)):
@@ -230,7 +233,10 @@ def dict_values_tostring(data_dict, reverse=False):
     values = list(data_dict.values())
     if reverse:
         for index in range(len(keys)):
-            value = float(values[index])
+            if '.' in values[index]:
+                value = float(values[index])
+            else:
+                value = int(values[index])
             new_dict[keys[index]] = value
     else:
         for index in range(len(keys)):

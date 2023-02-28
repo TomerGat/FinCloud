@@ -180,6 +180,7 @@ class Responses(Enum):
     INVALID_MESSAGE_INPUT = -39
     REQUEST_ALREADY_FILED = -40
     INVALID_MESSAGE_ID = -41
+    REQUEST_HANDLING_FAILED = -42
 
     # confirmation responses
     GENERAL_CONFIRM = 1  # general confirmation - no response output to ui
@@ -197,6 +198,7 @@ class Responses(Enum):
     REQUEST_FILED = 13
     IDENTITY_CONFIRMED = 14
     MESSAGE_SENT = 15
+    REQUEST_HANDLED = 16
 
     # empty response
     EMPTY_RESPONSE = 0

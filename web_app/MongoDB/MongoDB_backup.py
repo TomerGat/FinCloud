@@ -183,6 +183,8 @@ def backup_requests(db):  # use create_request_item() inner function
 
 def backup_security_questions(db):
     security_questions_item = dict_keys_tostring(security_questions)
+    for index in security_questions_item:
+        security_questions_item[index] = dict_values_tostring(security_questions_item[index])
     collection = db['Security_Questions']
     collection.delete_many({})
     collection.insert_one(security_questions_item)

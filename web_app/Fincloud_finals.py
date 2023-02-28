@@ -20,7 +20,7 @@ ANOMALY_DETECTION_CYCLE = 64800
 BACKUP_DATA_CYCLE = 300
 
 # minimum length to check for anomalies in ledger (under certain limit , algorithm is not effective)
-MIN_LENGTH_FOR_ANOMALY_DETECTION = 10
+MIN_LENGTH_FOR_ANOMALY_DETECTION = 15
 
 # ratio between product of deviation percentage times the spending limit, and the fee for the deviation
 OVERSPENDING_FEE_RATIO = 0.2
@@ -40,7 +40,7 @@ MINIMUM_RETURNS_FEE = 50
 CLUSTER_NUMBER_RATIO = 5  # tried 2.5, 3.75, 5.25, 4.75, 5 in tests
 
 # minimum deviation from standard to flag transaction
-MIN_DEVIATION_RATIO_TO_FLAG = 2.75  # change
+MIN_DEVIATION_RATIO_TO_FLAG = 2.75  # change?
 
 # whether or not to flag inner transfers (config - can be changed)
 FLAG_INNER_TRANSFERS = False
@@ -61,4 +61,6 @@ admin_file_path = '\\Admin_credentials.txt'
 DB_NAME = 'FinCloud_Database'
 
 # whether or not to access data on MongoDB (config - set to False to run without db connection)
-BACKUP_DATA_FLAG = False
+BACKUP_DATA_FLAG = True
+
+logo_path = '/send_pic'

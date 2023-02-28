@@ -952,7 +952,7 @@ def hash_function(param) -> int:
     return limit_length(abs(new_val))
 
 
-def create_table_output(value_table) -> str:
+def create_table_output(value_table: {}) -> str:
     output = '<table>' + '<tr>'
     output += '<th>Currency</th>' + '<th> | Current Value</th>' + '<th> | Exchange Rate to USD</th>' + '</tr>'
     output += '<tr><td> | USD</td><td> | ' + str(value_table['USD']) + '</td>' + '<td> | ' + str(currency_rates('USD', 'USD', 1)) + '</td></tr>'
@@ -963,6 +963,20 @@ def create_table_output(value_table) -> str:
             output += '<td> | ' + str(currency_rates(key, 'USD', 1)) + '</td></tr>'
     output += '</table>'
 
+    return output
+
+
+def create_request_output(request: Request) -> str:
+    output = f'''
+        Request Details:
+        Action type: {request.action_type}
+        Account details: {name_table.in_table(request.source_index)}, department name: {request.source_dep}
+        Additional party involved: {name_table.in_table(request.target_index())}, department name: {request.target_dep}
+        Transaction amount: {request.amount}
+        Date of transaction: {date_to_str(request.date)}
+        Request ID: {request.request_id}
+        Entry ID: {request.entry_id}
+    '''
     return output
 
 
@@ -1184,6 +1198,8 @@ def cluster_by_date(action_clusters: {str: [Entry]}) -> {str: [[Entry]]}:
     general_clusters = {}
     for action in action_clusters.keys():
         group = action_clusters[action]
+        if len(group) <= 1:
+            continue
         counter = int(len(group) * CLUSTER_NUMBER_RATIO)
 
         # find first date (later subtract first date from all dates to cluster correctly
@@ -1221,6 +1237,8 @@ def cluster_by_amount(action_clusters: {str: [Entry]}) -> {str: [[Entry]]}:
     general_clusters = {}
     for action in action_clusters.keys():  # run algorithm for each list of entries that are organized by action type
         group = action_clusters[action]
+        if len(group) <= 1:
+            continue
         counter = int(len(group) * CLUSTER_NUMBER_RATIO)
         largest_amount = 0
         # find the largest amount in group
@@ -1309,6 +1327,8 @@ def find_anomalies(ac_ledger: Log, ac_index: int) -> (bool, []):
     # clusters with only one entry, with two adjacent clusters that are empty, will be identified as outliers
     for action in amount_clusters.keys():
         clusters = amount_clusters[action]
+        if len(clusters) <= 1:
+            continue
         lonely_clusters = []  # indices for clusters with only one entry
         empty_clusters = []  # indices for clusters with no entries
         for index in range(len(clusters)):
@@ -1334,6 +1354,8 @@ def find_anomalies(ac_ledger: Log, ac_index: int) -> (bool, []):
     # find unreasonably large gaps in time between transactions
     for action in date_clusters.keys():
         clusters = date_clusters[action]
+        if len(clusters) <= 1:
+            continue
         lonely_clusters = []  # indices for clusters with only one entry
         empty_clusters = []  # indices for clusters with no entries
         for index in range(len(clusters)):
@@ -1399,20 +1421,20 @@ def send_anomaly_message(anomaly_entry: Entry, ac_index):
     date = anomaly_entry.date
     date_str = date_to_str(date)
     subject = 'Transaction of type ' + anomaly_entry.action + ' on ' + date_str + '(Entry ID: ' + str(anomaly_entry.entry_id) + ')'
-    message = 'Red Flag raised for transaction:' + '\n'
-    message += 'Entry ID: ' + str(anomaly_entry.entry_id) + '\n'
-    message += 'Transaction date: ' + date_str + '\n'
-    message += 'Action type: ' + anomaly_entry.action + '\n'
-    message += 'Transferred to account number: ' + (
-        str(anomaly_entry.target_num) if anomaly_entry.target_num != -1 else 'none') + '\n'
-    message += 'Transferred to department: ' + (
-        str(anomaly_entry.target_dep) if anomaly_entry.target_dep != -1 else 'none') + '\n'
-    message += 'Amount of transaction: ' + str(anomaly_entry.amount) + '\n'
-    message += 'If this transaction is an error, or you suspect that it was caused by a malicious third-party,' \
-               ' please file a request to the bank.' + '\n'
-    message += 'Thank you,' + '\n'
-    message += 'Anomaly Detection Team'
-    sender = 'Fincloud Anomaly Detection Team'
+    message = f'''
+        Red Flag raised for transaction:
+        Entry ID: {str(anomaly_entry.entry_id)}
+        Transaction date: {date_str}
+        Action type: {anomaly_entry.action}
+        Transferred to account number: {str(anomaly_entry.target_num) if anomaly_entry.target_num != -1 else 'none'}
+        Transferred to department: {str(anomaly_entry.target_dep) if anomaly_entry.target_dep != -1 else 'none'}
+        Amount of transaction: {str(anomaly_entry.amount)}
+        If this transaction is an error, or you suspect that it was caused by a malicious third-party,' \
+               ' please file a request to the bank.
+        Thank you,
+        Anomaly Detection Team
+    '''
+    sender = 'FinCloud Anomaly Detection Team'
     mes_type = 'red flag'
     send_message(ac_index, subject, message, sender, mes_type)
 

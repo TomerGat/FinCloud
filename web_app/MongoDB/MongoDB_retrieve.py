@@ -72,8 +72,8 @@ def get_accounts_data(db):
         if ac_type == 'admin' or ac_type == 'reg':
             ac_number = doc['account number']
             inbox = item_to_inbox(doc['inbox'])
-            spending_limit = doc['monthly limit']
-            remaining_spending = doc['remaining spending']
+            spending_limit = float(doc['monthly limit'])
+            remaining_spending = float(doc['remaining spending'])
             shift_date = doc['shift date']
             last_update = dict_to_date(doc['last update'])
             new_limit = doc['new monthly limit']
@@ -96,7 +96,6 @@ def get_accounts_data(db):
             ac_value = dict_values_tostring(doc['account value'], reverse=True)
             shift_date = doc['shift date']
             last_update = dict_to_date(doc['last update'])
-            new_limit = doc['new monthly limit']
             ledger = item_to_ledger(doc['ledger'])
             returns = doc['returns']
             fee = doc['fee']
@@ -104,7 +103,6 @@ def get_accounts_data(db):
             ac.fee = fee
             ac.inbox = inbox
             ac.ledger = ledger
-            ac.new_spending_limit = new_limit
             ac.last_update = last_update
             ac.shift_date = shift_date
             ac.account_number = ac_number
@@ -197,7 +195,7 @@ def get_security_data(db):
     doc = docs[0]
     for key in doc:
         if key != '_id':
-            security_questions[int(key)] = doc[key]
+            security_questions[int(key)] = dict_values_tostring(doc[key], reverse=True)
 
 
 def get_rates_data(db):
