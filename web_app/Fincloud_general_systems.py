@@ -10,6 +10,7 @@ class TradeEntry:
         self.amount = amount_taken
         self.conversion_rate = conversion_rate
         self.date = date
+        self.entry_id = generate_entry_id()
 
 
 class ConnectionEntry:
@@ -386,6 +387,8 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
             months -= 1
         self.value = self.value * (pow((1 + self.returns), months))
         self.value = self.value - self.fee * months
+        if self.value < 0:
+            self.value = 0  # make sure users cannot go into debt from fees
         if months != 0:
             self.last_update = current_date
 
@@ -696,7 +699,7 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
         confirm = False
         response_code = Responses.EMPTY_RESPONSE
         if dep_name not in self.departments.keys():
-            if validate_string(dep_name):
+            if validate_string(dep_name) and dep_name != 'none':
                 self.departments[dep_name] = (create_value_table(), Log(), Log())
                 confirm = True
             else:
@@ -1049,6 +1052,13 @@ def verification(attempt, code_attempt) -> (bool, Responses, int):  # returns: v
 
 
 def create_savings_account(account_name, account_code, phone_num, returns):
+    """
+    :param account_name: name of new account
+    :param account_code: code for new account
+    :param phone_num: phone number to register
+    :param returns: selected returns for savings account
+    :return: confirmation, index of new account, response code
+    """
     confirm = False
     user_name = account_name
     response_code = Responses.EMPTY_RESPONSE
@@ -1093,7 +1103,14 @@ def create_savings_account(account_name, account_code, phone_num, returns):
     return confirm, name_table.in_table(user_name), response_code
 
 
-def create_checking_account(account_name, account_code, phone_num, monthly_spending_limit):  # returns confirms, account index, response code
+def create_checking_account(account_name, account_code, phone_num, monthly_spending_limit):
+    """
+    :param account_name: name for new account
+    :param account_code: code for new account
+    :param phone_num: phone number to register
+    :param monthly_spending_limit: monthly spending limit for checking account
+    :return: confirmation, index of new account, response code
+    """
     confirm = False  # initialize return value
     user_name = account_name  # saving initial name of account
     response_code = Responses.EMPTY_RESPONSE
@@ -1139,6 +1156,13 @@ def create_checking_account(account_name, account_code, phone_num, monthly_spend
 
 
 def create_business_account(account_name, company_name, account_code, phone_num):
+    """
+    :param account_name: name for new account
+    :param company_name: company name to register
+    :param account_code: code for new account
+    :param phone_num: phone number to register
+    :return: confirmation, index of new account, response code
+    """
     confirm = False  # initialize return value
     user_name = account_name  # saving initial name of account
     response_code = Responses.EMPTY_RESPONSE
@@ -1195,6 +1219,10 @@ def create_business_account(account_name, company_name, account_code, phone_num)
 
 
 def cluster_by_date(action_clusters: {str: [Entry]}) -> {str: [[Entry]]}:
+    """
+    :param action_clusters: dictionary in which keys are actions and values are lists of transaction entries
+    :return: action_clusters but lists of entries are divided into clusters by dates
+    """
     general_clusters = {}
     for action in action_clusters.keys():
         group = action_clusters[action]

@@ -32,7 +32,7 @@ def accounts_update():  # run update functions in savings and checking accounts
             continue
         if len(Accounts.log) != 0:
             for index in loc_type_table.body.keys():
-                if loc_type_table.body[index] != 'bus':
+                if loc_type_table.body[index] in ['sav', 'reg']:
                     Accounts.log[index].update()
 
 

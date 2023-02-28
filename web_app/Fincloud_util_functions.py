@@ -43,11 +43,11 @@ def unpack_list(unpack: []) -> ():
     return new_tuple
 
 
-def validate_phone_number(phone):
+def validate_phone_number(phone) -> bool:
     return validate_number(phone) and (len(str(phone)) == 10)
 
 
-def validate_number(num):
+def validate_number(num) -> bool:
     valid = True
     decimal_counter = 0
     num = str(num)
@@ -65,7 +65,7 @@ def validate_number(num):
     return valid
 
 
-def validate_string(word):
+def validate_string(word) -> bool:
     word = str(word)
     if len(word) == 0:
         return False
@@ -83,7 +83,7 @@ def validate_string(word):
     return valid
 
 
-def validate_comp_name(comp_name):
+def validate_comp_name(comp_name) -> bool:
     if check_for_spaces(comp_name):
         valid = True
         for word in divide_to_words(comp_name):
@@ -130,7 +130,7 @@ def organize_comp_name(comp_name):
 
 
 def generate_code():
-    number = random.randint(100000, 999999)
+    number = random.randint(1, 9999999999999999999)
     return number
 
 

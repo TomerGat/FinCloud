@@ -14,7 +14,7 @@ def main():
 
     # admin account and credentials setup
     print('Setting up credentials')
-    Admin_code = str(hash_function(generate_code()))
+    Admin_code = str(hash_function(hash_function(generate_code())))
     print('Admin account password: ' + str(Admin_code))
     dir_path = str(os.path.dirname(os.path.abspath(__file__))) + admin_dir
     file_path = dir_path + admin_file_path
