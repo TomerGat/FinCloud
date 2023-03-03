@@ -61,6 +61,6 @@ admin_file_path = '\\Admin_credentials.txt'
 DB_NAME = 'FinCloud_Database'
 
 # whether or not to access data on MongoDB (config - set to False to run without db connection)
-BACKUP_DATA_FLAG = False
+BACKUP_DATA_FLAG = True
 
 logo_path = '/send_pic'

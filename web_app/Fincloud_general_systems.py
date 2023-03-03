@@ -69,7 +69,14 @@ class Cloud:  # a financial cloud that allows deposits to be kept and accessed u
     def __init__(self):  # attribute contains dictionary {code: value accessed with code}
         self.allocated = {}
 
-    def allocate(self, amount, allocation_code, ac_name, dep_name):
+    def allocate(self, amount, allocation_code, ac_name, dep_name) -> (bool, Responses):
+        """
+        :param amount: amount to allocate
+        :param allocation_code: allocation code
+        :param ac_name: account to allocate from
+        :param dep_name: department to allocate to
+        :return: confirmation, response code
+        """
         confirm = True
         response_code = Responses.EMPTY_RESPONSE
         if not validate_number(amount):
@@ -97,6 +104,7 @@ class Cloud:  # a financial cloud that allows deposits to be kept and accessed u
                         hashed_id = hash_function(allocation_code)
                         if ac_type == 'reg':
                             Accounts.log[ac_index].value['USD'] = Accounts.log[ac_index].value['USD'] - amount
+                            Accounts.log[ac_index].remaining_spending = Accounts.log[ac_index].remaining_spending - amount
                         elif ac_type == 'sav':
                             Accounts.log[ac_index].value = Accounts.log[ac_index].value - amount
                         else:
@@ -123,7 +131,14 @@ class Cloud:  # a financial cloud that allows deposits to be kept and accessed u
 
         return confirm, response_code
 
-    def withdraw(self, amount, allocation_code, ac_name, dep_name):
+    def withdraw(self, amount, allocation_code, ac_name, dep_name) -> (bool, Responses):
+        """
+        :param amount: amount to withdraw
+        :param allocation_code: code for allocation to withdraw from
+        :param ac_name: account to withdraw to
+        :param dep_name: department to withdraw to
+        :return: confirmation, response code
+        """
         confirm = True
         response_code = Responses.EMPTY_RESPONSE
         if not validate_number(amount):
@@ -180,7 +195,7 @@ class Account:
         number_table.add_key_index(self.account_number)
         loc_type_table.add_index_value('reg')
 
-    def update(self):
+    def update(self) -> None:
         current_date = get_date()
         months = current_date[1] - self.last_update[1]
         if current_date[2] < self.shift_date:
@@ -207,13 +222,17 @@ class Account:
                          'Fincloud Account Management Team',
                          'notif')
 
-    def get_value_usd(self):
+    def get_value_usd(self) -> str:
         total = 0
         for curr in self.value.keys():
             total += get_daily_rates(curr, 'USD', self.value[curr])
         return str(total)
 
-    def deposit(self, amount):
+    def deposit(self, amount) -> (bool, Responses):
+        """
+        :param amount: amount to deposit
+        :return: confirmation, response code
+        """
         confirm = True
         response_code = Responses.EMPTY_RESPONSE
         if not validate_number(amount):
@@ -231,7 +250,11 @@ class Account:
 
         return confirm, response_code
 
-    def withdraw(self, amount):
+    def withdraw(self, amount) -> (bool, Responses):
+        """
+        :param amount: amount to withdraw
+        :return: confirmation, response code
+        """
         confirm = True
         response_code = Responses.EMPTY_RESPONSE
         if not validate_number(amount):
@@ -260,7 +283,13 @@ class Account:
 
         return confirm, response_code
 
-    def trade_currency(self, amount, source_cur, target_cur):
+    def trade_currency(self, amount, source_cur, target_cur) -> (bool, Responses):
+        """
+        :param amount: amount to trade
+        :param source_cur: currency to transfer from
+        :param target_cur: currency to transfer to
+        :return: confirmation, response code
+        """
         confirm = True
         response_code = Responses.EMPTY_RESPONSE
         if not validate_number(amount):
@@ -292,7 +321,13 @@ class Account:
 
         return confirm, response_code
 
-    def transfer(self, amount, target_account, target_dep):
+    def transfer(self, amount, target_account, target_dep) -> (bool, Responses):
+        """
+        :param amount: amount to transfer
+        :param target_account: account to transfer to
+        :param target_dep: department to transfer to
+        :return: confirmation, response code
+        """
         confirm = True
         target_index = -1
         response_code = Responses.EMPTY_RESPONSE
@@ -377,10 +412,10 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
         number_table.add_key_index(self.account_number)
         loc_type_table.add_index_value('sav')
 
-    def get_value_usd(self):
+    def get_value_usd(self) -> str:
         return str(self.value)
 
-    def update(self):
+    def update(self) -> None:
         current_date = get_date()
         months = current_date[1] - self.last_update[1]
         if current_date[2] < self.shift_date:
@@ -392,7 +427,11 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
         if months != 0:
             self.last_update = current_date
 
-    def deposit(self, amount):
+    def deposit(self, amount) -> (bool, Responses):
+        """
+        :param amount: amount to transfer
+        :return: confirmation, response code
+        """
         confirm = True
         response_code = Responses.EMPTY_RESPONSE
         if not validate_number(amount):
@@ -411,7 +450,11 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
 
         return confirm, response_code
 
-    def withdraw(self, amount):
+    def withdraw(self, amount) -> (bool, Responses):
+        """
+        :param amount: amount to withdraw
+        :return: confirmation, response code
+        """
         confirm = True
         response_code = Responses.EMPTY_RESPONSE
         if not validate_number(amount):
@@ -434,7 +477,13 @@ class SavingsAccount:  # object properties: value, returns, last_update, account
 
         return confirm, response_code
 
-    def transfer(self, amount, target_account, target_dep):
+    def transfer(self, amount, target_account, target_dep) -> (bool, Responses):
+        """
+        :param amount: amount to transfer
+        :param target_account: account to transfer to
+        :param target_dep: department to transfer to
+        :return: confirmation, response code
+        """
         confirm = True
         target_index = -1
         response_code = Responses.EMPTY_RESPONSE
@@ -510,14 +559,21 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
             # each department is assigned a tuple containing a value table, a ledger, and a trade ledger
             self.departments[name] = (create_value_table(), Log(), Log())
 
-    def get_value_usd(self):
+    def get_value_usd(self) -> str:
         total = 0
         for dep_name in self.departments.keys():
             for curr in self.departments[dep_name][0].keys():
                 total += get_daily_rates(curr, 'USD', self.departments[dep_name][0][curr])
         return str(total)
 
-    def trade_currency(self, dep_name, source_cur, target_cur, amount):
+    def trade_currency(self, dep_name, source_cur, target_cur, amount) -> (bool, Responses):
+        """
+        :param dep_name: department to trade in
+        :param source_cur: currency to transfer from
+        :param target_cur: currency to transfer to
+        :param amount: amount to transfer
+        :return: confirmation, response code
+        """
         confirm = True
         target_index = -1
         response_code = Responses.EMPTY_RESPONSE
@@ -553,7 +609,14 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
 
         return confirm, response_code
 
-    def transfer(self, amount, source_dep, target_account, target_dep):
+    def transfer(self, amount, source_dep, target_account, target_dep) -> (bool, Responses):
+        """
+        :param amount: amount to transfer
+        :param source_dep: department to transfer from
+        :param target_account: account to transfer to
+        :param target_dep: department to transfer to
+        :return: confirmation, response code
+        """
         confirm = True
         target_index = -1
         response_code = Responses.EMPTY_RESPONSE
@@ -619,7 +682,13 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
 
         return confirm, response_code
 
-    def inner_transfer(self, source_dep, target_dep, amount):
+    def inner_transfer(self, source_dep, target_dep, amount) -> (bool, Responses):
+        """
+        :param source_dep: department to transfer from
+        :param target_dep: department to transfer to
+        :param amount: amount to transfer
+        :return: confirmation, response code
+        """
         confirm = True
         response_code = Responses.EMPTY_RESPONSE
         if not validate_number(amount):
@@ -649,7 +718,12 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
 
         return confirm, response_code
 
-    def deposit(self, amount, dep_name):
+    def deposit(self, amount, dep_name) -> (bool, Responses):
+        """
+        :param amount: amount to deposit
+        :param dep_name: department to deposit to
+        :return: confirmation, response code
+        """
         confirm = True
         response_code = Responses.EMPTY_RESPONSE
         if not validate_number(amount):
@@ -670,7 +744,12 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
 
         return confirm, response_code
 
-    def withdraw(self, amount, dep_name):
+    def withdraw(self, amount, dep_name) -> (bool, Responses):
+        """
+        :param amount: amount to withdraw
+        :param dep_name: department name to withdraw from
+        :return: confirmation, response code
+        """
         confirm = True
         response_code = Responses.EMPTY_RESPONSE
         if not validate_number(amount):
@@ -695,7 +774,11 @@ class BusinessAccount:  # object properties: company_name, departments_array, ac
 
         return confirm, response_code
 
-    def add_department(self, dep_name):
+    def add_department(self, dep_name) -> (bool, Responses):
+        """
+        :param dep_name: name for new department
+        :return: confirmation, response code
+        """
         confirm = False
         response_code = Responses.EMPTY_RESPONSE
         if dep_name not in self.departments.keys():
@@ -824,6 +907,14 @@ def handle_client_request(request_to_handle: Request, response: str) -> bool:
 
 
 def remove_entry(ac_index: int, id_to_remove: int, dep_name, remove_entry_id=False) -> None:
+    """
+    :param ac_index: index of account to remove entry from
+    :param id_to_remove: id of entry to remove
+    :param dep_name: name of department in which the entry is (if there is)
+    :param remove_entry_id: whether or not to remove id of entry
+    (function is called on both instances of some entries, only set remove_entry_id to true for first call)
+    :return: None
+    """
     ac_type = loc_type_table.in_table(ac_index)
 
     # remove entry id from existing_entry_id if flag is set to True
@@ -891,6 +982,14 @@ def send_message(ac_index: int, subject: str, message: str, sender: str, mes_typ
 
 
 def send_announcement(subject, message, sender, mes_type: str, type_modification=None) -> None:
+    """
+    :param subject: subject for message
+    :param message: message content
+    :param sender: message sender
+    :param mes_type: type of message (currently only announcements)
+    :param type_modification: only send the announcement to this account type
+    :return: None
+    """
     mes = Message(subject, message, sender, mes_type)
     for ac_index in range(len(Accounts.log)):
         if (type_modification is None) or \
@@ -899,6 +998,10 @@ def send_announcement(subject, message, sender, mes_type: str, type_modification
 
 
 def set_fee(returns) -> int:
+    """
+    :param returns: chosen returns
+    :return: fee for savings account
+    """
     if returns == RETURNS_PREMIUM:
         return PREMIUM_RETURNS_FEE
     elif returns == RETURNS_MEDIUM:
@@ -909,12 +1012,24 @@ def set_fee(returns) -> int:
 
 
 def set_overspending_fee(spending_limit, total_spending_breach, last_spending_amount) -> float:
+    """
+    :param spending_limit: spending limit for the account
+    :param total_spending_breach: total spending breach
+    :param last_spending_amount: last spending breach for which the fee is set
+    :return: fee for account after calculation according to input variables
+    """
     deviation_percentage = total_spending_breach / spending_limit
     fee = deviation_percentage * last_spending_amount * OVERSPENDING_FEE_RATIO
     return fee
 
 
 def set_underspending_bonus(spending_limit, remaining_spending, total_account_value) -> float:
+    """
+    :param spending_limit: spending limit for the account
+    :param remaining_spending: remaining spending at the end of the month
+    :param total_account_value: total account value
+    :return: bonus to give to account after calculation according to input variables
+    """
     # check that spending was at least 15%, otherwise do not give bonus
     if spending_limit / remaining_spending > (1 - MINIMUM_SPENDING_RATIO_FOR_BONUS):
         return 0
@@ -926,11 +1041,23 @@ def set_underspending_bonus(spending_limit, remaining_spending, total_account_va
 
 
 def get_daily_rates(cur1, cur2, amount) -> float:
+    """
+    :param cur1: source currency
+    :param cur2: amount currency
+    :param amount: amount to convert
+    :return: amount after conversion with last_rates table
+    """
     amount_new = amount / last_rates[cur1] * last_rates[cur2]
     return round(amount_new, 3)
 
 
 def currency_rates(cur1, cur2, amount) -> float:
+    """
+    :param cur1: source currency
+    :param cur2: amount currency
+    :param amount: amount to convert
+    :return: amount after conversion with forex-python
+    """
     try:
         return round(converter.CurrencyRates().convert(cur1, cur2, amount), 3)
     except converter.RatesNotAvailableError:
@@ -939,6 +1066,10 @@ def currency_rates(cur1, cur2, amount) -> float:
 
 
 def hash_function(param) -> int:
+    """
+    :param param: input
+    :return: hash value of input
+    """
     input_str = str(param)
     ascii_values = [ord(ch) for ch in input_str]
     values = []
@@ -956,6 +1087,10 @@ def hash_function(param) -> int:
 
 
 def create_table_output(value_table: {}) -> str:
+    """
+    :param value_table: value table to display in html/text
+    :return: the text with the html for the table
+    """
     output = '<table>' + '<tr>'
     output += '<th>Currency</th>' + '<th> | Current Value</th>' + '<th> | Exchange Rate to USD</th>' + '</tr>'
     output += '<tr><td> | USD</td><td> | ' + str(value_table['USD']) + '</td>' + '<td> | ' + str(currency_rates('USD', 'USD', 1)) + '</td></tr>'
@@ -970,6 +1105,10 @@ def create_table_output(value_table: {}) -> str:
 
 
 def create_request_output(request: Request) -> str:
+    """
+    :param request: the request to display in text
+    :return: the text with the request details
+    """
     output = f'''
         Request Details:
         Action type: {request.action_type}
@@ -988,7 +1127,7 @@ def security_verification(ac_index, question, answer_attempt) -> (bool, Response
     :param ac_index: index of account being recovered
     :param question: number of question (1/2)
     :param answer_attempt: user answer for security verification question
-    :return: verify (bool), response_code (int)
+    :return: verify (bool), response_code (Responses)
     """
 
     # initialize return values
@@ -1051,59 +1190,7 @@ def verification(attempt, code_attempt) -> (bool, Responses, int):  # returns: v
     return verify, response_code, index
 
 
-def create_savings_account(account_name, account_code, phone_num, returns):
-    """
-    :param account_name: name of new account
-    :param account_code: code for new account
-    :param phone_num: phone number to register
-    :param returns: selected returns for savings account
-    :return: confirmation, index of new account, response code
-    """
-    confirm = False
-    user_name = account_name
-    response_code = Responses.EMPTY_RESPONSE
-
-    # checking validity and availability of account name and code
-    if validate_string(account_name) and validate_string(account_code):
-        if name_table.in_table(account_name) == -1 and number_table.in_table(account_name) == -1:
-            confirm = True
-            response_code = Responses.GENERAL_CONFIRM  # account name and code are confirmed
-        else:
-            response_code = Responses.AC_NAME_EXISTS  # account name is unavailable
-    else:
-        if (not validate_string(account_name)) and validate_string(account_code):
-            response_code = Responses.AC_NAME_INVALID  # name invalid
-        else:
-            response_code = Responses.AC_CODE_INVALID  # code invalid
-        if not (validate_string(account_name) or validate_string(account_code)):
-            response_code = Responses.NAME_AND_CODE_INVALID  # name and code invalid
-    if confirm:
-        if returns not in [RETURNS_PREMIUM, RETURNS_MEDIUM, RETURNS_MINIMUM]:
-            response_code = Responses.INVALID_SAVING_RETURNS  # invalid returns
-            confirm = False
-        if not validate_phone_number(phone_num):
-            response_code = Responses.PHONE_NUM_INVALID  # phone number invalid
-            confirm = False
-        if phone_name_table.in_table(hash_function(phone_num)) != -1:
-            response_code = Responses.PHONE_NUM_EXISTS  # phone number already registered
-            confirm = False
-    if confirm:
-        # add account details to tables
-        name_table.add_key_index(account_name)
-        pass_table.add_index_value(hash_function(account_code))
-        phone_name_table.add_key_value(hash_function(phone_num), account_name)
-
-        # create account object
-        new_account = SavingsAccount(returns)
-        account_name = "ac" + str(name_table.in_table(account_name))
-        globals()[account_name] = new_account
-        Accounts.append(globals()[account_name])
-
-    # return values (confirmation, account index, response code)
-    return confirm, name_table.in_table(user_name), response_code
-
-
-def create_checking_account(account_name, account_code, phone_num, monthly_spending_limit):
+def create_checking_account(account_name, account_code, phone_num, monthly_spending_limit) -> (bool, int, Responses):
     """
     :param account_name: name for new account
     :param account_code: code for new account
@@ -1155,7 +1242,59 @@ def create_checking_account(account_name, account_code, phone_num, monthly_spend
     return confirm, name_table.in_table(user_name), response_code
 
 
-def create_business_account(account_name, company_name, account_code, phone_num):
+def create_savings_account(account_name, account_code, phone_num, returns) -> (bool, int, Responses):
+    """
+    :param account_name: name of new account
+    :param account_code: code for new account
+    :param phone_num: phone number to register
+    :param returns: selected returns for savings account
+    :return: confirmation, index of new account, response code
+    """
+    confirm = False
+    user_name = account_name
+    response_code = Responses.EMPTY_RESPONSE
+
+    # checking validity and availability of account name and code
+    if validate_string(account_name) and validate_string(account_code):
+        if name_table.in_table(account_name) == -1 and number_table.in_table(account_name) == -1:
+            confirm = True
+            response_code = Responses.GENERAL_CONFIRM  # account name and code are confirmed
+        else:
+            response_code = Responses.AC_NAME_EXISTS  # account name is unavailable
+    else:
+        if (not validate_string(account_name)) and validate_string(account_code):
+            response_code = Responses.AC_NAME_INVALID  # name invalid
+        else:
+            response_code = Responses.AC_CODE_INVALID  # code invalid
+        if not (validate_string(account_name) or validate_string(account_code)):
+            response_code = Responses.NAME_AND_CODE_INVALID  # name and code invalid
+    if confirm:
+        if returns not in [RETURNS_PREMIUM, RETURNS_MEDIUM, RETURNS_MINIMUM]:
+            response_code = Responses.INVALID_SAVING_RETURNS  # invalid returns
+            confirm = False
+        if not validate_phone_number(phone_num):
+            response_code = Responses.PHONE_NUM_INVALID  # phone number invalid
+            confirm = False
+        if phone_name_table.in_table(hash_function(phone_num)) != -1:
+            response_code = Responses.PHONE_NUM_EXISTS  # phone number already registered
+            confirm = False
+    if confirm:
+        # add account details to tables
+        name_table.add_key_index(account_name)
+        pass_table.add_index_value(hash_function(account_code))
+        phone_name_table.add_key_value(hash_function(phone_num), account_name)
+
+        # create account object
+        new_account = SavingsAccount(returns)
+        account_name = "ac" + str(name_table.in_table(account_name))
+        globals()[account_name] = new_account
+        Accounts.append(globals()[account_name])
+
+    # return values (confirmation, account index, response code)
+    return confirm, name_table.in_table(user_name), response_code
+
+
+def create_business_account(account_name, company_name, account_code, phone_num) -> (bool, int, Responses):
     """
     :param account_name: name for new account
     :param company_name: company name to register
@@ -1444,7 +1583,12 @@ def find_anomalies(ac_ledger: Log, ac_index: int) -> (bool, []):
     return red_flags_found, flagged_entries
 
 
-def send_anomaly_message(anomaly_entry: Entry, ac_index):
+def send_anomaly_message(anomaly_entry: Entry, ac_index) -> None:
+    """
+    :param anomaly_entry: the anomaly Entry with the details for the message
+    :param ac_index: index of the account index
+    :return: None
+    """
     # create subject
     date = anomaly_entry.date
     date_str = date_to_str(date)
@@ -1468,6 +1612,10 @@ def send_anomaly_message(anomaly_entry: Entry, ac_index):
 
 
 def find_id_in_message(mes: Message) -> int:
+    """
+    :param mes: a message
+    :return: the message id of the message
+    """
     subject = mes.subject
     # message subject structure - 'Transaction of type <type> on <dd/mm/yyyy> (Entry ID: <id>)'
     subject_parsed = subject.split(': ')  # dividing the subject into two parts, leaving the second part as '<id>)'
@@ -1475,7 +1623,11 @@ def find_id_in_message(mes: Message) -> int:
     return entry_id
 
 
-def wait_for_flag(seconds):
+def wait_for_flag(seconds) -> None:
+    """
+    :param seconds: number of seconds to wait while checking flag every second
+    :return: None
+    """
     counter = 0
     while counter < seconds and data.run_server_flag:
         time.sleep(0.99999999)

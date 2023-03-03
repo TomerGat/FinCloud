@@ -72,7 +72,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
         # handle get requests according to path
         if self.path.endswith('/'):
             self.start()
-            response_output = ''
+            response_output = '</br>'
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.redirect_flags[self.client_address[0]] = False
@@ -212,7 +212,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             <p> FinCloud is a digital banking system dedicated to giving the best possible service.</br>We offer a web-focused platform that offers a variety of features to a wide array of customers.</p>
                             </br>
                             <p><a href="/About">Learn About Us</a></p>
-                            </br></br>
+                            </br>
                             <h4>''' + response_output + '''</h4>
                         </div>
                         <div class="accounts">
@@ -702,13 +702,13 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/confirm_identity'):
             self.start()
-            
+
             question_num = random.randint(1, 2) - 1
             recovery_data = data.response_codes[self.client_address[0]]
             ac_index = recovery_data['index']
             questions = list(security_questions[ac_index].keys())
             question_to_ask = questions[question_num]
-            if question_to_ask[len(question_to_ask-1)] != '?':
+            if question_to_ask[len(question_to_ask - 1)] != '?':
                 question_to_ask = question_to_ask + '?'
             data.response_codes[self.client_address[0]]['question'] = question_to_ask
 
@@ -1452,7 +1452,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/new/checking'):
             self.start()
-            
+
             response_output = '</br>'
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
@@ -1464,7 +1464,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     response_output = '<h4>Account code is invalid: do not use symbols. Please try again.</h4>'
                 elif response_code == Responses.NAME_AND_CODE_INVALID:
                     response_output = '<h4>Account name and code are invalid: do not use symbols.' \
-                              ' Please try again.</h4>'
+                                      ' Please try again.</h4>'
                 elif response_code == Responses.AC_NAME_EXISTS:
                     response_output = '<h4>An account with this name already exists. Please try again.</h4>'
                 elif response_code == Responses.PHONE_NUM_INVALID:
@@ -1644,7 +1644,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     response_output = '<h4>Account code is invalid: do not use symbols. Please try again.</h4>'
                 elif response_code == Responses.NAME_AND_CODE_INVALID:
                     response_output = '<h4>Account name and code are invalid: do not use symbols.' \
-                              ' Please try again.</h4>'
+                                      ' Please try again.</h4>'
                 elif response_code == Responses.AC_NAME_EXISTS:
                     response_output = '<h4>An account with this name already exists. Please try again.</h4>'
                 elif response_code == Responses.PHONE_NUM_INVALID:
@@ -1994,7 +1994,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/admin_access/' + str(data.admin_token)):
             self.start()
-            
+
             output = '<html><body>'
             output += '<a href="/admin_access/' + str(data.admin_token) + '/account_list">Accounts list</a></br></br>'
             output += '<a href="/admin_access/' + str(
@@ -2015,7 +2015,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/admin_access/' + str(data.admin_token) + '/send_announcements'):
             self.start()
-            
+
             output = '<html><body>'
             output += '<h1>Send an Announcement</h1>'
             path = '/admin_access/' + str(data.admin_token) + '/send_announcements'
@@ -2037,7 +2037,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/admin_access/' + str(data.admin_token) + '/account_list'):
             self.start()
-            
+
             output = '<table>' + '<tr>'
             output += '<th>Index</th>' + '<th> | Account name</th>' + '<th> | Account number</th>' + '<th> | Account type</th>' + '<th> | Total account value in USD</th>' + '<th> | Current active requests</th>' + '</tr>'
             for i in range(len(Accounts.log)):
@@ -2056,7 +2056,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/' + str(data.admin_token) + '/account_watch/details'):
             self.start()
-            
+
             url_parsed = self.path.split('/')
             ac_name = url_parsed[2]
             ac_index = name_table.in_table(ac_name)
@@ -2081,7 +2081,8 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += '</br></br>'
             if ac_index in active_requests.keys():
                 output += '<h4><a href="' + self.path + \
-                          '/see_requests">See {} active requests for this account</a>'.format(len(active_requests[ac_index]))
+                          '/see_requests">See {} active requests for this account</a>'.format(
+                              len(active_requests[ac_index]))
             self.wfile.write(output.encode())
 
         elif self.path.endswith('/see_requests'):
@@ -2132,7 +2133,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/admin_access/' + str(data.admin_token) + '/cloud_watch'):
             self.start()
-            
+
             output = '<html><body>'
             allocations = Cloud().allocated
             output += '<h1>Cloud Allocations</h1></br>'
@@ -2161,6 +2162,10 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             if ac_type == 'reg':
                 spending_limit = Accounts.log[ac_index].monthly_spending_limit
                 remaining_spending = Accounts.log[ac_index].remaining_spending
+
+            holdings_link = '<h3><a href="/account/account_manage/current_holdings">Account Holdings</a></h3>' if ac_type != 'sav' else ''
+            if ac_type == 'bus':
+                holdings_link = '<h3><a href="/account/business/current_holdings">Account Holdings</a></h3>'
 
             response_output = '</br>'
             # print error/response message if redirect flag is set to True
@@ -2310,12 +2315,13 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             <p>Account Number: {}</p>
                             {}
                             </br>
+                            <h4>{}</h4>
                             </br>
                         </div>
                         <div class="transactions">
                             <h2>Transactions</h2>
                             <ul>
-                                <li><a href="/account/deposit">Deposit Funds</a></li>
+                                <li><a href="/account/handle_deposits">Deposit Funds</a></li>
                                 <li><a href="/account/withdraw_funds">Withdraw Funds</a></li>
                                 <li><a href="/account/transfer_funds">Transfer Funds</a></li>
                                 {}
@@ -2342,8 +2348,6 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             {}
                             {}
                             </br></br>
-                            <h3>{}</h3>
-                            </br></br>
                         </div>
                     </main>
                     <main>
@@ -2353,13 +2357,16 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     </main>
                 </body>
                 </html>
-            '''.format(account_name, account_number, '<p>Company: {}</p>'.format(comp_name) if ac_type == 'bus' else '</br>',
-                       '<li><a href="/account/business/inner_transfer">Inner Transfer</a></li>' if ac_type == 'bus' else '',
+            '''.format(account_name, account_number,
+                       '<p>Company: {}</p>'.format(comp_name) if ac_type == 'bus' else '</br>',
+                       response_output,
+                       '<li><a href="/account/business/departmental_transfer">Inner Transfer</a></li>' if ac_type == 'bus' else '',
                        '<li><a href="/account/previous_trades">Trade History</a></li>' if ac_type != 'sav' else '</br>',
-                       val, 'Remaining spending for the month: ${} out of ${}'.format(remaining_spending, spending_limit) if ac_type == 'reg' else '',
-                       '<h3><a href="/account/holdings">Account Holdings</a></h3>' if ac_type != 'sav' else '',
+                       val, 'Remaining spending for the month: ${} out of ${}'.format(remaining_spending,
+                                                                                      spending_limit) if ac_type == 'reg' else '',
+                       holdings_link,
                        '<h3><a href="/account/business/open_dep">Open new department</a></h3>' if ac_type == 'bus' else '',
-                       '<h3><a href="/account/change_spending_limit">Change spending limit</a></h3>' if ac_type == 'reg' else '</br>', response_output)
+                       '<h3><a href="/account/change_spending_limit">Change spending limit</a></h3>' if ac_type == 'reg' else '</br>')
 
             output = html
             self.wfile.write(output.encode())
@@ -2623,7 +2630,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/account/transaction_history'):
             self.start()
-            
+
             ac_index = data.current_account[self.client_address[0]]
             ac_type = loc_type_table.in_table(ac_index)
             if ac_type != 'bus':
@@ -2743,7 +2750,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/account/inbox'):
             self.start()
-            
+
             ac_index = data.current_account[self.client_address[0]]
             messages = Accounts.log[ac_index].inbox
 
@@ -2940,49 +2947,186 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/account/inbox/file_requests'):
             self.start()
-            
+
             ac_index = data.current_account[self.client_address[0]]
             messages = Accounts.log[ac_index].inbox
             red_flag_messages = [message for message in messages if message.message_type == 'red flag']
             red_flag_message_id_list = [message.message_id for message in red_flag_messages]
-            output = '<html><body>'
-            output += '<h1>File Request</h1>'
-            output += 'If you have been notified regarding red flags in your account history, ' \
-                      'you have the option to file a request to the bank to reverse the transaction. ' \
-                      'If you receive a red flag notification for a transaction, and believe it was done unintentionally, ' \
-                      'or by a malicious third party, please file a request to the bank and we will notify you shortly. ' \
-                      'Thank you, FinCloud Anomaly Detection Team'
-
-            output += '<form method="POST" enctype="multipart/form-data" action="/account/inbox/file_requests">'
-            output += 'Enter account password: ' + '<input name="code" type="text">' + '</br>'
-            output += 'Select message id for red flag: '
-            output += '<select id="message_id" name="message_id">'
+            message_id_options = ''
             for rf_id in red_flag_message_id_list:
-                rf_id = str(rf_id)
-                output += '<option value = "' + rf_id + '">' + rf_id + '</option>'
-            output += '</select></br></br>'
-            output += '<input type="submit" value="Submit Request">'
-            output += '</form>' + '</br>'
+                message_id_options += '<option value = "' + str(rf_id) + '">' + str(rf_id) + '</option>'
 
+            response_output = '</br>'
+            # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
                 response_code = data.response_codes[self.client_address[0]]
                 if response_code == Responses.INVALID_MESSAGE_ID:
-                    output += '<h4>Message ID is not valid.</h4>'
+                    response_output = '<h4>Message ID is not valid.</h4>'
                 elif response_code == Responses.REQUEST_ALREADY_FILED:
-                    output += '<h4>Request has already been filed for this message ID.</h4>'
+                    response_output = '<h4>Request has already been filed for this message ID.</h4>'
                 elif response_code == Responses.AC_CODE_INVALID:
-                    output += '<h4>Account password is not valid.</h4>'
+                    response_output = '<h4>Account password is not valid.</h4>'
                 elif response_code == Responses.AC_CODE_INCORRECT:
-                    output += '<h4>Account password is incorrect.</h4>'
+                    response_output = '<h4>Account password is incorrect.</h4>'
                 data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
-            output += '</br><h4><a href="/account/inbox">Cancel Request</a></h4>'
+            output = '''
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>File Requests</title>
+                    <style>
+                        /* CSS styles */
+                        header {
+                            font-family: Arial, sans-serif;
+                            background-color: #001F54;
+                            color: white;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            padding: 16px;
+                        }
+                        .title {
+                            font-weight: bold;
+                            margin: 0;
+                            font-size: 28px;
+                        }
+                        .logo {
+                            height: 2rem;
+                        }
+                        body {
+                            font-family: Arial, sans-serif;
+                            margin: 0;
+                            padding: 0;
+                        }
+                        .content-form {
+                            position: relative;
+                            left: 40%;
+                            width: 20%;
+                            border-radius: 3.5%;
+                            margin: 2rem;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            border: 2.5px solid gray;
+                            background-color: lightgray;
+                        }
+                        .content-text {
+                            margin: 2rem;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: left;
+                            line-height: 1.5;
+                        }
+                        .content-text p {
+                            font-size: 16.5px;
+                        }
+                        .content-links {
+                            margin: 2rem;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                        }
+                        form {
+                            padding-top: 5%;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            margin-bottom: 2rem;
+                        }
+                        form input {
+                            margin-bottom: 1rem;
+                            padding: 0.5rem;
+                            border-radius: 0.25rem;
+                            border: 1px solid lightgray;
+                            width: 100%;
+                            box-sizing: border-box;
+                        }
+                        form select {
+                            margin-bottom: 1rem;
+                            padding: 0.5rem;
+                            border-radius: 0.25rem;
+                            border: 1px solid lightgray;
+                            width: 100%;
+                            box-sizing: border-box;
+                        }
+                        form button {
+                            padding: 0.5rem;
+                            border-radius: 0.25rem;
+                            border: none;
+                            background-color: #001F54;
+                            color: white;
+                            cursor: pointer;
+                        }
+                        .response {
+                            margin: 2rem;
+                            display: flex;
+                            width: 100%;
+                            margin-bottom: 1rem;
+                        }
+                        .response p {
+                            color: black;
+                        }
+                        .cta {
+                            width: 100%;
+                            display: flex;
+                            align-items: left;
+                        }
+                        .cta a {
+                            color: navy;
+                            cursor: pointer;
+                            text-decoration: none;
+                        }
+                        .cta a:hover {
+                            font-weight: bold;
+                        }
+                    </style>
+                </head>
+                <header>
+                    <h1 class="title">File A Request</h1>
+                    <div class="logo">
+                        <img src="''' + logo_path + '''" alt="FinCloud">
+                    </div>
+                </header>
+                <body>
+                    <div class="content-form">
+                        <h3>Enter Request Details</h3>
+                        <form method="POST" enctype="multipart/form-data" action="/account/inbox/file_requests">
+                            <input type="password" name="code" placeholder="Confirm Account Password" required>
+                            </br>
+                            <h4>Enter message ID for </br>the red flag notification message</h4>
+                            <select id="message_id" name="message_id" required>
+                                ''' + message_id_options + '''
+                            </select>
+                            </br>
+                            <button type="submit">Submit Request</button>
+                        </form>
+                        </br></br>
+                    </div>
+                    <div class="response">''' + response_output + '''</div>
+                    <div class="content-text">
+                        <p>
+                            If you have been notified regarding red flags in your account transaction history, you have the option to file a request to the bank to reverse the transaction.</br>
+                            If you receive a red flag notification for a transaction, and believe it was done unintentionally, or by a malicious third party, please file a request to the bank and we will notify you shortly.</br>
+                            Thank you, FinCloud Anomaly Detection Team
+                        </p>
+                    </div>
+                    <div class="content-links">
+                        </br>
+                        <div class="cta">
+                            <p><a href="/login">Cancel Request</a></p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            '''
+
             self.wfile.write(output.encode())
 
         elif self.path.endswith('/account/confirm_spending'):
             self.start()
-            
+
             output = '''
                 <!DOCTYPE html>
                 <html>
@@ -3112,38 +3256,143 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/account/change_spending_limit'):
             self.start()
-            
-            output = '<html><body>'
-            ac_index = data.current_account[self.client_address[0]]
-            output += '<h1>Change Monthly Spending limit</h1>' + '</br>'
-            output += '<h3>Current spending limit per month: ' + str(Accounts.log[
-                ac_index].monthly_spending_limit) + '</h3></br>'
-            output += 'Your monthly spending limit allows you to maintain expenses on your account. ' \
-                      'If you overspend you will encounter a fee,' \
-                      ' but spending less than you monthly spending limit could add value to your account,' \
-                      ' courtesy of the funds management team.'
-            output += '</br>'
-            output += '<h2>Update your spending limit for next month: </h2></br>'
-            output += '<form method="POST" enctype="multipart/form-data" action="/account/change_spending_limit">'
-            output += 'Enter new monthly spending limit: ' + '<input name="new_limit" type="text">' + '</br></br>'
-            output += '<input type="submit" value="Submit">'
-            output += '</form>' + '</br>'
 
+            response_output = '</br>'
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
                 response_code = data.response_codes[self.client_address[0]]
                 if response_code == Responses.INVALID_SPENDING_LIMIT:
-                    output += '<h4>Spending limit is not valid.</h4>'
+                    response_output = '<h4>Spending limit is not valid.</h4>'
                 data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
-            output += '</br></br>' + 'To cancel and return to account home page ' + '<a href="/account/home">Click here</a>'
-            output += '</body></html>'
+            output = '''
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Set New Spending Limit</title>
+                    <style>
+                        /* CSS styles */
+                        header {
+                            font-family: Arial, sans-serif;
+                            background-color: #001F54;
+                            color: white;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            padding: 16px;
+                        }
+                        .title {
+                            font-weight: bold;
+                            margin: 0;
+                            font-size: 28px;
+                        }
+                        .logo {
+                            height: 2rem;
+                        }
+                        body {
+                            font-family: Arial, sans-serif;
+                            margin: 0;
+                            padding: 0;
+                            background-color: white;
+                        }
+                        .content-form {
+                            position: relative;
+                            left: 40%;
+                            width: 20%;
+                            border-radius: 3.5%;
+                            margin: 2rem;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            border: 2.5px solid gray;
+                            background-color: lightgray;
+                        }
+                        .content-form p {
+                            color: black;
+                        }
+                        form {
+                            padding-top: 5%;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            margin-bottom: 2rem;
+                        }
+                        form input {
+                            margin-bottom: 1rem;
+                            padding: 0.5rem;
+                            border-radius: 0.25rem;
+                            border: 1px solid lightgray;
+                            width: 100%;
+                            box-sizing: border-box;
+                        }
+                        form select {
+                            margin-bottom: 1rem;
+                            padding: 0.5rem;
+                            border-radius: 0.25rem;
+                            border: 1px solid lightgray;
+                            width: 100%;
+                            box-sizing: border-box;
+                        }
+                        form button {
+                            padding: 0.5rem;
+                            border-radius: 0.25rem;
+                            border: none;
+                            background-color: #001F54;
+                            color: white;
+                            cursor: pointer;
+                        }
+                        .cta {
+                            width: 100%;
+                            display: flex;
+                            align-items: left;
+                        }
+                        .cta p {
+                            margin: 2rem;
+                            display: flex;
+                            width: 100%;
+                            margin-bottom: 1rem;
+                        }
+                        .cta a {
+                            color: navy;
+                            cursor: pointer;
+                            text-decoration: none;
+                        }
+                        .cta a:hover {
+                            font-weight: bold;
+                        }
+                    </style>
+                </head>
+                <header>
+                    <h1 class="title">Set New Monthly Spending Limit</h1>
+                    <div class="logo">
+                        <img src="''' + logo_path + '''" alt="FinCloud">
+                    </div>
+                </header>
+                <body>
+                    <div class="content-form">
+                        <h3>Enter New Info</h3>
+                        <form method="POST" enctype="multipart/form-data" action="/account/change_spending_limit">
+                            <input type="text" name="new_limit" placeholder="New Spending Limit" required>
+                            </br></br>
+                            <button type="submit">Confirm</button>
+                        </form>
+                        </br>
+                        <div class="response">''' + response_output + '''</div>
+                        </br>
+                    </div>
+                    <div class="cta">
+                        <p><a href="/account/home">Cancel and return to account</a></p>
+                    </div>
+                </body>
+                </html>
+            '''
+
             self.wfile.write(output.encode())
 
-        elif self.path.endswith('/account/deposit'):
+        elif self.path.endswith('/account/handle_deposits'):
             self.start()
-            
+
             ac_index = data.current_account[self.client_address[0]]
             business_output = '</br>'
             if loc_type_table.in_table(ac_index) == 'bus':
@@ -3268,7 +3517,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 <body>
                     <div class="content-form">
                         <h3>Enter Transaction Info</h3>
-                        <form method="POST" enctype="multipart/form-data" action="/account/deposit">
+                        <form method="POST" enctype="multipart/form-data" action="/account/handle_deposits">
                             <input type="text" name="amount" placeholder="Amount to Deposit" required>
                             ''' + business_output + '''
                             </br></br>
@@ -3442,7 +3691,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             business_output = '</br>'
             if loc_type_table.in_table(ac_index) == 'bus':
                 business_output = '<input type="text" name="source_dep" placeholder="Source Department Name" required>'
-            
+
             response_output = '</br>'
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
@@ -3592,187 +3841,751 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 </body>
                 </html>
             '''
-            
+
             self.wfile.write(output.encode())
 
-        elif self.path.endswith('/account/holdings'):
+        elif self.path.endswith('/account/account_manage/current_holdings'):
             self.start()
-            
+
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
             ac_type = loc_type_table.in_table(ac_index)
             if ac_type == 'bus':
-                self.redirect('/account/business/departments')
-            output = '<html><body>'
-            output += '<h1>Account Holdings</h1>' + '</br>'
-            output += '<h2>Your Account: ' + account_name + '</h2>'
-            output += '<h2>Current currency holdings:</h2>'
-
+                self.wfile.write('redirecting'.encode())
+                self.redirect('/account/business/current_holdings')
+                return
             value_table = Accounts.log[ac_index].value
-            output += create_table_output(value_table)
+            ac_value = float(Accounts.log[ac_index].get_value_usd())
+            if ac_value != 0:
+                trade_output = '<a href="//account/account_manage/current_holdings/trade_currency">Trade & Invest In Different Currencies</a>'
+            else:
+                trade_output = '<h4>No Current Holdings In Account</h4>'
 
+            response_output = '</br>'
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
                 response_code = data.response_codes[self.client_address[0]]
                 if response_code == Responses.CURRENCY_TRADE_CONFIRM:
-                    output += '<h4>Currency trade confirmed.</h4>'
+                    response_output = '<h4>Currency trade confirmed.</h4>'
                 data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
-            output += '</br></br>' + 'To trade and invest in different currencies ' + \
-                      '<a href="/account/holdings/trade_currency">Click here</a>' + '</br></br>'
-            output += 'To return to account home page ' + '<a href="/account/home">Click here</a>'
-            output += '</body></html>'
+            output = '''
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Account Holdings</title>
+                    <style type="text/css">
+                        /* general styling */
+                        body {
+                            font-family: Arial, sans-serif;
+                            margin: 0;
+                            padding: 0;
+                        }
+                        a {
+                            text-decoration: none;
+                        }
+                        /* header styling */
+                        header {
+                            background-color: #001F54;
+                            color: #fff;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            padding: 16px;
+                        }
+                        .logo {
+                            height: 2rem;
+                        }
+                        .title {
+                            font-size: 28px;
+                            font-weight: bold;
+                            margin: 0;
+                        }
+        
+                        /* main content styling */
+                        main {
+                            display: flex;
+                            justify-content: space-between;
+                            padding: 20px;
+                        }
+                        .actions {
+                            width: 15%;
+                            height: 15%;
+                            border-left: 3px solid #001F54;
+                            border-bottom: 3px solid #001F54;
+                            padding-left: 25px;
+                            padding-right: 10px;
+                            text-align: left;
+                            margin-right: 20px
+                        }
+                        .actions a {
+                            color: navy;
+                        }
+                        .actions a:hover {
+                            font-weight: bold;
+                        }
+                        .actions h2 {
+                            font-size: 26px;
+                            margin-bottom: 10px;
+                        }
+                        .actions ul {
+                            list-style-type: none;
+                            margin-left: 0;
+                            padding: 0;
+                        }
+                        .actions li {
+                            margin-bottom: 10px;
+                        }
+                        .actions li a {
+                            font-size: 20px;
+                        }
+                        .welcome {
+                            width: 70%;
+                            padding-left: 10px;
+                        }
+                        .welcome h1 {
+                            font-size: 40px;
+                        }
+                        .welcome p {
+                            font-size: 22px;
+                            margin: 0;
+                        }
+                        .cta {
+                            width: 100%;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: left;
+                            font-weight: bold;
+                        }
+                        .cta a {
+                            padding: 0.5rem;
+                            border-radius: 0.25rem;
+                            border: 1px white;
+                            color: navy;
+                            text-decoration: none;
+                            cursor: pointer;
+                        }
+                        .cta a:hover {
+                            background-color: navy;
+                            color: white;
+                            text-decoration: none;
+                        }
+                        table {
+                          width: 100%;
+                          border-collapse: collapse;
+                          background-color: navy;
+                          color: white;
+                        }
+                        
+                        th, td {
+                          padding: 8px;
+                          text-align: left;
+                          border: 1px solid white;
+                        }
+                        
+                        th {
+                          background-color: #001F54;
+                        }
+                        
+                        tr:nth-child(even) {
+                          background-color: #0E3D91;
+                        }
+                        
+                        tr:hover {
+                          background-color: #1C4DC0;
+                        }
+                    </style>
+                    </head>
+                    <body>
+                    <header>
+                        <h1 class="title">Current Account Holdings</h1>
+                        <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
+                    </header>
+                    <main>
+                        <div class="welcome">
+                            <h2>Your Account: ''' + account_name + '''</h2>
+                            </br></br>
+                            <h2>Current Currency Holdings:</h2>
+                            ''' + create_table_output(value_table) + '''
+                            </br></br>
+                            <div class="cta">
+                                ''' + trade_output + '''
+                            </div>
+                            </br></br>
+                            <h4>''' + response_output + '''</h4>
+                            </br></br></br></br>
+                            <div class="cta">
+                                <a href="/account/home">
+                                    Return to Account Home Page
+                                </a>
+                            </div>
+                        </div>
+                    </main>
+                </body>
+                </html>
+            '''
+
             self.wfile.write(output.encode())
 
-        elif self.path.endswith('/account/business/departments'):
+        elif self.path.endswith('/account/business/current_holdings'):
             self.start()
-            
+
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
-            comp_name = Accounts.log[ac_index].company_name
-            output = '<html><body>'
-            output += '<h1>Business Departments</h1>' + '</br>'
-            output += '<h2>Company: ' + comp_name + '</h2>'
-            output += '<h2>Account name: ' + account_name + '</h2>' + '</br></br>'
-            output += '<h1>Company Departments and holdings: </h1>'
+            departments_output = ''
             if len(Accounts.log[ac_index].departments.keys()) == 0:
-                output += '<h3>Account has no departments.</h3></br></br>'
+                departments_output = '<h3>Account has no departments.</h3></br></br>'
             for dep in Accounts.log[ac_index].departments.keys():
-                output += '</br><h2>Holdings for department "' + dep + '":</h2>'
-                output += create_table_output(Accounts.log[ac_index].departments[dep][0]) + '</br>'
-                output += 'Trade currencies with ' + dep + ' department capital: ' + \
-                          '<a href="/account/business/departments/' + dep + '/invest_capital/trade_currencies">Here</a></br>'
+                departments_output += '</br><h2>Holdings for department "' + dep + '":</h2>'
+                departments_output += create_table_output(Accounts.log[ac_index].departments[dep][0]) + '</br>'
+                departments_output += 'Trade currencies with ' + dep + ' department capital: ' + \
+                                      '<a href="/account/business/current_holdings/' + dep + '/invest_capital/trade_currencies">Here</a></br>'
 
+            response_output = '</br>'
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
                 response_code = data.response_codes[self.client_address[0]]
                 if response_code == Responses.CURRENCY_TRADE_CONFIRM:
-                    output += '<h4>Currency trade confirmed.</h4>'
+                    response_output = '<h4>Currency trade confirmed.</h4>'
                 data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
-            output += '</br></br>' + 'To return to account home page ' + '<a href="/account/home">Click here</a>'
-            output += '</body></html>'
+            output = '''
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Account Holdings</title>
+                    <style type="text/css">
+                        /* general styling */
+                        body {
+                            font-family: Arial, sans-serif;
+                            margin: 0;
+                            padding: 0;
+                        }
+                        a {
+                            text-decoration: none;
+                        }
+                        /* header styling */
+                        header {
+                            background-color: #001F54;
+                            color: #fff;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            padding: 16px;
+                        }
+                        .logo {
+                            height: 2rem;
+                        }
+                        .title {
+                            font-size: 28px;
+                            font-weight: bold;
+                            margin: 0;
+                        }
+        
+                        /* main content styling */
+                        main {
+                            display: flex;
+                            justify-content: space-between;
+                            padding: 20px;
+                        }
+                        .actions {
+                            width: 15%;
+                            height: 15%;
+                            border-left: 3px solid #001F54;
+                            border-bottom: 3px solid #001F54;
+                            padding-left: 25px;
+                            padding-right: 10px;
+                            text-align: left;
+                            margin-right: 20px
+                        }
+                        .actions a {
+                            color: navy;
+                        }
+                        .actions a:hover {
+                            font-weight: bold;
+                        }
+                        .actions h2 {
+                            font-size: 26px;
+                            margin-bottom: 10px;
+                        }
+                        .actions ul {
+                            list-style-type: none;
+                            margin-left: 0;
+                            padding: 0;
+                        }
+                        .actions li {
+                            margin-bottom: 10px;
+                        }
+                        .actions li a {
+                            font-size: 20px;
+                        }
+                        .welcome {
+                            width: 70%;
+                            padding-left: 10px;
+                        }
+                        .welcome h1 {
+                            font-size: 40px;
+                        }
+                        .welcome p {
+                            font-size: 22px;
+                            margin: 0;
+                        }
+                        .welcome a {
+                            color: navy; 
+                            text-decoration: none;
+                        } 
+                        .welcome a:hover {
+                            font-weight: bold;
+                        }
+                        .cta {
+                            width: 100%;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: left;
+                            font-weight: bold;
+                        }
+                        .cta a {
+                            padding: 0.5rem;
+                            border-radius: 0.25rem;
+                            border: 1px white;
+                            color: navy;
+                            text-decoration: none;
+                            cursor: pointer;
+                        }
+                        .cta a:hover {
+                            background-color: navy;
+                            color: white;
+                            text-decoration: none;
+                        }
+                        table {
+                          width: 100%;
+                          border-collapse: collapse;
+                          background-color: navy;
+                          color: white;
+                        }
+                        
+                        th, td {
+                          padding: 8px;
+                          text-align: left;
+                          border: 1px solid white;
+                        }
+                        
+                        th {
+                          background-color: #001F54;
+                        }
+                        
+                        tr:nth-child(even) {
+                          background-color: #0E3D91;
+                        }
+                        
+                        tr:hover {
+                          background-color: #1C4DC0;
+                        }
+                    </style>
+                    </head>
+                    <body>
+                    <header>
+                        <h1 class="title">Company Departments & Holdings</h1>
+                        <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
+                    </header>
+                    <main>
+                        <div class="welcome">
+                            <h2>Your Account: ''' + account_name + '''</h2>
+                            </br></br>
+                            <h1>Current Currency Holdings:</h1>
+                            ''' + departments_output + '''
+                            </br></br>
+                            </br></br>
+                            <h4>''' + response_output + '''</h4>
+                            </br></br></br></br>
+                            <div class="cta">
+                                <a href="/account/home">
+                                    Return to Account Home Page
+                                </a>
+                            </div>
+                        </div>
+                    </main>
+                </body>
+                </html>
+            '''
+
             self.wfile.write(output.encode())
 
-        elif self.path.endswith('/account/holdings/trade_currency'):
+        elif self.path.endswith('//account/account_manage/current_holdings/trade_currency'):
             self.start()
-            
+
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
             value_table = Accounts.log[ac_index].value
             available_currencies = [currency for currency in value_table.keys() if value_table[currency] > 0]
-            output = '<html><body>'
-            output += '<h1>Currencies - Trade & Invest</h1>'
-            output += '<h2>Your Account: ' + account_name + '</h2>'
-            output += 'We offer you the opportunity to distribute and invest your account capital throughout' \
-                      ' multiple foreign currencies. '
-            output += 'Transfer funds between an array of currencies at market value without additional cost.' + '</br></br>'
+            source_cur_options = ''
+            target_cur_options = ''
             if len(available_currencies) == 0:
-                output += '<h2>No funds available.</h2></br>'
-            output += '<h2>Trade currencies:</h2>'
-            output += '<form method="POST" enctype="multipart/form-data" action="/account/holdings/trade_currency">'
-            output += 'Enter amount to transfer: ' + '<input name="amount" type="text">' + '</br>'
-            output += 'Select currency to transfer from: '
-            output += '<select id="source_cur" name="source_cur">'
+                source_cur_options = ''
             for curr in available_currencies:
-                output += '<option value = "' + curr + '">' + curr + '</option>'
-            output += '</select></br>'
-            output += 'Select currency to transfer to: '
-            output += '<select id="source_cur" name="target_cur">'
+                source_cur_options += '<option value = "' + curr + '">' + curr + '</option>'
             for curr in value_table.keys():
-                output += '<option value = "' + curr + '">' + curr + '</option>'
-            output += '</select></br></br>'
-            output += '<input type="submit" value="Submit">'
-            output += '</form>'
+                target_cur_options += '<option value = "' + curr + '">' + curr + '</option>'
 
+            response_output = '</br>'
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
                 response_code = data.response_codes[self.client_address[0]]
                 if response_code == Responses.INVALID_TRANSACTION:
-                    output += '<h4>Invalid transaction (null or negative values).</h4>'
+                    response_output = '<h4>Invalid transaction (null or negative values).</h4>'
                 elif response_code == Responses.INVALID_INPUT_AMOUNT:
-                    output += '<h4>Invalid input (amount).</h4>'
+                    response_output = '<h4>Invalid input (amount).</h4>'
                 elif response_code == Responses.INSUFFICIENT_AMOUNT:
-                    output += '<h4>Insufficient funds in source currency.</h4>'
+                    response_output = '<h4>Insufficient funds in source currency.</h4>'
                 elif response_code == Responses.SOURCE_CUR_NOT_FOUND:
-                    output += '<h4>Source currency not found.</h4>'
+                    response_output = '<h4>Source currency not found.</h4>'
                 elif response_code == Responses.TARGET_CUR_NOT_FOUND:
-                    output += '<h4>Target currency not found.</h4>'
+                    response_output = '<h4>Target currency not found.</h4>'
                 elif response_code == Responses.CURRENCIES_NOT_FOUND:
-                    output += '<h4>Source and target currencies not found.</h4>'
+                    response_output = '<h4>Source and target currencies not found.</h4>'
                 data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
-            output += '</br>' + '</br>' + 'To return to account holdings page ' + '<a href="/account/holdings">Click here</a>'
-            output += '</br>' + '</br>' + 'Return to account home page ' + '<a href="/account/home">Click here</a>'
-            output += '</body></html>'
+            output = '''
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Trade Currency</title>
+                    <style>
+                        /* CSS styles */
+                        header {
+                            font-family: Arial, sans-serif;
+                            background-color: #001F54;
+                            color: white;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            padding: 16px;
+                        }
+                        .title {
+                            font-weight: bold;
+                            margin: 0;
+                            font-size: 28px;
+                        }
+                        .logo {
+                            height: 2rem;
+                        }
+                        body {
+                            font-family: Arial, sans-serif;
+                            margin: 0;
+                            padding: 0;
+                            background-color: white;
+                        }
+                        .content-form {
+                            position: relative;
+                            left: 40%;
+                            width: 20%;
+                            border-radius: 3.5%;
+                            margin: 2rem;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            border: 2.5px solid gray;
+                            background-color: lightgray;
+                        }
+                        .content-form p {
+                            color: black;
+                        }
+                        .content-text {
+                            margin: 2rem;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: left;
+                            line-height: 1.5;
+                        }
+                        .content-text p {
+                            font-size: 16.5px;
+                        }
+                        form {
+                            padding-top: 5%;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            margin-bottom: 2rem;
+                        }
+                        form input {
+                            margin-bottom: 1rem;
+                            padding: 0.5rem;
+                            border-radius: 0.25rem;
+                            border: 1px solid lightgray;
+                            width: 100%;
+                            box-sizing: border-box;
+                        }
+                        form select {
+                            margin-bottom: 1rem;
+                            padding: 0.5rem;
+                            border-radius: 0.25rem;
+                            border: 1px solid lightgray;
+                            width: 100%;
+                            box-sizing: border-box;
+                        }
+                        form button {
+                            padding: 0.5rem;
+                            border-radius: 0.25rem;
+                            border: none;
+                            background-color: #001F54;
+                            color: white;
+                            cursor: pointer;
+                        }
+                        .cta {
+                            width: 100%;
+                            display: flex;
+                            align-items: left;
+                        }
+                        .cta p {
+                            margin: 2rem;
+                            display: flex;
+                            width: 100%;
+                            margin-bottom: 1rem;
+                        }
+                        .cta a {
+                            color: navy;
+                            cursor: pointer;
+                            text-decoration: none;
+                        }
+                        .cta a:hover {
+                            font-weight: bold;
+                        }
+                    </style>
+                </head>
+                <header>
+                    <h1 class="title">Foreign Currencies - Trade & Invest</h1>
+                    <div class="logo">
+                        <img src="''' + logo_path + '''" alt="FinCloud">
+                    </div>
+                </header>
+                <body>
+                    <div class="content-form">
+                        <h3>Enter Trade Info</h3>
+                        <form method="POST" enctype="multipart/form-data" action="//account/account_manage/current_holdings/trade_currency">
+                            <input type="text" name="amount" placeholder="Amount to Transfer" required>
+                            <select id="source_cur" name="source_cur" required>
+                            ''' + source_cur_options + '''
+                            </select>
+                            <select id="target_cur" name="target_cur" required>
+                            ''' + target_cur_options + '''
+                            </select>
+                            </br>
+                            <button type="submit">Confirm Trade</button>
+                        </form>
+                        </br>
+                        <div class="response">''' + response_output + '''</div>
+                        </br>
+                    </div>
+                    <div class="content-text">
+                        <h4>Foreign Currency Trading</h4>
+                        <p>
+                            FinCloud offers you the opportunity to distribute and invest your account capital throughout multiple foreign currencies.</br>
+                            Transfer funds between an array of currencies at market value without additional cost.
+                        </p>
+                    </div>
+                    <div class="cta">
+                        <p><a href="//account/account_manage/current_holdings">Cancel and return to holdings</a></p>
+                    </div>
+                </body>
+                </html>
+            '''
             self.wfile.write(output.encode())
 
         elif self.path.endswith('/invest_capital/trade_currencies'):
             self.start()
-            
+
             url_parsed = self.path.split('/')
             dep_name = url_parsed[4]
             ac_index = data.current_account[self.client_address[0]]
-            account_name = str(name_table.get_key(ac_index))
             value_table = Accounts.log[ac_index].departments[dep_name][0]
             available_currencies = [currency for currency in value_table.keys() if value_table[currency] > 0]
-            output = '<html><body>'
-            output += '<h1>Currencies - Trade & Invest</h1>'
-            output += '<h2>Your Account: ' + account_name + '</h2>'
-            output += '<h2>Department name: ' + dep_name + '</h2>'
-            output += 'We offer you the opportunity to distribute and invest your account capital throughout' \
-                      ' multiple foreign currencies. '
-            output += 'Transfer funds between an array of currencies at market value without additional cost.' + '</br></br>'
+            source_cur_options = ''
+            target_cur_options = ''
             if len(available_currencies) == 0:
-                output += '<h2>No funds available.</h2></br>'
-            output += '<h2>Trade currencies:</h2>'
-            output += '<form method="POST" enctype="multipart/form-data" action="/account/business/departments/' + dep_name + '/invest_capital/trade_currencies">'
-            output += 'Enter amount to transfer: ' + '<input name="amount" type="text">' + '</br>'
-            output += 'Select currency to transfer from: '
-            output += '<select id="source_cur" name="source_cur">'
+                source_cur_options = ''
             for curr in available_currencies:
-                output += '<option value = "' + curr + '">' + curr + '</option>'
-            output += '</select></br>'
-            output += 'Select currency to transfer to: '
-            output += '<select id="source_cur" name="target_cur">'
+                source_cur_options += '<option value = "' + curr + '">' + curr + '</option>'
             for curr in value_table.keys():
-                output += '<option value = "' + curr + '">' + curr + '</option>'
-            output += '</select></br></br>'
-            output += '<input type="submit" value="Submit">'
-            output += '</form>'
+                target_cur_options += '<option value = "' + curr + '">' + curr + '</option>'
 
+            response_output = '</br>'
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
                 response_code = data.response_codes[self.client_address[0]]
                 if response_code == Responses.INVALID_TRANSACTION:
-                    output += '<h4>Invalid transaction (null or negative values).</h4>'
+                    response_output = '<h4>Invalid transaction (null or negative values).</h4>'
                 elif response_code == Responses.INVALID_INPUT_AMOUNT:
-                    output += '<h4>Invalid input (amount).</h4>'
+                    response_output = '<h4>Invalid input (amount).</h4>'
                 elif response_code == Responses.INSUFFICIENT_AMOUNT:
-                    output += '<h4>Insufficient funds in source currency.</h4>'
+                    response_output = '<h4>Insufficient funds in source currency.</h4>'
                 elif response_code == Responses.SOURCE_CUR_NOT_FOUND:
-                    output += '<h4>Source currency not found.</h4>'
+                    response_output = '<h4>Source currency not found.</h4>'
                 elif response_code == Responses.TARGET_CUR_NOT_FOUND:
-                    output += '<h4>Target currency not found.</h4>'
+                    response_output = '<h4>Target currency not found.</h4>'
                 elif response_code == Responses.CURRENCIES_NOT_FOUND:
-                    output += '<h4>Source and target currencies not found.</h4>'
+                    response_output = '<h4>Source and target currencies not found.</h4>'
                 elif response_code == Responses.PROCESSING_ERROR:
-                    output += '<h4>Processing error. Please try again later.</h4>'
+                    response_output = '<h4>Processing error. Please try again later.</h4>'
                 data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
-            output += '</br>' + '</br>' + 'To return to account holdings page ' + '<a href="/account/business/departments">Click here</a>'
-            output += '</br>' + '</br>' + 'Return to account home page ' + '<a href="/account/home">Click here</a>'
-            output += '</body></html>'
+            output = '''
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Trade Currency</title>
+                    <style>
+                        /* CSS styles */
+                        header {
+                            font-family: Arial, sans-serif;
+                            background-color: #001F54;
+                            color: white;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            padding: 16px;
+                        }
+                        .title {
+                            font-weight: bold;
+                            margin: 0;
+                            font-size: 28px;
+                        }
+                        .logo {
+                            height: 2rem;
+                        }
+                        body {
+                            font-family: Arial, sans-serif;
+                            margin: 0;
+                            padding: 0;
+                            background-color: white;
+                        }
+                        .content-form {
+                            position: relative;
+                            left: 40%;
+                            width: 20%;
+                            border-radius: 3.5%;
+                            margin: 2rem;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            border: 2.5px solid gray;
+                            background-color: lightgray;
+                        }
+                        .content-form p {
+                            color: black;
+                        }
+                        .content-text {
+                            margin: 2rem;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: left;
+                            line-height: 1.5;
+                        }
+                        .content-text p {
+                            font-size: 16.5px;
+                        }
+                        form {
+                            padding-top: 5%;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            margin-bottom: 2rem;
+                        }
+                        form input {
+                            margin-bottom: 1rem;
+                            padding: 0.5rem;
+                            border-radius: 0.25rem;
+                            border: 1px solid lightgray;
+                            width: 100%;
+                            box-sizing: border-box;
+                        }
+                        form select {
+                            margin-bottom: 1rem;
+                            padding: 0.5rem;
+                            border-radius: 0.25rem;
+                            border: 1px solid lightgray;
+                            width: 100%;
+                            box-sizing: border-box;
+                        }
+                        form button {
+                            padding: 0.5rem;
+                            border-radius: 0.25rem;
+                            border: none;
+                            background-color: #001F54;
+                            color: white;
+                            cursor: pointer;
+                        }
+                        .cta {
+                            width: 100%;
+                            display: flex;
+                            align-items: left;
+                        }
+                        .cta p {
+                            margin: 2rem;
+                            display: flex;
+                            width: 100%;
+                            margin-bottom: 1rem;
+                        }
+                        .cta a {
+                            color: navy;
+                            cursor: pointer;
+                            text-decoration: none;
+                        }
+                        .cta a:hover {
+                            font-weight: bold;
+                        }
+                    </style>
+                </head>
+                <header>
+                    <h1 class="title">Foreign Currencies - Trade & Invest</h1>
+                    <div class="logo">
+                        <img src="''' + logo_path + '''" alt="FinCloud">
+                    </div>
+                </header>
+                <body>
+                    <div class="content-text">
+                        <h2>Department: ''' + dep_name + '''</h2>
+                    </div>
+                    <div class="content-form">
+                        <h3>Enter Trade Info</h3>
+                        <form method="POST" enctype="multipart/form-data" action="/account/business/current_holdings/''' + dep_name + '''/invest_capital/trade_currencies">
+                            <input type="text" name="amount" placeholder="Amount to Transfer" required>
+                            <select id="source_cur" name="source_cur" required>
+                            ''' + source_cur_options + '''
+                            </select>
+                            <select id="target_cur" name="target_cur" required>
+                            ''' + target_cur_options + '''
+                            </select>
+                            </br>
+                            <button type="submit">Confirm Trade</button>
+                        </form>
+                        </br>
+                        <div class="response">''' + response_output + '''</div>
+                        </br>
+                    </div>
+                    <div class="content-text">
+                        <h4>Foreign Currency Trading</h4>
+                        <p>
+                            FinCloud offers you the opportunity to distribute and invest your account capital throughout multiple foreign currencies.</br>
+                            Transfer funds between an array of currencies at market value without additional cost.
+                        </p>
+                    </div>
+                    <div class="cta">
+                        <p><a href="//account/account_manage/current_holdings">Cancel and return to holdings</a></p>
+                    </div>
+                </body>
+                </html>
+            '''
+
             self.wfile.write(output.encode())
 
-        elif self.path.endswith('/account/business/inner_transfer'):
+        elif self.path.endswith('/account/business/departmental_transfer'):
             self.start()
 
-            response_output = ''
+            response_output = '</br>'
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
@@ -3895,9 +4708,9 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 <body>
                     <div class="content-form">
                         <h3>Enter Transaction Info</h3>
-                        <form method="POST" enctype="multipart/form-data" action="/account/business/inner_transfer">
+                        <form method="POST" enctype="multipart/form-data" action="/account/business/departmental_transfer">
                             <input type="text" name="amount" placeholder="Amount to Transfer" required>
-                            <input type="text" name="target" placeholder="Source Department" required>
+                            <input type="text" name="source_dep" placeholder="Source Department" required>
                             <input type="text" name="target_dep" placeholder="Target Department">
                             </br>
                             <button type="submit">Confirm Transfer</button>
@@ -3917,138 +4730,600 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif self.path.endswith('/account/cloud'):
             self.start()
-            
-            output = '<html><body>'
-            output += '<h1>Our Financial Cloud</h1>'
-            output += '<h2>Why use Financial cloud?</h2>'
-            output += 'Our Financial cloud offers allocation, management, and storage of funds in a secure and anonymous way.'
-            output += '</br></br>'
-            output += '<h3>Allocate funds <a href="/account/cloud/allocate">now</a></h3>'
-            output += '<h3>Withdraw funds to your account <a href="/account/cloud/allocate">here</a></h3></br></br>'
 
+            response_output = '</br>'
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
                 response_code = data.response_codes[self.client_address[0]]
                 if response_code == Responses.CLOUD_ALLOCATION_CONFIRM:
-                    output += '<h4>Funds allocation confirmed.</h4>'
+                    response_output = '<h4>Funds allocation confirmed.</h4>'
                 elif response_code == Responses.CLOUD_WITHDRAWAL_CONFIRM:
-                    output += '<h4>Funds withdrawal confirmed.</h4>'
+                    response_output = '<h4>Funds withdrawal confirmed.</h4>'
                 data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
             if type(data.response_codes) is not int:
                 data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
-            output += '</br>' + '</br>' + 'To return to account home page ' + '<a href="/account/home">Click here</a>'
-            output += '</body></html>'
+            output = '''
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Financial Cloud</title>
+                    <style type="text/css">
+                        /* general styling */
+                        body {
+                            font-family: Arial, sans-serif;
+                            margin: 0;
+                            padding: 0;
+                        }
+                        a {
+                            text-decoration: none;
+                        }
+                        /* header styling */
+                        header {
+                            background-color: #001F54;
+                            color: #fff;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            padding: 16px;
+                        }
+                        .logo {
+                            height: 2rem;
+                        }
+                        .title {
+                            font-size: 28px;
+                            font-weight: bold;
+                            margin: 0;
+                        }
+        
+                        /* main content styling */
+                        main {
+                            display: flex;
+                            justify-content: space-between;
+                            padding: 20px;
+                        }
+                        .actions {
+                            width: 15%;
+                            height: 15%;
+                            border-left: 3px solid #001F54;
+                            border-bottom: 3px solid #001F54;
+                            padding-left: 25px;
+                            padding-right: 10px;
+                            text-align: left;
+                            margin-right: 20px
+                        }
+                        .actions a {
+                            color: navy;
+                        }
+                        .actions a:hover {
+                            font-weight: bold;
+                        }
+                        .actions h2 {
+                            font-size: 26px;
+                            margin-bottom: 10px;
+                        }
+                        .actions ul {
+                            list-style-type: none;
+                            margin-left: 0;
+                            padding: 0;
+                        }
+                        .actions li {
+                            margin-bottom: 10px;
+                        }
+                        .actions li a {
+                            font-size: 20px;
+                        }
+                        .welcome {
+                            width: 70%;
+                            padding-left: 10px;
+                        }
+                        .welcome h1 {
+                            font-size: 40px;
+                        }
+                        .welcome p {
+                            font-size: 22px;
+                            margin: 0;
+                        }
+                        .cta {
+                            width: 100%;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: left;
+                            font-weight: bold;
+                        }
+                        .cta a {
+                            padding: 0.5rem;
+                            border-radius: 0.25rem;
+                            border: 1px white;
+                            color: navy;
+                            text-decoration: none;
+                            cursor: pointer;
+                        }
+                        .cta a:hover {
+                            background-color: navy;
+                            color: white;
+                            text-decoration: none;
+                        }
+                    </style>
+                    </head>
+                    <body>
+                    <header>
+                        <h1 class="title">Financial Cloud</h1>
+                        <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
+                    </header>
+                    <main>
+                        <div class="welcome">
+                            <h1>Welcome to the Financial Cloud</h1>
+                            <p> Store funds securely with our remote storage system. Our Financial Cloud allows easy and efficient transfers between groups, secure storage of funds, and more.</br>
+                                Create an allocation of funds on our remote system and enjoy the convenience of easy access with your personal allocation code. Experience the freedom and flexibility of the financial cloud, with zero commissions.
+                            </p>
+                            </br></br>
+                            <h4>''' + response_output + '''</h4>
+                        </br></br></br></br>
+                        <div class="cta">
+                            <a href="/account/home">
+                                Return to Account Home Page
+                            </a>
+                        </div>
+                        </div>
+                        <div class="actions">
+                            <h2>Access Financial Cloud</h2>
+                            </br>
+                            <ul>
+                                <li><a href="/account/cloud/allocate">Allocate Funds</a></li>
+                                <li><a href="/account/cloud/withdraw">Withdraw From Allocation</a></li>
+                                </br>
+                            </ul>
+                        </div>
+                    </main>
+                </body>
+                </html>
+            '''
+
             self.wfile.write(output.encode())
 
         elif self.path.endswith('/account/cloud/allocate'):
             self.start()
-            
+
             ac_index = data.current_account[self.client_address[0]]
             account_name = str(name_table.get_key(ac_index))
             val = Accounts.log[ac_index].get_value_usd()
             ac_type = loc_type_table.in_table(ac_index)
-            output = '<html><body>'
-            output += '<h1>Allocate Funds With FinCloud</h1>' + '</br>'
-            output += '<h2>Your Account: ' + account_name + '</h2>'
-            output += '<h3>Current value in USD: ' + val + '</h3>' + '</br>' + '</br>'
-            output += '<form method="POST" enctype="multipart/form-data" action="/account/cloud/allocate">'
-            output += 'Enter amount to allocate: ' + '<input name="amount" type="text">' + '</br>'
+            business_output = '</br>'
             if ac_type == 'bus':
-                output += '</br>' + 'Enter name of department to allocate from: ' + '<input name="source_dep" type="text">' + '</br>'
-            output += 'Enter allocation number (used to access funds): ' + '<input name="allocation_id" type="text">' + '</br>'
-            output += '<input type="submit" value="Submit">'
-            output += '</form>' + '</br>'
+                business_output = '<input type="text" name="dep_name" placeholder="Department to Allocate From" required>'
 
+            response_output = '</br>'
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
                 response_code = data.response_codes[self.client_address[0]]
                 if response_code == Responses.INVALID_TRANSACTION:
-                    output += '<h4>Invalid transaction (null or negative values).</h4>'
+                    response_output = '<h4>Invalid transaction (null or negative values).</h4>'
                 elif response_code == Responses.INVALID_INPUT_AMOUNT:
-                    output += '<h4>Invalid input (amount).</h4>'
+                    response_output = '<h4>Invalid input (amount).</h4>'
                 elif response_code == Responses.ALLOCATION_ID_INVALID:
-                    output += '<h4>Allocation ID is invalid.</h4>'
+                    response_output = '<h4>Allocation ID is invalid.</h4>'
                 elif response_code == Responses.INSUFFICIENT_AMOUNT:
-                    output += '<h4>Insufficient funds in your account to complete allocation.</h4>'
+                    response_output = '<h4>Insufficient funds in your account to complete allocation.</h4>'
                 elif response_code == Responses.PROCESSING_ERROR:
-                    output += '<h4>Processing error: account not found. Please try again later</h4>'
+                    response_output = '<h4>Processing error: account not found. Please try again later</h4>'
                 data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
-            output += '</br>' + '</br>' + 'To return to FinCloud page ' + '<a href="/account/cloud">Click here</a>'
-            output += '</body></html>'
+            output = '''
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Financial Cloud Allocation</title>
+                    <style>
+                        /* CSS styles */
+                        header {
+                            font-family: Arial, sans-serif;
+                            background-color: #001F54;
+                            color: white;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            padding: 16px;
+                        }
+                        .title {
+                            font-weight: bold;
+                            margin: 0;
+                            font-size: 28px;
+                        }
+                        .logo {
+                            height: 2rem;
+                        }
+                        body {
+                            font-family: Arial, sans-serif;
+                            margin: 0;
+                            padding: 0;
+                            background-color: white;
+                        }
+                        .content-form {
+                            position: relative;
+                            left: 40%;
+                            width: 20%;
+                            border-radius: 3.5%;
+                            margin: 2rem;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            border: 2.5px solid gray;
+                            background-color: lightgray;
+                        }
+                        .content-form p {
+                            color: black;
+                        }
+                        form {
+                            padding-top: 5%;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            margin-bottom: 2rem;
+                        }
+                        form input {
+                            margin-bottom: 1rem;
+                            padding: 0.5rem;
+                            border-radius: 0.25rem;
+                            border: 1px solid lightgray;
+                            width: 100%;
+                            box-sizing: border-box;
+                        }
+                        form select {
+                            margin-bottom: 1rem;
+                            padding: 0.5rem;
+                            border-radius: 0.25rem;
+                            border: 1px solid lightgray;
+                            width: 100%;
+                            box-sizing: border-box;
+                        }
+                        form button {
+                            padding: 0.5rem;
+                            border-radius: 0.25rem;
+                            border: none;
+                            background-color: #001F54;
+                            color: white;
+                            cursor: pointer;
+                        }
+                        .cta {
+                            width: 100%;
+                            display: flex;
+                            align-items: left;
+                        }
+                        .cta p {
+                            margin: 2rem;
+                            display: flex;
+                            width: 100%;
+                            margin-bottom: 1rem;
+                        }
+                        .cta a {
+                            color: navy;
+                            cursor: pointer;
+                            text-decoration: none;
+                        }
+                        .cta a:hover {
+                            font-weight: bold;
+                        }
+                    </style>
+                </head>
+                <header>
+                    <h1 class="title">Allocate Funds to the Financial Cloud</h1>
+                    <div class="logo">
+                        <img src="''' + logo_path + '''" alt="FinCloud">
+                    </div>
+                </header>
+                <body>
+                    <div class="content-form">
+                        <h3>Enter Allocation Info</h3>
+                        <form method="POST" enctype="multipart/form-data" action="/account/cloud/allocate">
+                            <input type="text" name="amount" placeholder="Amount to Allocate" required>
+                            <input type="text" name="allocation_id" placeholder="Set Allocation Access Code" required>
+                            ''' + business_output + '''
+                            </br></br>
+                            <button type="submit">Confirm Allocation</button>
+                        </form>
+                        <div class="response">''' + response_output + '''</div>
+                        </br>
+                    </div>
+                    <div class="cta">
+                        <p><a href="/account/cloud">Cancel and return to general cloud page</a></p>
+                    </div>
+                </body>
+                </html>
+            '''
+
             self.wfile.write(output.encode())
 
         elif self.path.endswith('/account/cloud/withdraw'):
             self.start()
-            
-            ac_index = data.current_account[self.client_address[0]]
-            account_name = str(name_table.get_key(ac_index))
-            val = Accounts.log[ac_index].get_value_usd()
-            ac_type = loc_type_table.in_table(ac_index)
-            output = '<html><body>'
-            output += '<h1>Withdraw Funds From FinCloud</h1>' + '</br>'
-            output += '<h2>Your Account: ' + account_name + '</h2>'
-            output += '<h3>Current value in USD: ' + val + '</h3>' + '</br>' + '</br>'
-            output += '<form method="POST" enctype="multipart/form-data" action="/account/cloud/withdraw">'
-            output += 'Enter amount to allocate: ' + '<input name="amount" type="text">' + '</br>'
-            if ac_type == 'bus':
-                output += '</br>' + 'Enter name of department to withdraw to: ' + '<input name="source_dep" type="text">' + '</br>'
-            output += 'Enter allocation number to access funds: ' + '<input name="allocation_id" type="text">' + '</br>'
-            output += '<input type="submit" value="Submit">'
-            output += '</form>' + '</br>'
 
+            ac_index = data.current_account[self.client_address[0]]
+            ac_type = loc_type_table.in_table(ac_index)
+            business_output = '</br>'
+            if ac_type == 'bus':
+                business_output = '<input type="text" name="dep_name" placeholder="Department to Withdraw To" required>'
+
+            response_output = '</br>'
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
                 response_code = data.response_codes[self.client_address[0]]
                 if response_code == Responses.INVALID_TRANSACTION:
-                    output += '<h4>Invalid transaction (null or negative values).</h4>'
+                    response_output = '<h4>Invalid transaction (null or negative values).</h4>'
                 elif response_code == Responses.INVALID_INPUT_AMOUNT:
-                    output += '<h4>Invalid input (amount).</h4>'
+                    response_output = '<h4>Invalid input (amount).</h4>'
                 elif response_code == Responses.ALLOCATION_ID_INVALID:
-                    output += '<h4>Allocation ID is invalid.</h4>'
+                    response_output = '<h4>Allocation ID is invalid.</h4>'
                 elif response_code == Responses.INSUFFICIENT_AMOUNT:
-                    output += '<h4>Insufficient funds allocated to complete transaction.</h4>'
+                    response_output = '<h4>Insufficient funds allocated to complete transaction.</h4>'
                 elif response_code == Responses.PROCESSING_ERROR:
-                    output += '<h4>Processing error: account not found. Please try again later</h4>'
+                    response_output = '<h4>Processing error: account not found. Please try again later</h4>'
                 elif response_code == Responses.ALLOCATION_NOT_FOUND:
-                    output += '<h4>Allocation not found</h4>'
+                    response_output = '<h4>Allocation not found</h4>'
                 data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
-            output += '</br>' + '</br>' + 'To return to FinCloud page ' + '<a href="/account/cloud">Click here</a>'
-            output += '</body></html>'
+            output = '''
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Financial Cloud Access</title>
+                    <style>
+                        /* CSS styles */
+                        header {
+                            font-family: Arial, sans-serif;
+                            background-color: #001F54;
+                            color: white;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            padding: 16px;
+                        }
+                        .title {
+                            font-weight: bold;
+                            margin: 0;
+                            font-size: 28px;
+                        }
+                        .logo {
+                            height: 2rem;
+                        }
+                        body {
+                            font-family: Arial, sans-serif;
+                            margin: 0;
+                            padding: 0;
+                            background-color: white;
+                        }
+                        .content-form {
+                            position: relative;
+                            left: 40%;
+                            width: 20%;
+                            border-radius: 3.5%;
+                            margin: 2rem;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            border: 2.5px solid gray;
+                            background-color: lightgray;
+                        }
+                        .content-form p {
+                            color: black;
+                        }
+                        form {
+                            padding-top: 5%;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            margin-bottom: 2rem;
+                        }
+                        form input {
+                            margin-bottom: 1rem;
+                            padding: 0.5rem;
+                            border-radius: 0.25rem;
+                            border: 1px solid lightgray;
+                            width: 100%;
+                            box-sizing: border-box;
+                        }
+                        form select {
+                            margin-bottom: 1rem;
+                            padding: 0.5rem;
+                            border-radius: 0.25rem;
+                            border: 1px solid lightgray;
+                            width: 100%;
+                            box-sizing: border-box;
+                        }
+                        form button {
+                            padding: 0.5rem;
+                            border-radius: 0.25rem;
+                            border: none;
+                            background-color: #001F54;
+                            color: white;
+                            cursor: pointer;
+                        }
+                        .cta {
+                            width: 100%;
+                            display: flex;
+                            align-items: left;
+                        }
+                        .cta p {
+                            margin: 2rem;
+                            display: flex;
+                            width: 100%;
+                            margin-bottom: 1rem;
+                        }
+                        .cta a {
+                            color: navy;
+                            cursor: pointer;
+                            text-decoration: none;
+                        }
+                        .cta a:hover {
+                            font-weight: bold;
+                        }
+                    </style>
+                </head>
+                <header>
+                    <h1 class="title">Access & Withdraw Funds From the Financial Cloud</h1>
+                    <div class="logo">
+                        <img src="''' + logo_path + '''" alt="FinCloud">
+                    </div>
+                </header>
+                <body>
+                    <div class="content-form">
+                        <h3>Enter Transaction Info</h3>
+                        <form method="POST" enctype="multipart/form-data" action="/account/cloud/withdraw">
+                            <input type="text" name="amount" placeholder="Amount to Withdraw" required>
+                            <input type="password" name="allocation_id" placeholder="Allocation Access Code" required>
+                            ''' + business_output + '''
+                            </br></br>
+                            <button type="submit">Confirm Withdrawal</button>
+                        </form>
+                        <div class="response">''' + response_output + '''</div>
+                        </br>
+                    </div>
+                    <div class="cta">
+                        <p><a href="/account/cloud">Cancel and return to general cloud page</a></p>
+                    </div>
+                </body>
+                </html>
+            '''
+
             self.wfile.write(output.encode())
 
         elif self.path.endswith('/account/business/open_dep'):
             self.start()
-            
-            output = '<html><body>'
-            ac_index = data.current_account[self.client_address[0]]
-            account_name = str(name_table.get_key(ac_index))
-            output += '<h1>Your Account: ' + account_name + '</h1>'
-            comp_name = str(Accounts.log[ac_index].company_name)
-            output += '<h1>Company: ' + comp_name + '</h1>'
-            output += '<form method="POST" enctype="multipart/form-data" action="/account/business/open_dep">'
-            output += 'Enter name for new department: ' + '<input name="new_dep" type="text">'
-            output += '</br></br>'
-            output += '<input type="submit" value="Open department">'
-            output += '</form>' + '</br>'
 
+            response_output = '</br>'
             # print error/response message if redirect flag is set to True
             if data.redirect_flags[self.client_address[0]]:
                 data.alter_rf(self.client_address[0], False)
                 response_code = data.response_codes[self.client_address[0]]
                 if response_code == Responses.DEP_NAME_EXISTS:
-                    output += '<h4>Department name already exists.</h4>'
+                    response_output = '<h4>Department name already exists.</h4>'
                 if response_code == Responses.DEP_NAME_INVALID:
-                    output += '<h4>Department name invalid. Please try again.</h4>'
+                    response_output = '<h4>Department name invalid. Please try again.</h4>'
                 data.alter_re(self.client_address[0], Responses.EMPTY_RESPONSE)
 
-            output += '</br>' + '</br>' + 'To return to account home page ' + '<a href="/account/home">Click here</a>'
-            output += '</body></html>'
+            output = '''
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Open Department</title>
+                    <style>
+                        /* CSS styles */
+                        header {
+                            font-family: Arial, sans-serif;
+                            background-color: #001F54;
+                            color: white;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            padding: 16px;
+                        }
+                        .title {
+                            font-weight: bold;
+                            margin: 0;
+                            font-size: 28px;
+                        }
+                        .logo {
+                            height: 2rem;
+                        }
+                        body {
+                            font-family: Arial, sans-serif;
+                            margin: 0;
+                            padding: 0;
+                            background-color: white;
+                        }
+                        .content-form {
+                            position: relative;
+                            left: 40%;
+                            width: 20%;
+                            border-radius: 3.5%;
+                            margin: 2rem;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            border: 2.5px solid gray;
+                            background-color: lightgray;
+                        }
+                        .content-form p {
+                            color: black;
+                        }
+                        form {
+                            padding-top: 5%;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            margin-bottom: 2rem;
+                        }
+                        form input {
+                            margin-bottom: 1rem;
+                            padding: 0.5rem;
+                            border-radius: 0.25rem;
+                            border: 1px solid lightgray;
+                            width: 100%;
+                            box-sizing: border-box;
+                        }
+                        form select {
+                            margin-bottom: 1rem;
+                            padding: 0.5rem;
+                            border-radius: 0.25rem;
+                            border: 1px solid lightgray;
+                            width: 100%;
+                            box-sizing: border-box;
+                        }
+                        form button {
+                            padding: 0.5rem;
+                            border-radius: 0.25rem;
+                            border: none;
+                            background-color: #001F54;
+                            color: white;
+                            cursor: pointer;
+                        }
+                        .cta {
+                            width: 100%;
+                            display: flex;
+                            align-items: left;
+                        }
+                        .cta p {
+                            margin: 2rem;
+                            display: flex;
+                            width: 100%;
+                            margin-bottom: 1rem;
+                        }
+                        .cta a {
+                            color: navy;
+                            cursor: pointer;
+                            text-decoration: none;
+                        }
+                        .cta a:hover {
+                            font-weight: bold;
+                        }
+                    </style>
+                </head>
+                <header>
+                    <h1 class="title">Open New Business Department</h1>
+                    <div class="logo">
+                        <img src="''' + logo_path + '''" alt="FinCloud">
+                    </div>
+                </header>
+                <body>
+                    <div class="content-form">
+                        <h3>Enter Department Info</h3>
+                        <form method="POST" enctype="multipart/form-data" action="/account/business/open_dep">
+                            <input type="text" name="new_dep" placeholder="New Department Name" required>
+                            </br></br>
+                            <button type="submit">Open Department</button>
+                        </form>
+                        </br>
+                        <div class="response">''' + response_output + '''</div>
+                        </br>
+                    </div>
+                    <div class="cta">
+                        <p><a href="/account/home">Cancel and return to account</a></p>
+                    </div>
+                </body>
+                </html>
+            '''
             self.wfile.write(output.encode())
 
         else:
@@ -4250,7 +5525,8 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                         data.alter_re(self.client_address[0], Responses.INVALID_SPENDING_LIMIT)
                         self.redirect('/new/checking')
                     else:
-                        param_list = {'type': 'reg', 'account name': account_name, 'code': code, 'phone num': phone_number,
+                        param_list = {'type': 'reg', 'account name': account_name, 'code': code,
+                                      'phone num': phone_number,
                                       'spending limit': int(spending_limit)}
                         data.alter_re(self.client_address[0], param_list)
                         data.alter_rf(self.client_address[0], False)
@@ -4478,7 +5754,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             else:
                 self.system_error()
 
-        elif self.path.endswith('/account/deposit'):
+        elif self.path.endswith('/account/handle_deposits'):
             # extract user input from headers in POST packet
             ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
             pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
@@ -4502,7 +5778,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 else:
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], response_code)
-                    self.redirect('/account/deposit')
+                    self.redirect('/account/handle_deposits')
             else:
                 self.system_error()
 
@@ -4618,7 +5894,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             else:
                 self.redirect('/account/home')
 
-        elif self.path.endswith('/account/business/inner_transfer'):
+        elif self.path.endswith('/account/business/departmental_transfer'):
             # extract user input from headers in POST packet
             ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
             pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
@@ -4638,7 +5914,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 else:
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], response_code)
-                    self.redirect('/account/business/inner_transfer')
+                    self.redirect('/account/business/departmental_transfer')
             else:
                 self.system_error()
 
@@ -4692,7 +5968,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             else:
                 self.system_error()
 
-        elif self.path.endswith('/account/holdings/trade_currency'):
+        elif self.path.endswith('//account/account_manage/current_holdings/trade_currency'):
             # extract user input from headers in POST packet
             ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
             pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
@@ -4708,11 +5984,11 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 if confirm:
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], Responses.CURRENCY_TRADE_CONFIRM)
-                    self.redirect('/account/holdings')
+                    self.redirect('//account/account_manage/current_holdings')
                 else:
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], response_code)
-                    self.redirect('/account/holdings/trade_currency')
+                    self.redirect('//account/account_manage/current_holdings/trade_currency')
             else:
                 self.system_error()
 
@@ -4734,11 +6010,11 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 if confirm:
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], Responses.CURRENCY_TRADE_CONFIRM)
-                    self.redirect('/account/business/departments')
+                    self.redirect('/account/business/current_holdings')
                 else:
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], response_code)
-                    self.redirect('/account/business/departments/' + dep_name + '/invest_capital/trade_currencies')
+                    self.redirect('/account/business/current_holdings/' + dep_name + '/invest_capital/trade_currencies')
             else:
                 self.system_error()
 
@@ -4758,6 +6034,11 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     dep_name = fields.get('dep_name')[0]
                 else:
                     dep_name = 'none'
+                if not validate_number(amount):
+                    data.alter_rf(self.client_address[0], True)
+                    data.alter_re(self.client_address[0], Responses.INVALID_INPUT_AMOUNT)
+                    self.redirect('/account/cloud/allocate')
+                amount = float(amount)
                 if ac_type == 'reg':
                     if Accounts.log[ac_index].remaining_spending < amount:
                         data.alter_re(self.client_address[0], [Responses.OVERSPEND_BY_ALLOCATION, amount, allocation_id,

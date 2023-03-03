@@ -45,7 +45,7 @@ def rates_update():  # update last currency rates to use if live rates are not a
             try:
                 last_rates[curr] = converter.CurrencyRates().get_rate('USD', curr)
             except converter.RatesNotAvailableError:
-                pass
+                continue
 
 
 def refresh_admin_credentials():
@@ -54,7 +54,7 @@ def refresh_admin_credentials():
         if not data.run_server_flag:
             continue
         print('Updating credentials')
-        new_credentials = str(hash_function(generate_code()))
+        new_credentials = str(hash_function(hash_function(generate_code())))
         pass_table.body[0] = new_credentials
         dir_path = str(os.path.dirname(os.path.abspath(__file__))) + '\\credentials'
         file_path = dir_path + '\\Admin_credentials.txt'
@@ -75,7 +75,7 @@ def manage_backups(run_once=False):
                 connection_string = file.read()
             db = get_database(DB_NAME, connection_string)
         except FileNotFoundError:
-            print('\nMongoDB access failed\n')
+            print('\nMongoDB access failed: FileNotFoundError (connection data not found).\n')
             return
 
         try:
@@ -86,7 +86,7 @@ def manage_backups(run_once=False):
                 wait_for_flag(BACKUP_DATA_CYCLE)
                 backup_data(db)
         except errors.OperationFailure:
-            print('\nMongoDB access failed.\n')
+            print('\nMongoDB access failed: pymongo.errors.OperationFailure.\n')
             return
 
 
