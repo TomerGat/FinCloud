@@ -69,8 +69,16 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
         if self.path.split('/')[1] == 'account' and self.client_address[0] not in data.current_account.keys():
             self.timeout_session()
 
+        if self.path.endswith(logo_path):
+            self.send_response(200)
+            self.send_header('Content-type', 'image/png')
+            self.end_headers()
+            pic_dir = str(os.path.dirname(os.path.abspath(__file__))) + logo_dir
+            with open(pic_dir, 'rb') as f:
+                self.wfile.write(f.read())
+
         # handle get requests according to path
-        if self.path.endswith('/'):
+        elif self.path.endswith('/'):
             self.start()
             response_output = '</br>'
             # print error/response message if redirect flag is set to True
@@ -108,7 +116,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             padding: 16px;
                         }
                         .logo {
-                            height: 2rem;
+                            height: 3.5rem;
                         }
                         .title {
                             font-size: 28px;
@@ -204,7 +212,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     <body>
                     <header>
                         <h1 class="title">FinCloud</h1>
-                        <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
+                        <img class="logo" src="''' + logo_path + '''" alt="FinCloud"></img>
                     </header>
                     <main>
                         <div class="welcome">
@@ -220,7 +228,6 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             <ul>
                                 <li><a href="/login">Sign In</a></li>
                                 <li><a href="/new">Open Account</a></li>
-                                </br></br></br>
                             </ul>
                         </div>
                     </main>
@@ -228,7 +235,6 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     <main>
                         <div class="core">
                             <h2>Core Principles:</h2>
-                            </br>
                             <h3>Variety of Services</h3>
                             <p>
                                 FinCloud offers a wide array of services for different types of clients.</br>
@@ -246,7 +252,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                                 We offer unique services, such as foreign currency trading, and out Financial Cloud.</br>
                                 To read more, click 'Learn About Us' at the top of the page.
                             </p>
-                            </br></br>
+                            </br>
                             <p>
                                 Disclaimer: This is a simulation of a digital bank and does not use real funds!
                             </p>
@@ -289,7 +295,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             padding: 16px;
                         }
                         .logo {
-                            height: 2rem;
+                            height: 3.5rem;
                         }
                         .title {
                             font-size: 28px;
@@ -446,7 +452,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             font-size: 28px;
                         }
                         .logo {
-                            height: 2rem;
+                            height: 3.5rem;
                         }
                         body {
                             font-family: Arial, sans-serif;
@@ -536,9 +542,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 </head>
                 <header>
                     <h1 class="title">Login to Your Account</h1>
-                    <div class="logo">
-                        <img src="''' + logo_path + '''" alt="FinCloud">
-                    </div>
+                        <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
                 </header>
                 <body>
                     <div class="content">
@@ -596,7 +600,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             font-size: 28px;
                         }
                         .logo {
-                            height: 2rem;
+                            height: 3.5rem;
                         }
                         body {
                             font-family: Arial, sans-serif;
@@ -674,9 +678,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 </head>
                 <header>
                     <h1 class="title">Log Out of Account</h1>
-                    <div class="logo">
-                        <img src="''' + logo_path + '''" alt="FinCloud">
-                    </div>
+                        <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
                 </header>
                 <body>
                     <div class="content-form">
@@ -734,7 +736,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             font-size: 28px;
                         }
                         .logo {
-                            height: 2rem;
+                            height: 3.5rem;
                         }
                         body {
                             font-family: Arial, sans-serif;
@@ -812,9 +814,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 </head>
                 <header>
                     <h1 class="title">Complete Account Recovery</h1>
-                    <div class="logo">
-                        <img src="''' + logo_path + '''" alt="FinCloud">
-                    </div>
+                    <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
                 </header>
                 <body>
                     <div class="content-form">
@@ -882,7 +882,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             font-size: 28px;
                         }
                         .logo {
-                            height: 2rem;
+                            height: 3.5rem;
                         }
                         body {
                             font-family: Arial, sans-serif;
@@ -963,9 +963,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 </head>
                 <header>
                     <h1 class="title">Recover Account Username and Password</h1>
-                    <div class="logo">
-                        <img src="''' + logo_path + '''" alt="FinCloud">
-                    </div>
+                    <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
                 </header>
                 <body>
                     <div class="content-form">
@@ -1028,7 +1026,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             font-size: 28px;
                         }
                         .logo {
-                            height: 2rem;
+                            height: 3.5rem;
                         }
                         body {
                             font-family: Arial, sans-serif;
@@ -1109,9 +1107,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 </head>
                 <header>
                     <h1 class="title">Recover Account Password</h1>
-                    <div class="logo">
-                        <img src="''' + logo_path + '''" alt="FinCloud">
-                    </div>
+                    <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
                 </header>
                 <body>
                     <div class="content-form">
@@ -1162,7 +1158,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                                 font-size: 28px;
                             }
                             .logo {
-                                height: 2rem;
+                                height: 3.5rem;
                             }
                             body {
                                 margin: 0px;
@@ -1247,9 +1243,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     </head>
                     <header>
                         <h1 class="title">Open An Account</h1>
-                        <div class="logo">
-                            <img src="''' + logo_path + '''" alt="FinCloud">
-                        </div>
+                        <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
                     </header>
                     <body>
                         <div class="content">
@@ -1319,7 +1313,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             font-size: 28px;
                         }
                         .logo {
-                            height: 2rem;
+                            height: 3.5rem;
                         }
                         body {
                             font-family: Arial, sans-serif;
@@ -1405,9 +1399,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 </head>
                 <header>
                     <h1 class="title">Complete Your Account</h1>
-                    <div class="logo">
-                        <img src="''' + logo_path + '''" alt="FinCloud">
-                    </div>
+                    <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
                 </header>
                 <body>
                     <div class="content-text">
@@ -1499,7 +1491,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             font-size: 28px;
                         }
                         .logo {
-                            height: 2rem;
+                            height: 3.5rem;
                         }
                         body {
                             font-family: Arial, sans-serif;
@@ -1590,9 +1582,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 </head>
                 <header>
                     <h1 class="title">Create Checking Account</h1>
-                    <div class="logo">
-                        <img src="''' + logo_path + '''" alt="FinCloud">
-                    </div>
+                    <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
                 </header>
                 <body>
                     <div class="content-form">
@@ -1679,7 +1669,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             font-size: 28px;
                         }
                         .logo {
-                            height: 2rem;
+                            height: 3.5rem;
                         }
                         body {
                             font-family: Arial, sans-serif;
@@ -1770,9 +1760,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 </head>
                 <header>
                     <h1 class="title">Create Savings Account</h1>
-                    <div class="logo">
-                        <img src="''' + logo_path + '''" alt="FinCloud">
-                    </div>
+                    <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
                 </header>
                 <body>
                     <div class="content-form">
@@ -1867,7 +1855,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             font-size: 28px;
                         }
                         .logo {
-                            height: 2rem;
+                            height: 3.5rem;
                         }
                         body {
                             font-family: Arial, sans-serif;
@@ -1950,9 +1938,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 </head>
                 <header>
                     <h1 class="title">Create Business Account</h1>
-                    <div class="logo">
-                        <img src="''' + logo_path + '''" alt="FinCloud">
-                    </div>
+                    <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
                 </header>
                 <body>
                     <div class="content-form">
@@ -2163,7 +2149,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 spending_limit = Accounts.log[ac_index].monthly_spending_limit
                 remaining_spending = Accounts.log[ac_index].remaining_spending
 
-            holdings_link = '<h3><a href="/account/account_manage/current_holdings">Account Holdings</a></h3>' if ac_type != 'sav' else ''
+            holdings_link = '<h3><a href="/account/manage_account/account_holdings">Account Holdings</a></h3>' if ac_type != 'sav' else ''
             if ac_type == 'bus':
                 holdings_link = '<h3><a href="/account/business/current_holdings">Account Holdings</a></h3>'
 
@@ -2215,7 +2201,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                         padding: 16px;
                     }
                     .logo {
-                        height: 2rem;
+                        height: 3.5rem;
                     }
                     .title {
                         font-size: 28px;
@@ -2316,7 +2302,6 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             {}
                             </br>
                             <h4>{}</h4>
-                            </br>
                         </div>
                         <div class="transactions">
                             <h2>Transactions</h2>
@@ -2344,7 +2329,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             <h2>Manage Account:</h2>
                             <h3><a href="/account/general_info">General Info</a><h3>
                             {}
-                            <h3><a href="/account/inbox">Account Inbox</a></h3>
+                            <h3><a href="/account/message_inbox">Account Inbox</a></h3>
                             {}
                             {}
                             </br></br>
@@ -2401,7 +2386,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                                 padding: 16px;
                             }
                             .logo {
-                                height: 2rem;
+                                height: 3.5rem;
                             }
                             .title {
                                 font-size: 28px;
@@ -2748,7 +2733,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output += transactions_html
             self.wfile.write(output.encode())
 
-        elif self.path.endswith('/account/inbox'):
+        elif self.path.endswith('/account/message_inbox'):
             self.start()
 
             ac_index = data.current_account[self.client_address[0]]
@@ -2784,10 +2769,8 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     font-weight: bold;
                 }
                 
-                .logo img {
-                    display: inline-block;
-                    float: right;
-                    height: 60px;
+                .logo {
+                    height: 3.5rem;
                 }
 
                 .title {
@@ -2912,10 +2895,8 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                     <body>
                         <header>
                             <h1 class="title">Account Inbox</h1>
-                            <a class="file-request-link" href="/account/inbox/file_requests">File Request</a>
-                            <div class="logo">
-                                <img src="{logo_path}" alt="Logo">
-                            </div>
+                            <a class="file-request-link" href="/account/message_inbox/file_requests">File Request</a>
+                            <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
                         </header>
                         <div class="horizontal-line"></div>
                         {messages_html}
@@ -2933,9 +2914,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 <body>
                 <header>
                 <h1 class="title">Account Inbox</h1>
-                <div class="logo">
-                <img src="{logo_path}" alt="Logo">
-                </div>
+                <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
                 </header>
                 <div class="horizontal-line"></div>
                 <p class="no-messages">No messages to display</p>
@@ -2945,7 +2924,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             output = page_html
             self.wfile.write(output.encode())
 
-        elif self.path.endswith('/account/inbox/file_requests'):
+        elif self.path.endswith('/account/message_inbox/file_requests'):
             self.start()
 
             ac_index = data.current_account[self.client_address[0]]
@@ -2993,7 +2972,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             font-size: 28px;
                         }
                         .logo {
-                            height: 2rem;
+                            height: 3.5rem;
                         }
                         body {
                             font-family: Arial, sans-serif;
@@ -3085,14 +3064,12 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 </head>
                 <header>
                     <h1 class="title">File A Request</h1>
-                    <div class="logo">
-                        <img src="''' + logo_path + '''" alt="FinCloud">
-                    </div>
+                    <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
                 </header>
                 <body>
                     <div class="content-form">
                         <h3>Enter Request Details</h3>
-                        <form method="POST" enctype="multipart/form-data" action="/account/inbox/file_requests">
+                        <form method="POST" enctype="multipart/form-data" action="/account/message_inbox/file_requests">
                             <input type="password" name="code" placeholder="Confirm Account Password" required>
                             </br>
                             <h4>Enter message ID for </br>the red flag notification message</h4>
@@ -3149,7 +3126,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             font-size: 28px;
                         }
                         .logo {
-                            height: 2rem;
+                            height: 3.5rem;
                         }
                         body {
                             font-family: Arial, sans-serif;
@@ -3227,9 +3204,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 </head>
                 <header>
                     <h1 class="title">Transaction Confirmation</h1>
-                    <div class="logo">
-                        <img src="''' + logo_path + '''" alt="FinCloud">
-                    </div>
+                    <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
                 </header>
                 <body>
                     <div class="content-form">
@@ -3288,7 +3263,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             font-size: 28px;
                         }
                         .logo {
-                            height: 2rem;
+                            height: 3.5rem;
                         }
                         body {
                             font-family: Arial, sans-serif;
@@ -3365,9 +3340,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 </head>
                 <header>
                     <h1 class="title">Set New Monthly Spending Limit</h1>
-                    <div class="logo">
-                        <img src="''' + logo_path + '''" alt="FinCloud">
-                    </div>
+                    <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
                 </header>
                 <body>
                     <div class="content-form">
@@ -3433,7 +3406,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             font-size: 28px;
                         }
                         .logo {
-                            height: 2rem;
+                            height: 3.5rem;
                         }
                         body {
                             font-family: Arial, sans-serif;
@@ -3510,9 +3483,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 </head>
                 <header>
                     <h1 class="title">Deposit Funds</h1>
-                    <div class="logo">
-                        <img src="''' + logo_path + '''" alt="FinCloud">
-                    </div>
+                    <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
                 </header>
                 <body>
                     <div class="content-form">
@@ -3581,7 +3552,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             font-size: 28px;
                         }
                         .logo {
-                            height: 2rem;
+                            height: 3.5rem;
                         }
                         body {
                             font-family: Arial, sans-serif;
@@ -3658,9 +3629,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 </head>
                 <header>
                     <h1 class="title">Withdraw Funds</h1>
-                    <div class="logo">
-                        <img src="''' + logo_path + '''" alt="FinCloud">
-                    </div>
+                    <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
                 </header>
                 <body>
                     <div class="content-form">
@@ -3737,7 +3706,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             font-size: 28px;
                         }
                         .logo {
-                            height: 2rem;
+                            height: 3.5rem;
                         }
                         body {
                             font-family: Arial, sans-serif;
@@ -3814,9 +3783,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 </head>
                 <header>
                     <h1 class="title">Transfer Funds</h1>
-                    <div class="logo">
-                        <img src="''' + logo_path + '''" alt="FinCloud">
-                    </div>
+                    <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
                 </header>
                 <body>
                     <div class="content-form">
@@ -3844,7 +3811,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
             self.wfile.write(output.encode())
 
-        elif self.path.endswith('/account/account_manage/current_holdings'):
+        elif self.path.endswith('/account/manage_account/account_holdings'):
             self.start()
 
             ac_index = data.current_account[self.client_address[0]]
@@ -3857,7 +3824,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             value_table = Accounts.log[ac_index].value
             ac_value = float(Accounts.log[ac_index].get_value_usd())
             if ac_value != 0:
-                trade_output = '<a href="//account/account_manage/current_holdings/trade_currency">Trade & Invest In Different Currencies</a>'
+                trade_output = '<a href="/account/manage_account/account_holdings/trade_currency">Trade & Invest In Different Currencies</a>'
             else:
                 trade_output = '<h4>No Current Holdings In Account</h4>'
 
@@ -3895,7 +3862,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             padding: 16px;
                         }
                         .logo {
-                            height: 2rem;
+                            height: 3.5rem;
                         }
                         .title {
                             font-size: 28px;
@@ -4076,7 +4043,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             padding: 16px;
                         }
                         .logo {
-                            height: 2rem;
+                            height: 3.5rem;
                         }
                         .title {
                             font-size: 28px;
@@ -4213,7 +4180,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
 
             self.wfile.write(output.encode())
 
-        elif self.path.endswith('//account/account_manage/current_holdings/trade_currency'):
+        elif self.path.endswith('/account/manage_account/account_holdings/trade_currency'):
             self.start()
 
             ac_index = data.current_account[self.client_address[0]]
@@ -4270,7 +4237,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             font-size: 28px;
                         }
                         .logo {
-                            height: 2rem;
+                            height: 3.5rem;
                         }
                         body {
                             font-family: Arial, sans-serif;
@@ -4357,14 +4324,12 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 </head>
                 <header>
                     <h1 class="title">Foreign Currencies - Trade & Invest</h1>
-                    <div class="logo">
-                        <img src="''' + logo_path + '''" alt="FinCloud">
-                    </div>
+                    <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
                 </header>
                 <body>
                     <div class="content-form">
                         <h3>Enter Trade Info</h3>
-                        <form method="POST" enctype="multipart/form-data" action="//account/account_manage/current_holdings/trade_currency">
+                        <form method="POST" enctype="multipart/form-data" action="/account/manage_account/account_holdings/trade_currency">
                             <input type="text" name="amount" placeholder="Amount to Transfer" required>
                             <select id="source_cur" name="source_cur" required>
                             ''' + source_cur_options + '''
@@ -4387,7 +4352,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                         </p>
                     </div>
                     <div class="cta">
-                        <p><a href="//account/account_manage/current_holdings">Cancel and return to holdings</a></p>
+                        <p><a href="/account/manage_account/account_holdings">Cancel and return to holdings</a></p>
                     </div>
                 </body>
                 </html>
@@ -4454,7 +4419,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             font-size: 28px;
                         }
                         .logo {
-                            height: 2rem;
+                            height: 3.5rem;
                         }
                         body {
                             font-family: Arial, sans-serif;
@@ -4541,9 +4506,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 </head>
                 <header>
                     <h1 class="title">Foreign Currencies - Trade & Invest</h1>
-                    <div class="logo">
-                        <img src="''' + logo_path + '''" alt="FinCloud">
-                    </div>
+                    <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
                 </header>
                 <body>
                     <div class="content-text">
@@ -4574,7 +4537,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                         </p>
                     </div>
                     <div class="cta">
-                        <p><a href="//account/account_manage/current_holdings">Cancel and return to holdings</a></p>
+                        <p><a href="/account/manage_account/account_holdings">Cancel and return to holdings</a></p>
                     </div>
                 </body>
                 </html>
@@ -4624,7 +4587,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             font-size: 28px;
                         }
                         .logo {
-                            height: 2rem;
+                            height: 3.5rem;
                         }
                         body {
                             font-family: Arial, sans-serif;
@@ -4701,9 +4664,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 </head>
                 <header>
                     <h1 class="title">Transfer Between Departments</h1>
-                    <div class="logo">
-                        <img src="''' + logo_path + '''" alt="FinCloud">
-                    </div>
+                    <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
                 </header>
                 <body>
                     <div class="content-form">
@@ -4769,7 +4730,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             padding: 16px;
                         }
                         .logo {
-                            height: 2rem;
+                            height: 3.5rem;
                         }
                         .title {
                             font-size: 28px;
@@ -4933,7 +4894,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             font-size: 28px;
                         }
                         .logo {
-                            height: 2rem;
+                            height: 3.5rem;
                         }
                         body {
                             font-family: Arial, sans-serif;
@@ -5010,9 +4971,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 </head>
                 <header>
                     <h1 class="title">Allocate Funds to the Financial Cloud</h1>
-                    <div class="logo">
-                        <img src="''' + logo_path + '''" alt="FinCloud">
-                    </div>
+                    <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
                 </header>
                 <body>
                     <div class="content-form">
@@ -5086,7 +5045,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             font-size: 28px;
                         }
                         .logo {
-                            height: 2rem;
+                            height: 3.5rem;
                         }
                         body {
                             font-family: Arial, sans-serif;
@@ -5163,9 +5122,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 </head>
                 <header>
                     <h1 class="title">Access & Withdraw Funds From the Financial Cloud</h1>
-                    <div class="logo">
-                        <img src="''' + logo_path + '''" alt="FinCloud">
-                    </div>
+                    <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
                 </header>
                 <body>
                     <div class="content-form">
@@ -5225,7 +5182,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             font-size: 28px;
                         }
                         .logo {
-                            height: 2rem;
+                            height: 3.5rem;
                         }
                         body {
                             font-family: Arial, sans-serif;
@@ -5302,9 +5259,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 </head>
                 <header>
                     <h1 class="title">Open New Business Department</h1>
-                    <div class="logo">
-                        <img src="''' + logo_path + '''" alt="FinCloud">
-                    </div>
+                    <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
                 </header>
                 <body>
                     <div class="content-form">
@@ -5680,7 +5635,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             else:
                 self.system_error()
 
-        elif self.path.endswith('/account/inbox/file_requests'):
+        elif self.path.endswith('/account/message_inbox/file_requests'):
             # extract user input from headers in POST packet
             ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
             pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
@@ -5694,7 +5649,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 except TypeError:
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], Responses.INVALID_MESSAGE_ID)
-                    self.redirect('/account/inbox/file_requests')
+                    self.redirect('/account/message_inbox/file_requests')
                     return
                 ac_code = fields.get('code')[0]
                 ac_index = data.current_account[self.client_address[0]]
@@ -5705,7 +5660,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 if not verify:
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], response_code)
-                    self.redirect('/account/inbox/file_requests')
+                    self.redirect('/account/message_inbox/file_requests')
                     return
                 # find message
                 message = None
@@ -5742,7 +5697,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 if already_filed:
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], Responses.REQUEST_ALREADY_FILED)
-                    self.redirect('/account/inbox')
+                    self.redirect('/account/message_inbox')
                     return
 
                 # create and file request
@@ -5750,7 +5705,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 active_requests[ac_index].append(new_request)
                 data.alter_rf(self.client_address[0], True)
                 data.alter_re(self.client_address[0], Responses.REQUEST_FILED)
-                self.redirect('/account/inbox/file_requests')
+                self.redirect('/account/message_inbox/file_requests')
             else:
                 self.system_error()
 
@@ -5968,7 +5923,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
             else:
                 self.system_error()
 
-        elif self.path.endswith('//account/account_manage/current_holdings/trade_currency'):
+        elif self.path.endswith('/account/manage_account/account_holdings/trade_currency'):
             # extract user input from headers in POST packet
             ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
             pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
@@ -5984,11 +5939,11 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                 if confirm:
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], Responses.CURRENCY_TRADE_CONFIRM)
-                    self.redirect('//account/account_manage/current_holdings')
+                    self.redirect('/account/manage_account/account_holdings')
                 else:
                     data.alter_rf(self.client_address[0], True)
                     data.alter_re(self.client_address[0], response_code)
-                    self.redirect('//account/account_manage/current_holdings/trade_currency')
+                    self.redirect('/account/manage_account/account_holdings/trade_currency')
             else:
                 self.system_error()
 

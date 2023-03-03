@@ -63,4 +63,6 @@ DB_NAME = 'FinCloud_Database'
 # whether or not to access data on MongoDB (config - set to False to run without db connection)
 BACKUP_DATA_FLAG = True
 
-logo_path = '/send_pic'
+logo_path = '/fincloud_logo'
+
+logo_dir = '\\vault\\logo_transparent.png'
