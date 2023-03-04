@@ -1429,7 +1429,7 @@ def cluster_by_amount(action_clusters: {str: [Entry]}) -> {str: [[Entry]]}:
     return general_clusters
 
 
-def return_stats(entries: Log, ac_index: int) -> (int, float, float, {str: [[Entry]]}):
+def return_stats(entries: Log, ac_index: int) -> (int, float, float, {str: [[Entry]]}, {str: [[Entry]]}):
     """
     :param entries: list of entries
     :param ac_index: index of account (entries are from the account at ac_index in Accounts)
