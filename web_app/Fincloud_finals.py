@@ -36,8 +36,8 @@ PREMIUM_RETURNS_FEE = 100
 MEDIUM_RETURNS_FEE = 80
 MINIMUM_RETURNS_FEE = 50
 
-# ratio between number of entries and number of clusters to create in anomaly detection algorithm (must be full number)
-CLUSTER_NUMBER_RATIO = 5  # tried 2.5, 3.75, 5.25, 4.75, 5 in tests
+# ratio between number of entries and number of clusters to create in anomaly detection algorithm
+CLUSTER_NUMBER_RATIO = 0.75
 
 # minimum deviation from standard to flag transaction
 MIN_DEVIATION_RATIO_TO_FLAG = 2.75  # change?
