@@ -197,7 +197,7 @@ def backup_last_rates(db):
 
 
 def backup_last_checked(db):
-    last_checked_item = last_checked_entry
+    last_checked_item = dict_keys_tostring(last_checked_entry)
     collection = db['Last_Checked_Entry']
     collection.delete_many({})
     collection.insert_one(last_checked_item)

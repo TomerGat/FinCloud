@@ -217,7 +217,7 @@ def get_checked_data(db):
     doc = docs[0]
     for key in doc:
         if key != '_id':
-            last_checked_entry[key] = doc[key]
+            last_checked_entry[int(key)] = doc[key]
 
 
 def retrieve_data():

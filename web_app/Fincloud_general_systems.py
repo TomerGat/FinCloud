@@ -1504,16 +1504,15 @@ def find_anomalies(ac_ledger: Log, ac_index: int) -> (bool, []):
             elif len(clusters[index]) == 0:
                 empty_clusters.append(index)
         red_flag_indices = []
+
+        # relevant locations before beginning and end of cluster list to empty_clusters
+        # area before and after cluster list should be considered empty
+        empty_clusters.append(-1)
+        empty_clusters.append(len(clusters))
+
         for index in lonely_clusters:
-            if index == 0:
-                if (index + 1) in empty_clusters:
-                    red_flag_indices.append(index)
-            elif index == len(clusters) - 1:
-                if (index - 1) in empty_clusters:
-                    red_flag_indices.append(index)
-            else:
-                if (index + 1) in empty_clusters and (index - 1) in empty_clusters:
-                    red_flag_indices.append(index)
+            if (index + 1) in empty_clusters and (index - 1) in empty_clusters:
+                red_flag_indices.append(index)
         for index in red_flag_indices:
             if clusters[index][0] in entries_to_check:
                 flagged_entries.append(clusters[index][0])
@@ -1531,15 +1530,17 @@ def find_anomalies(ac_ledger: Log, ac_index: int) -> (bool, []):
             elif len(clusters[index]) == 0:
                 empty_clusters.append(index)
         red_flag_indices = []
+
+        # relevant locations before beginning and end of cluster list to empty_clusters
+        # area before and after cluster list should be considered empty
+        empty_clusters.append(-1)
+        empty_clusters.append(-2)
+        empty_clusters.append(len(clusters))
+        empty_clusters.append(len(clusters) + 1)
+
         for index in lonely_clusters:
-            if (index + 1) in empty_clusters and (index + 2) in empty_clusters:
+            if (index + 1) in empty_clusters and (index + 2) in empty_clusters and (index - 1) in empty_clusters and (index - 2) in empty_clusters:
                 red_flag_indices.append(index)
-            elif index == len(clusters) - 1:
-                if (index - 1) in empty_clusters and (index - 2) in empty_clusters:
-                    red_flag_indices.append(index)
-            else:
-                if (index + 1) in empty_clusters and (index + 2) in empty_clusters and (index - 1) in empty_clusters and (index - 2) in empty_clusters:
-                    red_flag_indices.append(index)
         for index in red_flag_indices:
             if clusters[index][0] in entries_to_check:
                 flagged_entries.append(clusters[index][0])

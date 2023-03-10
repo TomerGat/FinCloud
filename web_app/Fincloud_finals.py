@@ -40,7 +40,7 @@ MINIMUM_RETURNS_FEE = 50
 CLUSTER_NUMBER_RATIO = 0.75
 
 # minimum deviation from standard to flag transaction
-MIN_DEVIATION_RATIO_TO_FLAG = 2.75  # change?
+MIN_DEVIATION_RATIO_TO_FLAG = 2.75
 
 # whether or not to flag inner transfers (config - can be changed)
 FLAG_INNER_TRANSFERS = False

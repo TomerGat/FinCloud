@@ -17,8 +17,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
         self.send_header('Location', path)
         self.end_headers()
 
-    def system_error(
-            self):  # redirect to main page, set redirect flag to true, set response code to -1 to display error
+    def system_error(self):  # redirect to main page, set redirect flag to true, set response code to -1 to display error
         if self.client_address[0] in data.current_account.keys():
             data.delete_ca(self.client_address[0])
         data.alter_rf(self.client_address[0], True)
@@ -2899,7 +2898,7 @@ class FinCloudHTTPRequestHandler(BaseHTTPRequestHandler):
                             <img class="logo" src="''' + logo_path + '''" alt="FinCloud">
                         </header>
                         <div class="horizontal-line"></div>
-                        {messages_html}
+                        ''' + messages_html + '''
                     </body>
                     </html>
                 '''
