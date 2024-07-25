@@ -1063,6 +1063,8 @@ def currency_rates(cur1, cur2, amount) -> float:
     except converter.RatesNotAvailableError:
         amount_new = amount / last_rates[cur1] * last_rates[cur2]
         return round(amount_new, 3)
+    except Exception as e:
+        print(f'Forex exception: {e}')
 
 
 def hash_function(param) -> int:

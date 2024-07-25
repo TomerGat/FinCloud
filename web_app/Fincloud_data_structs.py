@@ -120,9 +120,9 @@ previous_requests = {}
 # dict from ac_index to personal questions/answers for security verification that is used when recovering an account
 # will contain {account index: {question: answer, question: answer}} as dict(int, dict(str, str))
 security_questions = {}
-
 # shared list containing addresses connected
 addresses = []
+
 
 # creating backup of last currency rates (relative to USD)
 last_rates = create_value_table()
@@ -134,6 +134,8 @@ except converter.RatesNotAvailableError:
     last_rates = {'USD': 1, 'EUR': 0.93, 'JPY': 131.09, 'BGN': 1.82, 'CZK': 22.19, 'GBP': 0.83, 'CHF': 0.92,
                   'AUD': 1.44, 'BRL': 5.2, 'CAD': 1.34, 'CNY': 6.79, 'IDR': 15144.65, 'INR': 82.77,
                   'MXN': 18.91, 'SGD': 1.32}
+except Exception as e:
+    print(f'Forex exception: "{e}"')
 
 
 # enum with all possible response codes
@@ -213,9 +215,9 @@ class Responses(Enum):
 # dictionary saving index of last checked entry for each account
 # anomaly detection will start from this index when checking new entries
 last_checked_entry = {}  # {ac index : index of last checked entry}
-
 # possible entry types list
 entry_types = ['deposit', 'withdrawal', 'transfer from', 'transfer to', 'transfer from (inner)', 'transfer to (inner)']
+
 
 # possible message types list
 mes_types = ['notif', 'red flag', 'announcement', 'update']
