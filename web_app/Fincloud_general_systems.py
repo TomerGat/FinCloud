@@ -1064,7 +1064,9 @@ def currency_rates(cur1, cur2, amount) -> float:
         amount_new = amount / last_rates[cur1] * last_rates[cur2]
         return round(amount_new, 3)
     except Exception as e:
+        amount_new = amount / last_rates[cur1] * last_rates[cur2]
         print(f'Forex exception: {e}')
+        return round(amount_new, 3)
 
 
 def hash_function(param) -> int:

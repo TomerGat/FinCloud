@@ -135,6 +135,10 @@ except converter.RatesNotAvailableError:
                   'AUD': 1.44, 'BRL': 5.2, 'CAD': 1.34, 'CNY': 6.79, 'IDR': 15144.65, 'INR': 82.77,
                   'MXN': 18.91, 'SGD': 1.32}
 except Exception as e:
+    # set to rates as of 7/2/2023
+    last_rates = {'USD': 1, 'EUR': 0.93, 'JPY': 131.09, 'BGN': 1.82, 'CZK': 22.19, 'GBP': 0.83, 'CHF': 0.92,
+                  'AUD': 1.44, 'BRL': 5.2, 'CAD': 1.34, 'CNY': 6.79, 'IDR': 15144.65, 'INR': 82.77,
+                  'MXN': 18.91, 'SGD': 1.32}
     print(f'Forex exception: "{e}"')
 
 
